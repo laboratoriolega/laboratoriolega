@@ -1,19 +1,34 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { CalendarDays, Users, Stethoscope } from "lucide-react";
+import { CalendarDays, Users, Stethoscope, LogOut } from "lucide-react";
 import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
+import { getSession } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "LEGA Laboratorio | Dashboard",
   description: "Sistema de gestión de turnos para LEGA Laboratorio",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getSession() as any;
+
+  if (!session) {
+    return (
+      <html lang="es">
+        <body>
+          <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {children}
+          </div>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="es">
       <body>
@@ -24,10 +39,9 @@ export default function RootLayout({
             padding: '2rem 1.5rem',
             margin: '1rem',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '2rem'
+            flexDirection: 'column'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '2.5rem' }}>
               <img 
                 src="/logo.png" 
                 alt="LEGA Laboratorio Logo" 
@@ -36,6 +50,32 @@ export default function RootLayout({
             </div>
 
             <SidebarNav />
+
+            {/* Profile & Logout */}
+            <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                  {session.username.charAt(0).toUpperCase()}
+                </div>
+                <div style={{ overflow: 'hidden' }}>
+                  <p style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden' }}>{session.username}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, textTransform: 'capitalize' }}>Rol: {session.role}</p>
+                </div>
+              </div>
+              
+              <form action={async () => { "use server"; const { logoutAction } = await import("@/actions/auth"); await logoutAction(); }}>
+                <button type="submit" style={{ 
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', 
+                  padding: '0.75rem', background: '#f1f5f9', color: 'var(--danger)', 
+                  borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', border: 'none', cursor: 'pointer', transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                >
+                  <LogOut size={16} /> Cerrar Sesión
+                </button>
+              </form>
+            </div>
           </aside>
 
           {/* Main Content */}
