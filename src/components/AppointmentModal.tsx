@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { createAppointment } from "@/actions/appointments";
 import { format } from "date-fns";
-import { User, FileText, Calendar, CloudUpload, X } from "lucide-react";
+import { User, FileText, Calendar, CloudUpload, X, Loader2 } from "lucide-react";
+import { compressImage } from "@/lib/compression";
 
 export default function AppointmentModal({ 
   isOpen, 
@@ -25,6 +26,15 @@ export default function AppointmentModal({
     const formData = new FormData(e.currentTarget);
     
     try {
+      // Image Compression Logic
+      const file = formData.get("document") as File;
+      if (file && file.size > 0 && file.type.startsWith("image/")) {
+        console.log("Original size:", (file.size / 1024 / 1024).toFixed(2), "MB");
+        const compressedBlob = await compressImage(file);
+        formData.set("document", compressedBlob, "processed_image.jpg");
+        console.log("Compressed size:", (compressedBlob.size / 1024 / 1024).toFixed(2), "MB");
+      }
+
       await createAppointment(formData);
       onClose();
       window.location.reload(); 
