@@ -25,14 +25,12 @@ export default function RootLayout({
             flexDirection: 'column',
             gap: '2rem'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ background: 'var(--primary)', padding: '0.5rem', borderRadius: '8px' }}>
-                <Stethoscope size={24} color="white" />
-              </div>
-              <div>
-                <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>LEGA</h1>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Laboratorio</p>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '0.5rem' }}>
+              <img 
+                src="/logo.png" 
+                alt="LEGA Laboratorio Logo" 
+                style={{ width: '180px', height: 'auto', objectFit: 'contain' }} 
+              />
             </div>
 
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
