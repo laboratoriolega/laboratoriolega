@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const res = await pool.query('SELECT document_base64 FROM appointments WHERE id = $1', [params.id]);
+    const { id } = await context.params;
+    const res = await pool.query('SELECT document_base64 FROM appointments WHERE id = $1', [id]);
     const { document_base64 } = res.rows[0] || {};
     
     if (!document_base64) {
@@ -15,7 +16,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/octet-stream', // Puede ser PDF o Imagen
-        'Content-Disposition': `inline; filename="pedido-${params.id}.pdf"`,
+        'Content-Disposition': `inline; filename="pedido-${id}.pdf"`,
       },
     });
   } catch (err) {
