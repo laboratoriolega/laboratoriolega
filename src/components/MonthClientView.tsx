@@ -77,7 +77,7 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                       border: '1px solid var(--glass-border)', 
                       padding: '0.5rem', 
                       borderRadius: '4px',
-                      borderLeft: \`3px solid \${apt.status === 'AGENDADO' ? 'var(--primary)' : 'var(--success)'}\`
+                      borderLeft: `3px solid ${apt.status === 'AGENDADO' ? 'var(--primary)' : 'var(--success)'}`
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--primary)', marginBottom: '0.1rem', fontWeight: 600, fontSize: '0.7rem' }}>
                         <Clock size={10} />
