@@ -38,6 +38,7 @@ export default async function PacientesPage() {
                 <th style={{ padding: '1rem', fontWeight: 500 }}>Obra Social</th>
                 <th style={{ padding: '1rem', fontWeight: 500 }}>Fecha Nacimiento</th>
                 <th style={{ padding: '1rem', fontWeight: 500 }}>Email</th>
+                <th style={{ padding: '1rem', fontWeight: 500, textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -73,6 +74,17 @@ export default async function PacientesPage() {
                     </td>
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{p.birth_date ? new Date(p.birth_date).toLocaleDateString() : '-'}</td>
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{p.email || '-'}</td>
+                    <td style={{ padding: '1rem', textAlign: 'right' }}>
+                      <a href={`/pacientes/${p.id}`} style={{
+                        display: 'inline-block', padding: '0.4rem 1rem', background: 'rgba(14, 165, 233, 0.1)', 
+                        color: 'var(--primary)', fontWeight: 600, fontSize: '0.85rem', borderRadius: '6px', transition: 'all 0.2s', textDecoration: 'none'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(14, 165, 233, 0.2)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)'}
+                      >
+                        Ver Historial
+                      </a>
+                    </td>
                   </tr>
                 ))
               )}
