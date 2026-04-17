@@ -34,6 +34,7 @@ export default async function PacientesPage() {
               <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '1rem', fontWeight: 500 }}>Nombre</th>
                 <th style={{ padding: '1rem', fontWeight: 500 }}>DNI</th>
+                <th style={{ padding: '1rem', fontWeight: 500 }}>Teléfono</th>
                 <th style={{ padding: '1rem', fontWeight: 500 }}>Obra Social</th>
                 <th style={{ padding: '1rem', fontWeight: 500 }}>Fecha Nacimiento</th>
                 <th style={{ padding: '1rem', fontWeight: 500 }}>Email</th>
@@ -64,6 +65,7 @@ export default async function PacientesPage() {
                       </div>
                     </td>
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{p.dni}</td>
+                    <td style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>{p.phone || '-'}</td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{ background: 'rgba(0,0,0,0.05)', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 500 }}>
                         {p.health_insurance}

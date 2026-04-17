@@ -126,13 +126,24 @@ export default function AppointmentModal({
               <input required name="dni" type="text" className="modern-input" style={inputStyle} placeholder="12345678" />
             </div>
             <div>
-              <label style={labelStyle}>Obra Social</label>
-              <input required name="health_insurance" type="text" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, Swiss, Particular" />
+              <label style={labelStyle}>Teléfono</label>
+              <input required name="phone" type="tel" className="modern-input" style={inputStyle} placeholder="Ej: 11 1234-5678" />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
             <div>
+              <label style={labelStyle}>Obra Social</label>
+              <input required name="health_insurance" type="text" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, Particular" />
+            </div>
+            <div>
+              <label style={labelStyle}>Tipo de Análisis</label>
+              <input required name="analysis_type" type="text" className="modern-input" style={inputStyle} placeholder="Ej: SIBO, Esputo, etc." />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+            <div style={{ gridColumn: "span 2" }}>
               <label style={labelStyle}>Fecha y Hora</label>
               <input 
                 required 
@@ -142,10 +153,6 @@ export default function AppointmentModal({
                 className="modern-input"
                 style={inputStyle}
               />
-            </div>
-            <div>
-              <label style={labelStyle}>Tipo de Análisis</label>
-              <input required name="analysis_type" type="text" className="modern-input" style={inputStyle} placeholder="Ej: SIBO, Esputo, etc." />
             </div>
           </div>
 

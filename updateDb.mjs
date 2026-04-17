@@ -7,8 +7,8 @@ const pool = new Pool({
 
 async function run() {
   try {
-    await pool.query('ALTER TABLE appointments ADD COLUMN IF NOT EXISTS document_base64 TEXT;');
-    console.log("Column document_base64 added successfully.");
+    await pool.query('ALTER TABLE patients ADD COLUMN IF NOT EXISTS phone VARCHAR(50);');
+    console.log("Column phone added successfully.");
   } catch(e) {
     console.error(e);
   } finally {

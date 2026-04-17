@@ -26,6 +26,7 @@ export async function createAppointment(formData: FormData) {
     
     const name = formData.get("name") as string;
     const dni = formData.get("dni") as string;
+    const phone = formData.get("phone") as string;
     const email = formData.get("email") as string;
     const health_insurance = formData.get("health_insurance") as string;
     const appointment_date = formData.get("appointment_date") as string;
@@ -46,8 +47,8 @@ export async function createAppointment(formData: FormData) {
       patientId = existingPatient.rows[0].id;
     } else {
       const newPatient = await client.query(
-        'INSERT INTO patients (name, dni, email, health_insurance) VALUES ($1, $2, $3, $4) RETURNING id',
-        [name, dni, email, health_insurance]
+        'INSERT INTO patients (name, dni, email, phone, health_insurance) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [name, dni, email, phone, health_insurance]
       );
       patientId = newPatient.rows[0].id;
     }
