@@ -4,6 +4,7 @@ import { CalendarDays, Users, Stethoscope, LogOut } from "lucide-react";
 import Link from "next/link";
 import SidebarNav from "@/components/SidebarNav";
 import { getSession } from "@/lib/auth";
+import { logoutAction } from "@/actions/auth";
 
 export const metadata: Metadata = {
   title: "LEGA Laboratorio | Dashboard",
@@ -63,15 +64,12 @@ export default async function RootLayout({
                 </div>
               </div>
               
-              <form action={async () => { "use server"; const { logoutAction } = await import("@/actions/auth"); await logoutAction(); }}>
+              <form action={logoutAction}>
                 <button type="submit" style={{ 
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', 
                   padding: '0.75rem', background: '#f1f5f9', color: 'var(--danger)', 
                   borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', border: 'none', cursor: 'pointer', transition: 'background 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
-                >
+                }}>
                   <LogOut size={16} /> Cerrar Sesión
                 </button>
               </form>
