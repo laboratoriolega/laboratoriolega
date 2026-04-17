@@ -38,11 +38,11 @@ export default function AppointmentModal({
 
   const inputStyle = {
     width: "100%",
-    padding: "0.75rem 1rem",
-    borderRadius: "10px",
+    padding: "0.6rem 0.8rem",
+    borderRadius: "8px",
     border: "1px solid #e2e8f0",
     background: "#f8fafc",
-    fontSize: "0.95rem",
+    fontSize: "0.9rem",
     color: "#1e293b",
     outline: "none",
     transition: "all 0.2s ease"
@@ -50,8 +50,8 @@ export default function AppointmentModal({
 
   const labelStyle = {
     display: "block",
-    marginBottom: "0.4rem",
-    fontSize: "0.85rem",
+    marginBottom: "0.25rem",
+    fontSize: "0.8rem",
     fontWeight: 600,
     color: "#64748b"
   };
@@ -62,6 +62,7 @@ export default function AppointmentModal({
       background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 1000,
+      padding: "1rem",
       animation: "fadeIn 0.2s ease-out"
     }}>
       <style>{`
@@ -72,55 +73,65 @@ export default function AppointmentModal({
           box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
           background: #ffffff !important;
         }
+        .modal-body::-webkit-scrollbar {
+          width: 6px;
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 10px;
+        }
       `}</style>
       
       <div style={{ 
         width: "100%", maxWidth: "550px", 
+        maxHeight: "95vh",
         background: "#ffffff",
-        borderRadius: "20px",
+        borderRadius: "16px",
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        display: "flex", flexDirection: "column",
         overflow: "hidden",
         animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
       }}>
         <div style={{ 
-          padding: "1.5rem 2rem", 
+          padding: "1rem 1.5rem", 
           borderBottom: "1px solid #f1f5f9", 
           display: "flex", 
           justifyContent: "space-between",
           alignItems: "center",
+          flexShrink: 0,
           background: "linear-gradient(to right, #fbfcdb 0%, #e6f2f5 100%)" // Premium soft gradient
         }}>
-          <h3 style={{ fontSize: "1.35rem", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Calendar size={22} color="var(--primary)" />
-            {defaultDate ? `Agendar Turno: ${format(defaultDate, 'dd/MM')}` : "Agendar Nuevo Turno"}
+          <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+            <Calendar size={20} color="var(--primary)" />
+            {defaultDate ? `Agendar: ${format(defaultDate, 'dd/MM')}` : "Agendar Nuevo Turno"}
           </h3>
           <button 
             type="button" 
             onClick={onClose} 
             style={{ 
               display: "flex", alignItems: "center", justifyContent: "center",
-              width: "32px", height: "32px", borderRadius: "50%",
+              width: "28px", height: "28px", borderRadius: "50%",
               background: "rgba(255,255,255,0.6)", color: "#64748b",
               transition: "all 0.2s ease", border: "none", cursor: "pointer"
             }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; e.currentTarget.style.color = "#0f172a" }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.6)"; e.currentTarget.style.color = "#64748b" }}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <form className="modal-body" onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "1.25rem 1.5rem", display: "flex", flexDirection: "column", gap: "1rem", overflowY: "auto" }}>
           
           <div>
             <label style={labelStyle}>Nombre del Paciente</label>
             <div style={{ position: "relative" }}>
-              <User size={18} color="#94a3b8" style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }} />
-              <input required name="name" type="text" className="modern-input" style={{...inputStyle, paddingLeft: "2.75rem"}} placeholder="Ej: Walter Gómez" />
+              <User size={16} color="#94a3b8" style={{ position: "absolute", left: "0.8rem", top: "50%", transform: "translateY(-50%)" }} />
+              <input required name="name" type="text" className="modern-input" style={{...inputStyle, paddingLeft: "2.5rem"}} placeholder="Ej: Walter Gómez" />
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>DNI</label>
               <input required name="dni" type="text" className="modern-input" style={inputStyle} placeholder="12345678" />
@@ -131,7 +142,7 @@ export default function AppointmentModal({
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Obra Social</label>
               <input required name="health_insurance" type="text" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, Particular" />
@@ -142,7 +153,7 @@ export default function AppointmentModal({
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div style={{ gridColumn: "span 2" }}>
               <label style={labelStyle}>Fecha y Hora</label>
               <input 
@@ -161,14 +172,14 @@ export default function AppointmentModal({
             <input name="observations" type="text" className="modern-input" style={inputStyle} placeholder="Contexto adicional del turno..." />
           </div>
 
-          <div style={{ marginTop: "0.5rem" }}>
-            <label style={{...labelStyle, marginBottom: "0.5rem" }}>Documentación Medica</label>
+          <div>
+            <label style={{...labelStyle, marginBottom: "0.25rem" }}>Documentación Médica</label>
             <div style={{ 
               position: "relative",
               border: "2px dashed #cbd5e1", 
-              borderRadius: "12px", 
+              borderRadius: "10px", 
               background: "#f8fafc",
-              padding: "1.5rem",
+              padding: "1rem",
               textAlign: "center",
               transition: "all 0.2s ease",
               cursor: "pointer"
@@ -176,12 +187,12 @@ export default function AppointmentModal({
             onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--primary)"}
             onMouseLeave={(e) => e.currentTarget.style.borderColor = "#cbd5e1"}
             >
-              <CloudUpload size={28} color="var(--primary)" style={{ margin: "0 auto 0.5rem auto" }} />
-              <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#334155", marginBottom: "0.25rem" }}>
+              <CloudUpload size={22} color="var(--primary)" style={{ margin: "0 auto 0.25rem auto" }} />
+              <p style={{ fontSize: "0.8rem", fontWeight: 600, color: "#334155", margin: 0 }}>
                 {fileName ? "Archivo seleccionado:" : "Adjuntar Pedido Médico (Imagen/PDF)"}
               </p>
-              <p style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                {fileName ? fileName : "Arrastra el archivo o haz clic para subir"}
+              <p style={{ fontSize: "0.7rem", color: "#64748b", margin: 0, marginTop: "0.25rem" }}>
+                {fileName ? fileName : "Haz clic o arrastra"}
               </p>
               <input 
                 name="document" 
@@ -196,14 +207,14 @@ export default function AppointmentModal({
             </div>
           </div>
 
-          <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
+          <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.75rem", flexShrink: 0 }}>
             <button 
               type="button" 
               onClick={onClose} 
               style={{ 
-                flex: 1, padding: "0.875rem", 
+                flex: 1, padding: "0.75rem", 
                 background: "#f1f5f9", color: "#475569", 
-                borderRadius: "10px", fontWeight: 600, fontSize: "0.95rem",
+                borderRadius: "8px", fontWeight: 600, fontSize: "0.9rem",
                 transition: "all 0.2s ease", border: "none", cursor: "pointer"
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = "#e2e8f0"}
@@ -215,10 +226,10 @@ export default function AppointmentModal({
               type="submit" 
               disabled={loading} 
               style={{ 
-                flex: 1, padding: "0.875rem", 
+                flex: 1, padding: "0.75rem", 
                 background: "linear-gradient(135deg, var(--primary) 0%, #0284c7 100%)", 
                 color: "white", 
-                borderRadius: "10px", fontWeight: 600, fontSize: "0.95rem",
+                borderRadius: "8px", fontWeight: 600, fontSize: "0.9rem",
                 transition: "all 0.2s ease", border: "none", cursor: loading ? "wait" : "pointer",
                 boxShadow: "0 4px 6px -1px rgba(14, 165, 233, 0.3)",
                 opacity: loading ? 0.7 : 1
