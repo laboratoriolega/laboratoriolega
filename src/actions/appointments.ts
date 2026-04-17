@@ -65,6 +65,10 @@ export async function createAppointment(formData: FormData) {
     
     await logAction("CREATE_APPOINTMENT", { patient_name: name, dni, analysis_type });
 
+    revalidatePath("/");
+    revalidatePath("/calendario");
+    revalidatePath("/pacientes", "layout");
+
     return { success: true };
   } catch (error: any) {
     await client.query('ROLLBACK');

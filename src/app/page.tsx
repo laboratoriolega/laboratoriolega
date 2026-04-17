@@ -49,7 +49,7 @@ export default async function DashboardPage() {
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Asistencias Confirmadas</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>0</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{appointments?.filter((a:any) => a.status === 'COMPLETADO').length || 0}</h3>
           </div>
         </div>
 
@@ -59,7 +59,7 @@ export default async function DashboardPage() {
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Turnos Pendientes</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{appointments?.length || 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{appointments?.filter((a:any) => a.status === 'AGENDADO').length || 0}</h3>
           </div>
         </div>
       </div>

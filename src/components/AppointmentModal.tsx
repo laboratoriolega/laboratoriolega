@@ -26,6 +26,12 @@ export default function AppointmentModal({
     const formData = new FormData(e.currentTarget);
     
     try {
+      // Normalize Date to ISO (Avoid timezone shifts)
+      const rawDate = formData.get("appointment_date") as string;
+      if (rawDate) {
+        formData.set("appointment_date", new Date(rawDate).toISOString());
+      }
+
       // Image Compression Logic
       const file = formData.get("document") as File;
       if (file && file.size > 0 && file.type.startsWith("image/")) {
@@ -40,7 +46,7 @@ export default function AppointmentModal({
       window.location.reload(); 
     } catch(err) {
       console.error(err);
-      alert("Error al cargar el turno");
+      alert("Error al cargar el turno. Verifica que el archivo no sea demasiado grande.");
     } finally {
       setLoading(false);
     }
