@@ -1,13 +1,28 @@
 import { getAppointments } from "@/actions/appointments";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Clock, Activity, FileText } from "lucide-react";
+import { Calendar, Clock, Activity, FileText, X } from "lucide-react";
 import NewAppointmentModal from "@/components/NewAppointmentModal";
+import Link from "next/link";
+import DashboardFilters from "@/components/DashboardFilters";
 
 export const revalidate = 0; // Disable cache for this page since data changes
 
-export default async function DashboardPage() {
-  const { data: appointments, error } = await getAppointments();
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ status?: string, month?: string }> }) {
+  const { data: allAppointments, error } = await getAppointments();
+  const filters = await searchParams;
+
+  // Filter logic
+  let appointments = allAppointments || [];
+  if (filters.status) {
+    appointments = appointments.filter((a: any) => a.status === filters.status);
+  }
+  if (filters.month) {
+    appointments = appointments.filter((a: any) => {
+      const date = new Date(a.appointment_date);
+      return (date.getMonth() + 1).toString().padStart(2, '0') === filters.month;
+    });
+  }
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -32,48 +47,53 @@ export default async function DashboardPage() {
       </header>
 
       {/* Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+        <Link href="/" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: !filters.status ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}>
           <div style={{ background: 'rgba(14, 165, 233, 0.1)', padding: '1rem', borderRadius: '12px' }}>
             <Calendar color="var(--primary)" size={28} />
           </div>
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Turnos Hoy</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{appointments?.length || 0}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Total General</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.length ?? 0}</h3>
           </div>
-        </div>
+        </Link>
 
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <Link href="/?status=COMPLETADO" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'COMPLETADO' ? '2px solid var(--success)' : '1px solid var(--glass-border)' }}>
           <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '1rem', borderRadius: '12px' }}>
             <Activity color="var(--success)" size={28} />
           </div>
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Asistencias Confirmadas</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{appointments?.filter((a:any) => a.status === 'COMPLETADO').length || 0}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Confirmados</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a.status === 'COMPLETADO')?.length ?? 0}</h3>
           </div>
-        </div>
+        </Link>
 
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <Link href="/?status=AGENDADO" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'AGENDADO' ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}>
           <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '12px' }}>
             <Clock color="var(--danger)" size={28} />
           </div>
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Turnos Pendientes</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{appointments?.filter((a:any) => a.status === 'AGENDADO').length || 0}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Pendientes</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a.status === 'AGENDADO')?.length ?? 0}</h3>
           </div>
-        </div>
+        </Link>
+
+        <Link href="/?status=CANCELADO" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'CANCELADO' ? '2px solid #64748b' : '1px solid var(--glass-border)' }}>
+          <div style={{ background: 'rgba(100, 116, 139, 0.1)', padding: '1rem', borderRadius: '12px' }}>
+            <X color="#64748b" size={28} />
+          </div>
+          <div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Cancelados</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a.status === 'CANCELADO')?.length ?? 0}</h3>
+          </div>
+        </Link>
       </div>
 
       {/* Main Table */}
       <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Agenda de Laboratorio (Lista)</h3>
-          <input 
-            type="text" 
-            placeholder="Buscar por paciente o DNI..." 
-            className="input-field"
-            style={{ width: '300px' }}
-          />
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Agenda de Laboratorio ({filters.status || 'Todos'})</h3>
+          <DashboardFilters currentMonth={filters.month} />
         </div>
 
         {error && <div style={{ color: 'var(--danger)', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>Error cargando base de datos: {error}</div>}

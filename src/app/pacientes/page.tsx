@@ -60,9 +60,9 @@ export default async function PacientesPage() {
                     <td style={{ padding: '1rem', fontWeight: 600 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ width: '30px', height: '30px', background: 'var(--primary)', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>
-                          {p.name.charAt(0).toUpperCase()}
+                          {p.name ? p.name.charAt(0).toUpperCase() : '?'}
                         </div>
-                        {p.name}
+                        {p.name || 'Sin nombre'}
                       </div>
                     </td>
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{p.dni}</td>
@@ -72,7 +72,15 @@ export default async function PacientesPage() {
                         {p.health_insurance}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{p.birth_date ? new Date(p.birth_date).toLocaleDateString() : '-'}</td>
+                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
+                      {(() => {
+                        try {
+                          return p.birth_date ? new Date(p.birth_date).toLocaleDateString() : '-';
+                        } catch (e) {
+                          return 'Fecha inválida';
+                        }
+                      })()}
+                    </td>
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{p.email || '-'}</td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>
                       <a href={`/pacientes/${p.id}`} style={{
