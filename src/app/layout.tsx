@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CalendarDays, Users, Stethoscope } from "lucide-react";
 import Link from "next/link";
+import SidebarNav from "@/components/SidebarNav";
 
 export const metadata: Metadata = {
   title: "LEGA Laboratorio | Dashboard",
@@ -34,36 +35,7 @@ export default function RootLayout({
               />
             </div>
 
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <Link href="/" style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.75rem 1rem', borderRadius: '8px',
-                background: 'rgba(14, 165, 233, 0.1)',
-                color: 'var(--primary)', fontWeight: 600,
-                transition: 'all 0.2s ease'
-              }}>
-                <CalendarDays size={20} className="nav-icon" />
-                <span>Turnos en Lista</span>
-              </Link>
-              <Link href="/pacientes" style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.75rem 1rem', borderRadius: '8px',
-                color: 'var(--text-muted)', fontWeight: 500,
-                transition: 'all 0.2s ease'
-              }}>
-                <Users size={20} />
-                <span>Pacientes</span>
-              </Link>
-              <Link href="/calendario" style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.75rem 1rem', borderRadius: '8px',
-                color: 'var(--text-muted)', fontWeight: 500,
-                transition: 'all 0.2s ease'
-              }}>
-                <CalendarDays size={20} />
-                <span>Calendario Mensual</span>
-              </Link>
-            </nav>
+            <SidebarNav />
           </aside>
 
           {/* Main Content */}
