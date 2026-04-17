@@ -101,7 +101,13 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--primary)', marginBottom: '0.1rem', fontWeight: 600, fontSize: '0.7rem' }}>
                         <Clock size={10} />
-                        {format(new Date(apt.appointment_date), "HH:mm")}
+                        {(() => {
+                          try {
+                            return format(new Date(apt.appointment_date), "HH:mm");
+                          } catch (e) {
+                            return "--:--";
+                          }
+                        })()}
                       </div>
                       <p style={{ fontWeight: 600, fontSize: '0.75rem', lineHeight: 1.1, marginBottom: '0.1rem' }}>{apt.name}</p>
                       <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{apt.analysis_type}</p>

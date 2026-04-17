@@ -84,7 +84,15 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
                       </div>
                       <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <Calendar size={14} />
-                        {new Date(apt.appointment_date).toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}
+                        {(() => {
+                          try {
+                            return apt.appointment_date 
+                              ? new Date(apt.appointment_date).toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })
+                              : "Sin fecha definida";
+                          } catch (e) {
+                            return "Fecha inválida";
+                          }
+                        })()}
                       </p>
                       {apt.observations && (
                         <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem', fontStyle: 'italic' }}>

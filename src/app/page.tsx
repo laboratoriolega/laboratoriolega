@@ -19,7 +19,13 @@ export default async function DashboardPage() {
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            {format(new Date(), "EEEE, d 'de' MMMM", { locale: es })}
+            {(() => {
+              try {
+                return format(new Date(), "EEEE, d 'de' MMMM", { locale: es });
+              } catch (e) {
+                return "Fecha actual";
+              }
+            })()}
           </p>
           <NewAppointmentModal />
         </div>
@@ -103,9 +109,23 @@ export default async function DashboardPage() {
                     <td style={{ padding: '1rem', fontWeight: 500 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Clock size={16} color="var(--primary)" />
-                        {format(new Date(apt.appointment_date), "HH:mm")}
+                        {(() => {
+                          try {
+                            return apt.appointment_date ? format(new Date(apt.appointment_date), "HH:mm") : "--:--";
+                          } catch (e) {
+                            return "--:--";
+                          }
+                        })()}
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{format(new Date(apt.appointment_date), "dd/MM/yyyy")}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {(() => {
+                          try {
+                            return apt.appointment_date ? format(new Date(apt.appointment_date), "dd/MM/yyyy") : "Sin fecha";
+                          } catch (e) {
+                            return "Fecha inválida";
+                          }
+                        })()}
+                      </span>
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <p style={{ fontWeight: 600 }}>{apt.name}</p>
