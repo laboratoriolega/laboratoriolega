@@ -4,9 +4,12 @@ import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, subMonths, addMonths } from "date-fns";
 import { es } from "date-fns/locale";
 import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import AppointmentModal from "./AppointmentModal";
 
 export default function MonthClientView({ appointments }: { appointments: any[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -58,14 +61,24 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
           const isToday = isSameDay(day, new Date());
 
           return (
-            <div key={day.toISOString()} style={{ 
+            <div 
+              key={day.toISOString()} 
+              onClick={() => {
+                 setSelectedDate(day);
+                 setIsModalOpen(true);
+              }}
+              style={{ 
               background: isCurrentMonth ? '#FFFFFF' : 'rgba(0,0,0,0.02)',
               border: isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)', 
               borderRadius: '8px', 
+              cursor: 'pointer',
               padding: '0.5rem',
               display: 'flex', flexDirection: 'column', gap: '0.25rem',
               minHeight: '120px', opacity: isCurrentMonth ? 1 : 0.6
-            }}>
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.border = '2px solid var(--primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.border = isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)'}
+            >
                <p style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.25rem', color: isToday ? 'var(--primary)' : (isCurrentMonth ? 'var(--text-main)' : 'var(--text-muted)') }}>
                  {format(day, 'dd', { locale: es })}
                </p>
@@ -93,6 +106,12 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
           );
         })}
       </div>
+
+      <AppointmentModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        defaultDate={selectedDate} 
+      />
     </div>
   );
 }

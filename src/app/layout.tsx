@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CalendarDays, Users, Stethoscope } from "lucide-react";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "LEGA Laboratorio | Dashboard",
@@ -34,7 +35,7 @@ export default function RootLayout({
             </div>
 
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <a href="/" style={{
+              <Link href="/" style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.75rem 1rem', borderRadius: '8px',
                 background: 'rgba(14, 165, 233, 0.1)',
@@ -43,8 +44,8 @@ export default function RootLayout({
               }}>
                 <CalendarDays size={20} className="nav-icon" />
                 <span>Turnos en Lista</span>
-              </a>
-              <a href="#" style={{
+              </Link>
+              <Link href="/pacientes" style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.75rem 1rem', borderRadius: '8px',
                 color: 'var(--text-muted)', fontWeight: 500,
@@ -52,8 +53,8 @@ export default function RootLayout({
               }}>
                 <Users size={20} />
                 <span>Pacientes</span>
-              </a>
-              <a href="/calendario" style={{
+              </Link>
+              <Link href="/calendario" style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.75rem 1rem', borderRadius: '8px',
                 color: 'var(--text-muted)', fontWeight: 500,
@@ -61,7 +62,7 @@ export default function RootLayout({
               }}>
                 <CalendarDays size={20} />
                 <span>Calendario Mensual</span>
-              </a>
+              </Link>
             </nav>
           </aside>
 

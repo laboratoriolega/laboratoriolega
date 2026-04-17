@@ -130,6 +130,13 @@ export default async function DashboardPage() {
                     </td>
                     <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {apt.observations || '-'}
+                      {apt.has_document && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                           <a href={`/api/doc/${apt.id}`} target="_blank" style={{ color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none' }}>
+                             📎 Ver Pedido
+                           </a>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
