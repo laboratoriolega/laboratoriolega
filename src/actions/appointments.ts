@@ -1,8 +1,8 @@
 "use server";
 
 import pool from '@/lib/db';
-
 import { revalidatePath } from 'next/cache';
+import { logAction } from './audit';
 
 export async function getAppointments() {
   try {
@@ -62,6 +62,9 @@ export async function createAppointment(formData: FormData) {
     );
 
     await client.query('COMMIT');
+    
+    await logAction("CREATE_APPOINTMENT", { patient_name: name, dni, analysis_type });
+
     return { success: true };
   } catch (error: any) {
     await client.query('ROLLBACK');
@@ -82,6 +85,8 @@ export async function updateEvolution(formData: FormData) {
       'UPDATE appointments SET status = $1, evolution_notes = $2 WHERE id = $3',
       [status, evolution_notes, id]
     );
+
+    await logAction("UPDATE_EVOLUTION", { appointment_id: id, new_status: status });
 
     revalidatePath("/calendario");
     revalidatePath("/");

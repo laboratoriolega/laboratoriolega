@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users } from "lucide-react";
+import { CalendarDays, Users, UserCircle, ShieldCheck } from "lucide-react";
 
-export default function SidebarNav() {
+export default function SidebarNav({ userRole }: { userRole?: string }) {
   const pathname = usePathname();
 
   const navItems = [
@@ -12,6 +12,12 @@ export default function SidebarNav() {
     { name: "Pacientes", path: "/pacientes", icon: <Users size={20} /> },
     { name: "Calendario Mensual", path: "/calendario", icon: <CalendarDays size={20} /> },
   ];
+
+  if (userRole === 'admin') {
+    navItems.push({ name: "Usuarios", path: "/usuarios", icon: <ShieldCheck size={20} /> });
+  }
+
+  navItems.push({ name: "Mi Perfil", path: "/perfil", icon: <UserCircle size={20} /> });
 
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

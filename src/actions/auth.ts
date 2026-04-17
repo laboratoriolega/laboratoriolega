@@ -1,8 +1,9 @@
 "use server";
 import pool from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { signToken } from '@/lib/auth';
+import { signToken, getSession } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { logAction } from './audit';
 
 export async function login(formData: FormData) {
   const username = formData.get("username") as string;
@@ -37,6 +38,8 @@ export async function login(formData: FormData) {
       path: '/'
     });
 
+    await logAction("LOGIN", { username, role: user.role });
+
     return { success: true };
   } catch (error: any) {
     console.error("Login error:", error);
@@ -45,6 +48,10 @@ export async function login(formData: FormData) {
 }
 
 export async function logoutAction() {
+  const session = await getSession() as any;
+  if (session) {
+    await logAction("LOGOUT", { username: session.username });
+  }
   const cookieStore = await cookies();
   cookieStore.delete('auth_token');
 }

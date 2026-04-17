@@ -32,15 +32,17 @@ export default async function RootLayout({
 
   return (
     <html lang="es">
-      <body>
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <body style={{ margin: 0, padding: 0 }}>
+        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
           {/* Sidebar */}
           <aside className="glass-panel" style={{ 
             width: '22rem', 
-            padding: '2rem 1.5rem',
+            padding: '2.5rem 1.5rem',
             margin: '1rem',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            flexShrink: 0,
+            overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '2.5rem' }}>
               <img 
@@ -50,7 +52,7 @@ export default async function RootLayout({
               />
             </div>
 
-            <SidebarNav />
+            <SidebarNav userRole={session.role} />
 
             {/* Profile & Logout */}
             <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
@@ -77,8 +79,16 @@ export default async function RootLayout({
           </aside>
 
           {/* Main Content */}
-          <main style={{ flex: 1, padding: '1rem', paddingLeft: 0 }}>
-            {children}
+          <main style={{ 
+            flex: 1, 
+            padding: '1rem', 
+            paddingLeft: 0, 
+            overflowY: 'auto',
+            height: '100vh'
+          }}>
+            <div style={{ minHeight: '100%' }}>
+              {children}
+            </div>
           </main>
         </div>
       </body>
