@@ -37,8 +37,8 @@ export default function RootLayout({
               <a href="/" style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.75rem 1rem', borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                color: 'var(--text-main)', fontWeight: 500,
+                background: 'rgba(14, 165, 233, 0.1)',
+                color: 'var(--primary)', fontWeight: 600,
                 transition: 'all 0.2s ease'
               }}>
                 <CalendarDays size={20} className="nav-icon" />

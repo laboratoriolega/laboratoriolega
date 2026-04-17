@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --primary: #0EA5E9; /* Lega blueish */
+  --primary: #0EA5E9; /* Celeste */
   --primary-hover: #0284C7;
-  --bg-gradient-start: #0F172A;
-  --bg-gradient-end: #1E293B;
-  --glass-bg: rgba(30, 41, 59, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
+  --bg-gradient-start: #FFFFFF; /* Blanco */
+  --bg-gradient-end: #F0F9FF; /* Celeste muy clarito */
+  --glass-bg: rgba(255, 255, 255, 0.95); /* Blanco translúcido */
+  --glass-border: rgba(14, 165, 233, 0.2); /* Borde celeste */
+  --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* Sombra suave negra */
+  --text-main: #000000; /* Negro */
+  --text-muted: #475569;
   --accent: #38BDF8;
   --success: #10B981;
   --danger: #EF4444;
@@ -70,10 +70,10 @@ button {
 .input-field {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: rgba(15, 23, 42, 0.6);
+  background: #FFFFFF;
   border: 1px solid var(--glass-border);
   border-radius: 8px;
-  color: var(--text-main);
+  color: #000;
   font-family: inherit;
   transition: all 0.3s ease;
 }
@@ -92,7 +92,7 @@ button {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
+  background: #CBD5E1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {

@@ -112,7 +112,7 @@ export default async function DashboardPage() {
                       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>DNI: {apt.dni}</p>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <span style={{ background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.875rem' }}>
+                      <span style={{ background: 'rgba(0,0,0,0.05)', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 500 }}>
                         {apt.health_insurance}
                       </span>
                     </td>
