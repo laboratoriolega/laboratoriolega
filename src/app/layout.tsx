@@ -20,7 +20,7 @@ export default function RootLayout({
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           {/* Sidebar */}
           <aside className="glass-panel" style={{ 
-            width: '260px', 
+            width: '22rem', 
             padding: '2rem 1.5rem',
             margin: '1rem',
             display: 'flex',
@@ -31,7 +31,7 @@ export default function RootLayout({
               <img 
                 src="/logo.png" 
                 alt="LEGA Laboratorio Logo" 
-                style={{ width: '180px', height: 'auto', objectFit: 'contain' }} 
+                style={{ width: '15rem', height: 'auto', objectFit: 'contain' }} 
               />
             </div>
 

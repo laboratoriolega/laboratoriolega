@@ -21,6 +21,10 @@
   margin: 0;
 }
 
+html {
+  font-size: 12px; /* 75% global scale down for compact dashboard feel */
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
