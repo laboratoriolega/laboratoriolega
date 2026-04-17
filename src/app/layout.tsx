@@ -42,7 +42,7 @@ export default function RootLayout({
                 transition: 'all 0.2s ease'
               }}>
                 <CalendarDays size={20} className="nav-icon" />
-                <span>Turnos</span>
+                <span>Turnos en Lista</span>
               </a>
               <a href="#" style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -52,6 +52,15 @@ export default function RootLayout({
               }}>
                 <Users size={20} />
                 <span>Pacientes</span>
+              </a>
+              <a href="/calendario" style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '0.75rem 1rem', borderRadius: '8px',
+                color: 'var(--text-muted)', fontWeight: 500,
+                transition: 'all 0.2s ease'
+              }}>
+                <CalendarDays size={20} />
+                <span>Calendario Mensual</span>
               </a>
             </nav>
           </aside>
