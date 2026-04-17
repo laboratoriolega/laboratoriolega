@@ -5,11 +5,13 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSa
 import { es } from "date-fns/locale";
 import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import AppointmentModal from "./AppointmentModal";
+import EvolutionModal from "./EvolutionModal";
 
 export default function MonthClientView({ appointments }: { appointments: any[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedAp, setSelectedAp] = useState<any>(null);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -91,7 +93,12 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                       padding: '0.5rem', 
                       borderRadius: '4px',
                       borderLeft: `3px solid ${apt.status === 'AGENDADO' ? 'var(--primary)' : 'var(--success)'}`
-                    }}>
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedAp(apt);
+                    }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--primary)', marginBottom: '0.1rem', fontWeight: 600, fontSize: '0.7rem' }}>
                         <Clock size={10} />
                         {format(new Date(apt.appointment_date), "HH:mm")}
@@ -111,6 +118,12 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         defaultDate={selectedDate} 
+      />
+
+      <EvolutionModal
+        isOpen={selectedAp !== null}
+        onClose={() => setSelectedAp(null)}
+        ap={selectedAp}
       />
     </div>
   );

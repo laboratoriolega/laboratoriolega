@@ -2,10 +2,12 @@
 
 import pool from '@/lib/db';
 
+import { revalidatePath } from 'next/cache';
+
 export async function getAppointments() {
   try {
     const res = await pool.query(`
-      SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.observations,
+      SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.observations, a.evolution_notes,
              CASE WHEN a.document_base64 IS NOT NULL THEN true ELSE false END as has_document,
              p.name, p.dni, p.health_insurance 
       FROM appointments a
@@ -67,5 +69,27 @@ export async function createAppointment(formData: FormData) {
     throw new Error(error.message);
   } finally {
     client.release();
+  }
+}
+
+export async function updateEvolution(formData: FormData) {
+  const id = formData.get("id");
+  const status = formData.get("status");
+  const evolution_notes = formData.get("evolution_notes");
+
+  try {
+    await pool.query(
+      'UPDATE appointments SET status = $1, evolution_notes = $2 WHERE id = $3',
+      [status, evolution_notes, id]
+    );
+
+    revalidatePath("/calendario");
+    revalidatePath("/");
+    revalidatePath("/pacientes", "layout");
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Evolution error:", error);
+    return { error: error.message };
   }
 }

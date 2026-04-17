@@ -40,7 +40,7 @@ export async function login(formData: FormData) {
     return { success: true };
   } catch (error: any) {
     console.error("Login error:", error);
-    return { error: "Error interno del servidor. Por favor, intenta de nuevo." };
+    return { error: `[DEBUG] Sistema: ${error.message}` };
   }
 }
 
