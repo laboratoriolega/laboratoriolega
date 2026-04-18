@@ -1,5 +1,7 @@
 import { getPatients } from "@/actions/patients";
 import { Users, FileText } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -54,9 +56,7 @@ export default async function PacientesPage() {
                 </tr>
               ) : (
                 patients.map((p: any) => (
-                  <tr key={p.id} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s ease' }} 
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--glass-border)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                  <tr key={p.id} className="hoverable-row" style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s ease' }}>
                     <td style={{ padding: '1rem', fontWeight: 600 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ width: '30px', height: '30px', background: 'var(--primary)', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>
@@ -75,21 +75,21 @@ export default async function PacientesPage() {
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
                       {(() => {
                         try {
-                          return p.birth_date ? new Date(p.birth_date).toLocaleDateString() : '-';
+                          if (!p.birth_date) return "-";
+                          const d = new Date(p.birth_date);
+                          if (isNaN(d.getTime())) return "Fecha inválida";
+                          return format(d, "dd/MM/yyyy");
                         } catch (e) {
-                          return 'Fecha inválida';
+                          return '-';
                         }
                       })()}
                     </td>
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{p.email || '-'}</td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>
-                      <a href={`/pacientes/${p.id}`} style={{
+                      <a href={`/pacientes/${p.id}`} className="hoverable-link" style={{
                         display: 'inline-block', padding: '0.4rem 1rem', background: 'rgba(14, 165, 233, 0.1)', 
                         color: 'var(--primary)', fontWeight: 600, fontSize: '0.85rem', borderRadius: '6px', transition: 'all 0.2s', textDecoration: 'none'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(14, 165, 233, 0.2)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)'}
-                      >
+                      }}>
                         Ver Historial
                       </a>
                     </td>
