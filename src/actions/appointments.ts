@@ -3,12 +3,14 @@
 import pool from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { logAction } from './audit';
+import { put } from '@vercel/blob';
 
 export async function getAppointments() {
   try {
     const res = await pool.query(`
       SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.observations, a.evolution_notes,
-             CASE WHEN a.document_base64 IS NOT NULL THEN true ELSE false END as has_document,
+             a.document_url,
+             CASE WHEN (a.document_url IS NOT NULL OR a.document_base64 IS NOT NULL) THEN true ELSE false END as has_document,
              p.name, p.dni, p.health_insurance 
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
@@ -36,13 +38,16 @@ export async function createAppointment(formData: FormData) {
     const observations = formData.get("observations") as string;
     const file = formData.get("document") as File;
 
-    let document_base64 = null;
+    // Upload to Vercel Blob (NOT to Postgres)
+    let document_url = null;
     if (file && file.size > 0) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB Hard Limit in Server Action
-         throw new Error("El archivo es demasiado grande (Máximo 2MB). Redúcelo antes de subir.");
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("El archivo es demasiado grande (Máximo 10MB).");
       }
-      const arrayBuffer = await file.arrayBuffer();
-      document_base64 = Buffer.from(arrayBuffer).toString('base64');
+      const ext = file.name.split('.').pop() || 'bin';
+      const filename = `pedidos/${Date.now()}-${dni}.${ext}`;
+      const blob = await put(filename, file, { access: 'public' });
+      document_url = blob.url;
     }
 
     // UPSERT patient based on DNI
@@ -58,10 +63,10 @@ export async function createAppointment(formData: FormData) {
       patientId = newPatient.rows[0].id;
     }
 
-    // Insert Appointment
+    // Insert Appointment - store URL, not base64
     await client.query(
-      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, observations, document_base64) VALUES ($1, $2, $3, $4, $5)',
-      [patientId, appointment_date, analysis_type, observations, document_base64]
+      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, observations, document_url) VALUES ($1, $2, $3, $4, $5)',
+      [patientId, appointment_date, analysis_type, observations, document_url]
     );
 
     await client.query('COMMIT');
