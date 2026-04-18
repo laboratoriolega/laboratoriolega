@@ -46,7 +46,7 @@ export async function createAppointment(formData: FormData) {
       }
       const ext = file.name.split('.').pop() || 'bin';
       const filename = `pedidos/${Date.now()}-${dni}.${ext}`;
-      const blob = await put(filename, file, { access: 'public' });
+      const blob = await put(filename, file, { access: 'private' });
       document_url = blob.url;
     }
 
