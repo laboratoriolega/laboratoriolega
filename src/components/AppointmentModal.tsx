@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createAppointment } from "@/actions/appointments";
 import { format } from "date-fns";
 import { User, FileText, Calendar, CloudUpload, X, Loader2 } from "lucide-react";
@@ -17,6 +18,7 @@ export default function AppointmentModal({
 }) {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
+  const router = useRouter();
   
   if (!isOpen) return null;
 
@@ -46,7 +48,7 @@ export default function AppointmentModal({
 
       await createAppointment(formData);
       onClose();
-      window.location.reload(); 
+      router.refresh();
     } catch(err) {
       console.error(err);
       alert("Error al cargar el turno. Verifica que el archivo no sea demasiado grande.");

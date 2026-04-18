@@ -5,6 +5,7 @@ import { Calendar, Clock, Activity, FileText, X } from "lucide-react";
 import NewAppointmentModal from "@/components/NewAppointmentModal";
 import Link from "next/link";
 import DashboardFilters from "@/components/DashboardFilters";
+import { Suspense } from "react";
 
 export const revalidate = 0; // Disable cache for this page since data changes
 
@@ -93,7 +94,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Agenda de Laboratorio ({filters.status || 'Todos'})</h3>
-          <DashboardFilters currentMonth={filters.month} />
+          <Suspense fallback={<div style={{ width: '300px', height: '36px', background: '#f1f5f9', borderRadius: '8px' }} />}>
+            <DashboardFilters currentMonth={filters.month} />
+          </Suspense>
         </div>
 
         {error && <div style={{ color: 'var(--danger)', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>Error cargando base de datos: {error}</div>}
