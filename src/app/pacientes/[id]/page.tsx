@@ -108,14 +108,11 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
                     </div>
                     
                     {apt.has_document && (
-                      <a href={`/api/doc/${apt.id}`} target="_blank" style={{
+                      <a href={`/api/doc/${apt.id}`} target="_blank" className="hoverable-link" style={{
                         display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem',
                         background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', color: 'var(--primary)',
                         fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(14, 165, 233, 0.1)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)'; }}
-                      >
+                      }}>
                          📎 Pedido Médico
                       </a>
                     )}

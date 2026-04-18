@@ -126,9 +126,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 </tr>
               ) : (
                 appointments.map((apt: any) => (
-                  <tr key={apt.id} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s ease' }} 
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--glass-border)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                  <tr key={apt.id} className="hoverable-row" style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s ease' }}>
                     <td style={{ padding: '1rem', fontWeight: 500 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Clock size={16} color="var(--primary)" />
