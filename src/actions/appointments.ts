@@ -38,6 +38,9 @@ export async function createAppointment(formData: FormData) {
 
     let document_base64 = null;
     if (file && file.size > 0) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB Hard Limit in Server Action
+         throw new Error("El archivo es demasiado grande (Máximo 2MB). Redúcelo antes de subir.");
+      }
       const arrayBuffer = await file.arrayBuffer();
       document_base64 = Buffer.from(arrayBuffer).toString('base64');
     }

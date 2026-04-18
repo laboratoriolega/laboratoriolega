@@ -58,11 +58,11 @@ export default async function RootLayout({
             <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                 <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                  {session.username.charAt(0).toUpperCase()}
+                  {(session?.username || '?').charAt(0).toUpperCase()}
                 </div>
                 <div style={{ overflow: 'hidden' }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden' }}>{session.username}</p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, textTransform: 'capitalize' }}>Rol: {session.role}</p>
+                  <p style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden' }}>{session?.username || 'Usuario'}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, textTransform: 'capitalize' }}>Rol: {session?.role || 'staff'}</p>
                 </div>
               </div>
               

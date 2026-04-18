@@ -28,9 +28,12 @@ export default function AppointmentModal({
     try {
       // Normalize Date to ISO (Avoid timezone shifts)
       const rawDate = formData.get("appointment_date") as string;
-      if (rawDate) {
-        formData.set("appointment_date", new Date(rawDate).toISOString());
+      if (!rawDate) {
+        alert("Por favor selecciona una fecha y hora.");
+        setLoading(false);
+        return;
       }
+      formData.set("appointment_date", new Date(rawDate).toISOString());
 
       // Image Compression Logic
       const file = formData.get("document") as File;
