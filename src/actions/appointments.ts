@@ -16,7 +16,13 @@ export async function getAppointments() {
       JOIN patients p ON a.patient_id = p.id
       ORDER BY a.appointment_date ASC
     `);
-    return { data: res.rows, error: null };
+    return { 
+      data: res.rows.map(row => ({
+        ...row,
+        appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null
+      })), 
+      error: null 
+    };
   } catch (error: any) {
     console.error("Error fetching appointments:", error);
     return { data: null, error: error.message };

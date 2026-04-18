@@ -1,6 +1,8 @@
 import pool from '@/lib/db';
 import { Calendar, Stethoscope, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +20,15 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
   // Obtener historial clinico (Turnos pasados y futuros)
   const apptsRes = await pool.query(`
     SELECT id, appointment_date, status, analysis_type, observations,
-           CASE WHEN document_base64 IS NOT NULL THEN true ELSE false END as has_document
+           CASE WHEN (document_url IS NOT NULL OR document_base64 IS NOT NULL) THEN true ELSE false END as has_document
     FROM appointments 
     WHERE patient_id = $1 
     ORDER BY appointment_date DESC
   `, [id]);
-  const appointments = apptsRes.rows;
+  const appointments = apptsRes.rows.map(row => ({
+    ...row,
+    appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null
+  }));
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -34,9 +39,9 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
           </Link>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ width: '36px', height: '36px', background: 'var(--primary)', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
-              {patient.name.charAt(0).toUpperCase()}
+              {(patient.name || '?').charAt(0).toUpperCase()}
             </div>
-            {patient.name}
+            {patient.name || 'Paciente Sin Nombre'}
           </h2>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.3rem' }}>
             DNI: {patient.dni} • Teléfono: {patient.phone || 'No registrado'} • Obra Social: {patient.health_insurance}
@@ -86,11 +91,12 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
                         <Calendar size={14} />
                         {(() => {
                           try {
-                            return apt.appointment_date 
-                              ? new Date(apt.appointment_date).toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })
-                              : "Sin fecha definida";
+                            if (!apt.appointment_date) return "Sin fecha definida";
+                            const d = new Date(apt.appointment_date);
+                            if (isNaN(d.getTime())) return "Fecha inválida";
+                            return format(d, "PPPPp", { locale: es });
                           } catch (e) {
-                            return "Fecha inválida";
+                            return "Error fecha";
                           }
                         })()}
                       </p>

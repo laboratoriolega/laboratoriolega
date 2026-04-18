@@ -134,7 +134,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         <Clock size={16} color="var(--primary)" />
                         {(() => {
                           try {
-                            return apt.appointment_date ? format(new Date(apt.appointment_date), "HH:mm") : "--:--";
+                            if (!apt.appointment_date) return "--:--";
+                            const d = new Date(apt.appointment_date);
+                            if (isNaN(d.getTime())) return "--:--";
+                            return format(d, "HH:mm");
                           } catch (e) {
                             return "--:--";
                           }
@@ -143,9 +146,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         {(() => {
                           try {
-                            return apt.appointment_date ? format(new Date(apt.appointment_date), "dd/MM/yyyy") : "Sin fecha";
+                            if (!apt.appointment_date) return "Sin fecha";
+                            const d = new Date(apt.appointment_date);
+                            if (isNaN(d.getTime())) return "Fecha inválida";
+                            return format(d, "dd/MM/yyyy");
                           } catch (e) {
-                            return "Fecha inválida";
+                            return "Error fecha";
                           }
                         })()}
                       </span>
