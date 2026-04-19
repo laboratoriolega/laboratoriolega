@@ -30,7 +30,8 @@ export default function LoginPage() {
       border: "1px solid var(--glass-border)"
     }}>
       <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-        <img src="/logo.png" alt="LEGA" style={{ height: "60px", marginBottom: "1rem" }} />
+        <img src="/logo.png" alt="LEGA" className="logo-light" style={{ height: "60px", marginBottom: "1rem" }} />
+        <img src="/logoB.png" alt="LEGA" className="logo-dark" style={{ height: "60px", marginBottom: "1rem" }} />
         <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--text-main)" }}>Portal de Acceso</h1>
         <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Ingresa tus credenciales para continuar</p>
       </div>
