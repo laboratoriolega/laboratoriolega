@@ -82,11 +82,11 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
                           color: isPast ? '#64748b' : 'white', 
                           padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 
                         }}>
-                          {isPast ? 'Completado' : apt.status}
+                          {isPast ? 'Completado' : (apt?.status || 'AGENDADO')}
                         </span>
                         <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                          {apt.analysis_type}
-                          {apt.aire_test_type && (
+                          {apt?.analysis_type}
+                          {apt?.aire_test_type && (
                             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem', fontWeight: 500 }}>
                               ({apt.aire_test_type})
                             </span>

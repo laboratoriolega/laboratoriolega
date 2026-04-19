@@ -231,10 +231,10 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                     }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: getBadgeColor(apt.analysis_type), fontWeight: 800, fontSize: '0.65rem', marginBottom: '0.2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: getBadgeColor(apt?.analysis_type), fontWeight: 800, fontSize: '0.65rem', marginBottom: '0.2rem' }}>
                           <Clock size={10} />
-                          {format(new Date(apt.appointment_date), "HH:mm")}
-                          {apt.status === 'COMPLETADO' && <CheckCircle size={10} color="var(--success)" />}
+                          {format(new Date(apt?.appointment_date || new Date()), "HH:mm")}
+                          {apt?.status === 'COMPLETADO' && <CheckCircle size={10} color="var(--success)" />}
                         </div>
                         <button 
                           onClick={(e) => {
@@ -246,7 +246,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                           <Edit2 size={10} />
                         </button>
                       </div>
-                      <p style={{ fontWeight: 800, fontSize: '0.75rem', lineHeight: 1.2, color: apt.status === 'CANCELADO' ? '#64748b' : '#1e293b', margin: 0, textDecoration: apt.status === 'CANCELADO' ? 'line-through' : 'none' }}>{apt.name}</p>
+                      <p style={{ fontWeight: 800, fontSize: '0.75rem', lineHeight: 1.2, color: apt?.status === 'CANCELADO' ? '#64748b' : '#1e293b', margin: 0, textDecoration: apt?.status === 'CANCELADO' ? 'line-through' : 'none' }}>{apt?.name}</p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.1rem' }}>
                         <p style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600 }}>{apt.aire_test_type || 'Prueba'}</p>
                         {apt.observations && <MessageSquare size={10} color="var(--primary)" />}

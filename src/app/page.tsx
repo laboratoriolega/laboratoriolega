@@ -174,8 +174,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{ 
-                        background: apt.status === 'AGENDADO' ? 'rgba(14, 165, 233, 0.2)' : 'rgba(16, 185, 129, 0.2)', 
-                        color: apt.status === 'AGENDADO' ? 'var(--primary)' : 'var(--success)', 
+                        background: apt?.status === 'AGENDADO' ? 'rgba(14, 165, 233, 0.2)' : 'rgba(16, 185, 129, 0.2)', 
+                        color: apt?.status === 'AGENDADO' ? 'var(--primary)' : 'var(--success)', 
                         padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600,
                         display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
                       }}>
