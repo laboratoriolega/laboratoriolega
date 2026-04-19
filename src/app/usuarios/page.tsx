@@ -9,6 +9,37 @@ import { getSession } from "@/lib/auth";
 
 export const revalidate = 0;
 
+function formatAuditLog(log: any) {
+  const { action, details } = log;
+  const d = details || {};
+  switch (action) {
+    case 'CREATE_APPOINTMENT':
+      return `Creó un turno para ${d.patient_name || 'un paciente'} (${d.analysis_type || 'General'})`;
+    case 'UPDATE_APPOINTMENT':
+      return `Actualizó un turno de ${d.analysis_type || 'General'}`;
+    case 'DELETE_APPOINTMENT':
+      return `Eliminó un turno del sistema`;
+    case 'LOGIN':
+      return `Inició sesión en el sistema`;
+    case 'LOGOUT':
+      return `Cerró su sesión de trabajo`;
+    case 'CREATE_USER':
+      return `Creó al nuevo usuario @${d.username} (${d.role})`;
+    case 'DELETE_USER':
+      return `Eliminó permanentemente al usuario @${d.username}`;
+    case 'ADMIN_UPDATE_USER':
+      return `Modificó los datos del usuario @${d.username}`;
+    case 'ADMIN_UPDATE_USER_AND_PWD':
+      return `Actualizó al usuario @${d.username} y reseteó su clave`;
+    case 'UPDATE_PROFILE_NAME':
+      return `Actualizó su nombre en el perfil`;
+    case 'UPDATE_PROFILE_WITH_PASSWORD':
+      return `Cambió su contraseña y datos de perfil`;
+    default:
+      return action.replace(/_/g, ' ').toLowerCase();
+  }
+}
+
 export default async function UsuariosPage() {
   const { data: users, error: userError } = await getUsers();
   const { data: auditLogs, error: auditError } = await getAuditLogs();
@@ -50,10 +81,12 @@ export default async function UsuariosPage() {
                      {format(new Date(log.created_at), "d MMM, HH:mm", { locale: es })}
                    </span>
                 </div>
-                <p style={{ margin: 0, fontWeight: 500 }}>{log.action.replace(/_/g, ' ')}</p>
-                {log.details && (
-                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {JSON.stringify(log.details)}
+                <p style={{ margin: 0, fontWeight: 500, color: '#334155', lineHeight: 1.4 }}>
+                  {formatAuditLog(log)}
+                </p>
+                {log.action.includes('CREATE_APPOINTMENT') && log.details?.dni && (
+                  <p style={{ margin: '0.1rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    DNI: {log.details.dni}
                   </p>
                 )}
               </div>
