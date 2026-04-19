@@ -158,8 +158,11 @@ export default function PendientesTable({ data }: { data: any[] }) {
                         </select>
                       ) : (
                         <span style={{ 
-                          color: item.seguimiento === 'Finalizado' ? 'var(--success)' : (item.seguimiento === 'En Proceso' ? 'var(--primary)' : 'var(--text-muted)'),
-                          fontWeight: 500
+                          padding: "0.25rem 0.6rem", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 600,
+                          background: item.seguimiento === 'Finalizado' ? 'rgba(16, 185, 129, 0.1)' : (item.seguimiento === 'En Proceso' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(239, 68, 68, 0.1)'),
+                          color: item.seguimiento === 'Finalizado' ? '#10B981' : (item.seguimiento === 'En Proceso' ? '#FBBF24' : '#EF4444'),
+                          border: item.seguimiento === 'Finalizado' ? '1px solid #10B981' : (item.seguimiento === 'En Proceso' ? '1px solid #FBBF24' : '1px solid #EF4444'),
+                          display: "inline-block"
                         }}>
                           {item.seguimiento}
                         </span>

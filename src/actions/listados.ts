@@ -107,6 +107,40 @@ export async function updateSystemCode(id: number, data: any) {
   }
 }
 
+export async function createSystemCode(formData: FormData) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    const analisis = formData.get("analisis") as string;
+    const codigo_sistema = formData.get("codigo_sistema") as string;
+    const codigo_nbu = formData.get("codigo_nbu") as string;
+
+    await pool.query(
+      "INSERT INTO system_codes (analisis, codigo_sistema, codigo_nbu) VALUES ($1, $2, $3)",
+      [analisis, codigo_sistema, codigo_nbu]
+    );
+
+    revalidatePath("/listados/codigos");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function deleteSystemCode(id: number) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    await pool.query("DELETE FROM system_codes WHERE id = $1", [id]);
+    revalidatePath("/listados/codigos");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
 // --- BILLING PRICES ---
 
 export async function getBillingPrices() {
@@ -131,6 +165,43 @@ export async function updateBillingPrice(id: number, data: any) {
     
     await pool.query(`UPDATE billing_prices SET ${fields} WHERE id = $${values.length + 1}`, [...values, id]);
 
+    revalidatePath("/listados/precios");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function createBillingPrice(formData: FormData) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    const analisis = formData.get("analisis") as string;
+    const cibic = formData.get("cibic") as string;
+    const gornitz = formData.get("gornitz") as string;
+    const fpm = formData.get("fpm") as string;
+    const manlab = formData.get("manlab") as string;
+    const lerda = formData.get("lerda") as string;
+
+    await pool.query(
+      "INSERT INTO billing_prices (analisis, cibic, gornitz, fpm, manlab, lerda) VALUES ($1, $2, $3, $4, $5, $6)",
+      [analisis, cibic, gornitz, fpm, manlab, lerda]
+    );
+
+    revalidatePath("/listados/precios");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function deleteBillingPrice(id: number) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    await pool.query("DELETE FROM billing_prices WHERE id = $1", [id]);
     revalidatePath("/listados/precios");
     return { success: true };
   } catch (error: any) {

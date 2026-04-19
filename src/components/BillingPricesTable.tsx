@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { updateBillingPrice } from "@/actions/listados";
-import { Search, Save, X, DollarSign } from "lucide-react";
+import { Search, Save, X, Plus, Trash2 } from "lucide-react";
+import { updateBillingPrice, createBillingPrice, deleteBillingPrice } from "@/actions/listados";
 
 export default function BillingPricesTable({ data }: { data: any[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [items, setItems] = useState(data);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<any>({});
+  const [showNewRow, setShowNewRow] = useState(false);
 
   const filteredItems = items.filter(item => 
     item.analisis.toLowerCase().includes(searchTerm.toLowerCase())
@@ -24,6 +25,14 @@ export default function BillingPricesTable({ data }: { data: any[] }) {
     }
   }
 
+  async function handleDelete(id: number) {
+    if (!confirm("¿Eliminar este registro de precios?")) return;
+    const res = await deleteBillingPrice(id);
+    if (!res.error) {
+      setItems(items.filter(it => it.id !== id));
+    }
+  }
+
   const columns = [
     { key: "cibic", label: "CIBIC" },
     { key: "gornitz", label: "GORNITZ" },
@@ -34,16 +43,45 @@ export default function BillingPricesTable({ data }: { data: any[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div className="glass-panel" style={{ padding: "1rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-        <Search size={20} style={{ color: "var(--text-muted)" }} />
-        <input 
-          className="input-field" 
-          placeholder="Buscar análisis por nombre..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ border: "none", background: "transparent", boxShadow: "none" }}
-        />
+      <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+        <div className="glass-panel" style={{ flex: 1, padding: "0.75rem 1rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+          <Search size={20} style={{ color: "var(--text-muted)" }} />
+          <input 
+            className="input-field" 
+            placeholder="Buscar análisis por nombre..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ border: "none", background: "transparent", boxShadow: "none", padding: 0 }}
+          />
+        </div>
+        <button onClick={() => setShowNewRow(true)} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", whiteSpace: "nowrap" }}>
+          <Plus size={18} /> Nuevo Item
+        </button>
       </div>
+
+      {showNewRow && (
+        <form action={async (fd) => {
+          const res = await createBillingPrice(fd);
+          if (!res.error) {
+            window.location.reload();
+          }
+        }} className="glass-panel" style={{ padding: "1.5rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1rem", alignItems: "end" }}>
+           <div style={{ gridColumn: "1 / -1" }}>
+             <label style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Nombre del Análisis</label>
+             <input name="analisis" required className="input-field" placeholder="Ej: Ferritina" />
+           </div>
+           {columns.map(col => (
+             <div key={col.key}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{col.label}</label>
+                <input name={col.key} className="input-field" placeholder="$ 0.00" />
+             </div>
+           ))}
+           <div style={{ display: "flex", gap: "0.5rem" }}>
+             <button type="submit" className="btn-primary">Guardar</button>
+             <button type="button" onClick={() => setShowNewRow(false)} style={{ color: "var(--danger)" }}><X /></button>
+           </div>
+        </form>
+      )}
 
       <div className="glass-panel" style={{ overflow: "hidden" }}>
         <div className="table-responsive">
@@ -54,7 +92,7 @@ export default function BillingPricesTable({ data }: { data: any[] }) {
                 {columns.map(col => (
                   <th key={col.key} style={{ padding: "1rem", textAlign: "center" }}>{col.label}</th>
                 ))}
-                <th style={{ padding: "1rem", width: "80px" }}></th>
+                <th style={{ padding: "1rem", width: "120px" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -78,16 +116,21 @@ export default function BillingPricesTable({ data }: { data: any[] }) {
                     </td>
                   ))}
                   <td style={{ padding: "1rem", textAlign: "right" }}>
-                    {editingId === item.id ? (
-                      <div style={{ display: "flex", gap: "0.4rem" }}>
-                        <button onClick={() => handleSave(item.id)} style={{ color: "var(--success)" }}><Save size={16} /></button>
-                        <button onClick={() => setEditingId(null)}><X size={16} /></button>
-                      </div>
-                    ) : (
-                      <button onClick={() => { setEditingId(item.id); setEditValues(item); }} style={{ color: "var(--primary)", fontSize: "0.8rem" }}>
-                        Editar
-                      </button>
-                    )}
+                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                      {editingId === item.id ? (
+                        <>
+                          <button onClick={() => handleSave(item.id)} style={{ color: "var(--success)" }}><Save size={16} /></button>
+                          <button onClick={() => setEditingId(null)}><X size={16} /></button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => { setEditingId(item.id); setEditValues(item); }} style={{ color: "var(--primary)", fontSize: "0.80rem" }}>
+                            Editar
+                          </button>
+                          <button onClick={() => handleDelete(item.id)} style={{ color: "var(--danger)" }}><Trash2 size={16} /></button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
