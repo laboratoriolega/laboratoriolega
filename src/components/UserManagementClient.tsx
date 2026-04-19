@@ -56,7 +56,10 @@ export default function UserManagementClient({ initialUsers, currentUserId }: { 
                       <button 
                         onClick={async () => {
                           if (confirm(`¿Estás seguro de eliminar al usuario @${u.username}?`)) {
-                            await deleteUser(u.id);
+                            const res = await deleteUser(u.id);
+                            if (res.error) {
+                              alert(`Error al eliminar: ${res.error}`);
+                            }
                           }
                         }}
                         style={{ color: 'var(--danger)', border: 'none', background: 'rgba(239, 68, 68, 0.1)', cursor: 'pointer', padding: '0.5rem', borderRadius: '6px' }}

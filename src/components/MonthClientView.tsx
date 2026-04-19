@@ -3,15 +3,18 @@
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, subMonths, addMonths } from "date-fns";
 import { es } from "date-fns/locale";
-import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import AppointmentModal from "./AppointmentModal";
 import EvolutionModal from "./EvolutionModal";
+import EditAppointmentModal from "./EditAppointmentModal";
+import { Clock, ChevronLeft, ChevronRight, Edit2, MessageSquare } from "lucide-react";
 
 export default function MonthClientView({ appointments }: { appointments: any[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedAp, setSelectedAp] = useState<any>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingAp, setEditingAp] = useState<any>(null);
 
   // EXCLUDE Breath Tests from Internal Calendar
   const filteredAppointments = appointments.filter(a => a.analysis_type !== 'Test de aire' && a.analysis_type !== 'Aires');
@@ -90,31 +93,47 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
 
                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto', flex: 1, maxHeight: '200px' }}>
                  {dayAppts.map(apt => (
-                    <div key={apt.id} style={{ 
-                      background: 'rgba(0,0,0,0.02)', 
-                      border: '1px solid var(--glass-border)', 
-                      padding: '0.5rem', 
-                      borderRadius: '4px',
-                      borderLeft: `3px solid ${apt.status === 'AGENDADO' ? 'var(--primary)' : 'var(--success)'}`
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedAp(apt);
-                    }}
+                    <div key={apt.id} 
+                      style={{ 
+                        background: 'rgba(0,0,0,0.02)', 
+                        border: '1px solid var(--glass-border)', 
+                        padding: '0.5rem', 
+                        borderRadius: '4px',
+                        borderLeft: `3px solid ${apt.status === 'AGENDADO' ? 'var(--primary)' : 'var(--success)'}`,
+                        cursor: 'pointer'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAp(apt);
+                      }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--primary)', marginBottom: '0.1rem', fontWeight: 600, fontSize: '0.7rem' }}>
-                        <Clock size={10} />
-                        {(() => {
-                          try {
-                            return format(new Date(apt.appointment_date), "HH:mm");
-                          } catch (e) {
-                            return "--:--";
-                          }
-                        })()}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--primary)', marginBottom: '0.1rem', fontWeight: 600, fontSize: '0.7rem' }}>
+                          <Clock size={10} />
+                          {format(new Date(apt.appointment_date), "HH:mm")}
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingAp(apt);
+                            setIsEditOpen(true);
+                          }}
+                          style={{ border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
+                          title="Mover o Editar Turno"
+                        >
+                          <Edit2 size={12} />
+                        </button>
                       </div>
                       <p style={{ fontWeight: 600, fontSize: '0.75rem', lineHeight: 1.1, marginBottom: '0.1rem' }}>{apt.name}</p>
                       <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{apt.analysis_type}</p>
-                      <p style={{ fontSize: '0.65rem', fontWeight: 500 }}>{apt.health_insurance}</p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
+                        <p style={{ fontSize: '0.65rem', fontWeight: 500 }}>{apt.health_insurance}</p>
+                        {apt.observations && (
+                          <span title={apt.observations} style={{ display: 'flex' }}>
+                            <MessageSquare size={10} color="var(--primary)" />
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                </div>
@@ -133,6 +152,12 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
         isOpen={selectedAp !== null}
         onClose={() => setSelectedAp(null)}
         ap={selectedAp}
+      />
+
+      <EditAppointmentModal
+        isOpen={isEditOpen}
+        onClose={() => { setIsEditOpen(false); setEditingAp(null); }}
+        ap={editingAp}
       />
     </div>
   );

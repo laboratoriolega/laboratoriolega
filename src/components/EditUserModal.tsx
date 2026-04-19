@@ -72,8 +72,8 @@ export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boole
 
         <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
-            <label style={labelStyle}>Usuario (No editable)</label>
-            <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--primary)" }}>@{user.username}</p>
+            <label style={labelStyle}>Nombre de Usuario</label>
+            <input required name="username" defaultValue={user.username} type="text" className="input-field" style={inputStyle} />
           </div>
 
           <div>
@@ -87,6 +87,11 @@ export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boole
               <option value="staff">Staff (Lectura/Carga)</option>
               <option value="admin">Administrador (Control Total)</option>
             </select>
+          </div>
+
+          <div style={{ padding: '0.75rem', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
+            <label style={{...labelStyle, color: '#991b1b'}}>Nueva Contraseña (Opcional)</label>
+            <input name="password" type="password" placeholder="Solo si deseás resetearla" className="input-field" style={inputStyle} />
           </div>
 
           <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem" }}>

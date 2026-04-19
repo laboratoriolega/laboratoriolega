@@ -96,18 +96,29 @@ export async function deleteUser(userId: number) {
 export async function updateUser(formData: FormData) {
   try {
     const session = await getSession() as any;
-    if (!session || session.role !== 'admin') throw new Error("Unauthorized");
+    if (!session || session.role !== 'admin') throw new Error("Acceso denegado: Se requieren permisos de administrador.");
 
     const id = formData.get("id");
+    const username = formData.get("username") as string;
     const full_name = formData.get("full_name") as string;
     const role = formData.get("role") as string;
+    const newPassword = formData.get("password") as string;
 
-    await pool.query(
-      "UPDATE users SET full_name = $1, role = $2 WHERE id = $3",
-      [full_name, role, id]
-    );
+    if (newPassword && newPassword.trim().length > 0) {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await pool.query(
+        "UPDATE users SET username = $1, full_name = $2, role = $3, password_hash = $4 WHERE id = $5",
+        [username, full_name, role, hashedPassword, id]
+      );
+      await logAction("ADMIN_UPDATE_USER_AND_PWD", { user_id: id, username, role, updated_by: session.username });
+    } else {
+      await pool.query(
+        "UPDATE users SET username = $1, full_name = $2, role = $3 WHERE id = $4",
+        [username, full_name, role, id]
+      );
+      await logAction("ADMIN_UPDATE_USER", { user_id: id, username, role, updated_by: session.username });
+    }
 
-    await logAction("UPDATE_USER_ADMIN", { user_id: id, full_name, role, updated_by: session.username });
     revalidatePath("/usuarios");
     return { success: true };
   } catch (error: any) {
