@@ -6,17 +6,25 @@ import { updateEvolution } from "@/actions/appointments";
 
 export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolean, onClose: () => void, ap: any }) {
   const [loading, setLoading] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(ap.status);
 
   if (!isOpen || !ap) return null;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
+    
     const formData = new FormData(e.currentTarget);
+    const status = formData.get("status");
+    const notes = formData.get("evolution_notes") as string;
+
+    if (status === "CANCELADO" && (!notes || notes.trim().length < 5)) {
+      alert("Por favor, ingresá un motivo válido para la cancelación (mínimo 5 caracteres).");
+      return;
+    }
+
+    setLoading(true);
     formData.append("id", ap.id);
-    
     await updateEvolution(formData);
-    
     setLoading(false);
     onClose();
   }
@@ -47,7 +55,13 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
           
           <div>
             <label style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600, fontSize: "0.85rem", color: "var(--text-muted)" }}>Estado de la Consulta</label>
-            <select name="status" defaultValue={ap.status} className="input-field" style={{ padding: "0.6rem" }}>
+            <select 
+              name="status" 
+              defaultValue={ap.status} 
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="input-field" 
+              style={{ padding: "0.6rem" }}
+            >
               <option value="AGENDADO">Agendado (Pendiente)</option>
               <option value="COMPLETADO">Completado</option>
               <option value="CANCELADO">Cancelado</option>
@@ -55,7 +69,9 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
           </div>
 
           <div>
-            <label style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600, fontSize: "0.85rem", color: "var(--text-muted)" }}>Evolución / Accionables futuros</label>
+            <label style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600, fontSize: "0.85rem", color: "var(--text-muted)" }}>
+              {selectedStatus === "CANCELADO" ? "Motivo de la Cancelación (Obligatorio)" : "Evolución / Accionables futuros"}
+            </label>
             <textarea 
               name="evolution_notes" 
               defaultValue={ap.evolution_notes || ""} 

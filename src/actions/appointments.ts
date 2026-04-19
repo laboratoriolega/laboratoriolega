@@ -4,6 +4,8 @@ import pool from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { logAction } from './audit';
 import { put } from '@vercel/blob';
+import { getSession } from '@/lib/auth';
+import { format } from 'date-fns';
 
 export async function getAppointments() {
   try {
@@ -174,6 +176,49 @@ export async function updateAppointment(formData: FormData) {
     return { success: true };
   } catch (error: any) {
     console.error("Update appointment error:", error);
+  }
+}
+
+export async function moveAppointment(appointmentId: string, newDate: string, reason: string) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autorizado");
+
+    // Get current data for logging and logic
+    const current = await pool.query("SELECT p.name, a.analysis_type FROM appointments a JOIN patients p ON a.patient_id = p.id WHERE a.id = $1", [appointmentId]);
+    const apt = current.rows[0];
+
+    // Check limit if moving a Test de aire
+    if (apt?.analysis_type === 'Test de aire') {
+      const targetDateStr = newDate.split('T')[0];
+      const countRes = await pool.query(
+        "SELECT COUNT(*) FROM appointments WHERE analysis_type = 'Test de aire' AND DATE(appointment_date) = $1 AND id != $2",
+        [targetDateStr, appointmentId]
+      );
+      if (parseInt(countRes.rows[0].count) >= 4) {
+        throw new Error("Límite excedido: Solo se permiten 4 turnos de 'Test de aire' por día.");
+      }
+    }
+
+    await pool.query(
+      "UPDATE appointments SET appointment_date = $1, evolution_notes = COALESCE(evolution_notes, '') || '\n' || $2 WHERE id = $3",
+      [newDate, `[REPROGRAMACIÓN ${format(new Date(), "dd/MM")}] Motivo: ${reason}`, appointmentId]
+    );
+
+    await logAction("MOVE_APPOINTMENT", { 
+      appointment_id: appointmentId, 
+      patient_name: apt?.name, 
+      new_date: newDate,
+      reason 
+    });
+
+    revalidatePath("/calendario");
+    revalidatePath("/");
+    revalidatePath("/pacientes", "layout");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Move appointment error:", error);
     return { error: error.message };
   }
 }

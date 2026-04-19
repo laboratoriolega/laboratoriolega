@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { CalendarDays, Users, Stethoscope, LogOut } from "lucide-react";
-import Link from "next/link";
+import { LogOut } from "lucide-react";
 import SidebarNav from "@/components/SidebarNav";
+import ThemeToggle from "@/components/ThemeToggle";
 import { getSession } from "@/lib/auth";
 import { logoutAction } from "@/actions/auth";
 
 export const metadata: Metadata = {
   title: "LEGA Laboratorio | Dashboard",
   description: "Sistema de gestión de turnos para LEGA Laboratorio",
+  icons: {
+    icon: "/logofavicon.png",
+  }
 };
 
 export default async function RootLayout({
@@ -21,6 +24,16 @@ export default async function RootLayout({
   if (!session) {
     return (
       <html lang="es">
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function() {
+              try {
+                const theme = localStorage.getItem('theme') || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+              } catch (e) {}
+            })()
+          `}} />
+        </head>
         <body>
           <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {children}
@@ -32,6 +45,16 @@ export default async function RootLayout({
 
   return (
     <html lang="es">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              const theme = localStorage.getItem('theme') || 'light';
+              document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {}
+          })()
+        `}} />
+      </head>
       <body style={{ margin: 0, padding: 0 }}>
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
           {/* Sidebar */}
@@ -44,7 +67,7 @@ export default async function RootLayout({
             flexShrink: 0,
             overflowY: 'auto'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '2.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '2rem' }}>
               <img 
                 src="/logo.png" 
                 alt="LEGA Laboratorio Logo" 
@@ -52,6 +75,7 @@ export default async function RootLayout({
               />
             </div>
 
+            <ThemeToggle />
             <SidebarNav userRole={session.role} />
 
             {/* Profile & Logout */}
@@ -69,7 +93,7 @@ export default async function RootLayout({
               <form action={logoutAction}>
                 <button type="submit" style={{ 
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', 
-                  padding: '0.75rem', background: '#f1f5f9', color: 'var(--danger)', 
+                  padding: '0.75rem', background: 'rgba(0,0,0,0.05)', color: 'var(--danger)', 
                   borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', border: 'none', cursor: 'pointer', transition: 'background 0.2s'
                 }}>
                   <LogOut size={16} /> Cerrar Sesión

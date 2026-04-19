@@ -6,6 +6,7 @@ import { es } from "date-fns/locale";
 import AppointmentModal from "./AppointmentModal";
 import EvolutionModal from "./EvolutionModal";
 import EditAppointmentModal from "./EditAppointmentModal";
+import MoveReasonModal from "./MoveReasonModal";
 import { Clock, ChevronLeft, ChevronRight, Edit2, MessageSquare } from "lucide-react";
 
 export default function MonthClientView({ appointments }: { appointments: any[] }) {
@@ -15,6 +16,9 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
   const [selectedAp, setSelectedAp] = useState<any>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingAp, setEditingAp] = useState<any>(null);
+  
+  const [isMovingModalOpen, setIsMovingModalOpen] = useState(false);
+  const [movingAppt, setMovingAppt] = useState<{ id: string, targetDate: string } | null>(null);
 
   // EXCLUDE Breath Tests from Internal Calendar
   const filteredAppointments = appointments.filter(a => a.analysis_type !== 'Test de aire' && a.analysis_type !== 'Aires');
@@ -75,6 +79,22 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                  setSelectedDate(day);
                  setIsModalOpen(true);
               }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)';
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.style.background = isCurrentMonth ? '#FFFFFF' : 'rgba(0,0,0,0.02)';
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.style.background = isCurrentMonth ? '#FFFFFF' : 'rgba(0,0,0,0.02)';
+                const apptId = e.dataTransfer.getData("appointmentId");
+                if (apptId) {
+                  setMovingAppt({ id: apptId, targetDate: day.toISOString() });
+                  setIsMovingModalOpen(true);
+                }
+              }}
               style={{ 
               background: isCurrentMonth ? '#FFFFFF' : 'rgba(0,0,0,0.02)',
               border: isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)', 
@@ -99,8 +119,16 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                         border: '1px solid var(--glass-border)', 
                         padding: '0.5rem', 
                         borderRadius: '4px',
-                        borderLeft: `3px solid ${apt.status === 'AGENDADO' ? 'var(--primary)' : 'var(--success)'}`,
-                        cursor: 'pointer'
+                        borderLeft: `3px solid ${apt.status === 'AGENDADO' ? 'var(--primary)' : (apt.status === 'CANCELADO' ? '#94a3b8' : 'var(--success)')}`,
+                        cursor: 'grab'
+                      }}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("appointmentId", apt.id);
+                        e.currentTarget.style.opacity = '0.5';
+                      }}
+                      onDragEnd={(e) => {
+                        e.currentTarget.style.opacity = '1';
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -158,6 +186,13 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
         isOpen={isEditOpen}
         onClose={() => { setIsEditOpen(false); setEditingAp(null); }}
         ap={editingAp}
+      />
+
+      <MoveReasonModal
+        isOpen={isMovingModalOpen}
+        onClose={() => { setIsMovingModalOpen(false); setMovingAppt(null); }}
+        apptId={movingAppt?.id || null}
+        newDate={movingAppt?.targetDate || null}
       />
     </div>
   );

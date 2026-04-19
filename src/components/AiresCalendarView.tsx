@@ -3,15 +3,20 @@
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, subMonths, addMonths } from "date-fns";
 import { es } from "date-fns/locale";
-import { Clock, ChevronLeft, ChevronRight, Wind, AlertCircle } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Wind, AlertCircle, Edit2, CheckCircle, MessageSquare } from "lucide-react";
 import AppointmentModal from "./AppointmentModal";
 import EditAppointmentModal from "./EditAppointmentModal";
+import EvolutionModal from "./EvolutionModal";
+import MoveReasonModal from "./MoveReasonModal";
 
 export default function AiresCalendarView({ appointments }: { appointments: any[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedAp, setSelectedAp] = useState<any>(null);
+  const [selectedApForEvolution, setSelectedApForEvolution] = useState<any>(null);
+  const [isMovingModalOpen, setIsMovingModalOpen] = useState(false);
+  const [movingAppt, setMovingAppt] = useState<{ id: string, targetDate: string } | null>(null);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -36,13 +41,25 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   const lactosaCount = currentMonthAppts.filter(a => a.aire_test_type === 'Lactosa').length;
   const fructuosaCount = currentMonthAppts.filter(a => a.aire_test_type === 'Fructuosa').length;
 
-  const getTypeStyle = (type?: string) => {
-    switch(type) {
-      case 'SIBO': return { border: '1px solid #A855F7', borderLeft: '5px solid #A855F7', background: '#faf5ff' };
-      case 'Lactosa': return { border: '1px solid #EC4899', borderLeft: '5px solid #EC4899', background: '#fdf2f8' };
-      case 'Fructuosa': return { border: '1px solid #78350F', borderLeft: '5px solid #78350F', background: '#fff7ed' };
-      default: return { border: '1px solid #e2e8f0', borderLeft: '5px solid #e2e8f0', background: 'white' };
+  const getTypeStyle = (type?: string, status?: string) => {
+    let base = { border: '1px solid #e2e8f0', borderLeft: '5px solid #e2e8f0', background: 'white', opacity: 1 };
+    
+    if (status === 'CANCELADO') {
+      return { ...base, opacity: 0.5, background: '#f1f5f9', border: '1px solid #cbd5e1', borderLeft: '5px solid #94a3b8' };
     }
+
+    switch(type) {
+      case 'SIBO': base = { ...base, border: '1px solid #A855F7', borderLeft: '5px solid #A855F7', background: status === 'COMPLETADO' ? '#f5f3ff' : '#faf5ff' }; break;
+      case 'Lactosa': base = { ...base, border: '1px solid #EC4899', borderLeft: '5px solid #EC4899', background: status === 'COMPLETADO' ? '#fdf2f8' : '#fff1f2' }; break;
+      case 'Fructuosa': base = { ...base, border: '1px solid #78350F', borderLeft: '5px solid #78350F', background: status === 'COMPLETADO' ? '#fff7ed' : '#fffbeb' }; break;
+    }
+    
+    if (status === 'COMPLETADO') {
+      base.border = '1px solid var(--success)';
+      base.borderLeft = '5px solid var(--success)';
+    }
+
+    return base;
   };
 
   const getBadgeColor = (type?: string) => {
@@ -138,6 +155,28 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                  setSelectedDate(day);
                  setIsModalOpen(true);
               }}
+              onDragOver={(e) => {
+                if (!isFull) {
+                  e.preventDefault();
+                  e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)';
+                }
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.style.background = isCurrentMonth ? (isFull ? '#fff1f2' : '#FFFFFF') : 'rgba(0,0,0,0.02)';
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.style.background = isCurrentMonth ? (isFull ? '#fff1f2' : '#FFFFFF') : 'rgba(0,0,0,0.02)';
+                const apptId = e.dataTransfer.getData("appointmentId");
+                if (apptId) {
+                  if (isFull) {
+                    alert("No se pueden mover turnos a este día: Límite de 4 alcanzado.");
+                    return;
+                  }
+                  setMovingAppt({ id: apptId, targetDate: day.toISOString() });
+                  setIsMovingModalOpen(true);
+                }
+              }}
               style={{ 
                 background: isCurrentMonth ? (isFull ? '#fff1f2' : '#FFFFFF') : 'rgba(0,0,0,0.02)',
                 border: isFull ? '2px dashed #fb7185' : (isToday ? '2px solid var(--primary)' : '1px solid #e2e8f0'), 
@@ -168,24 +207,48 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', flex: 1, maxHeight: '220px' }}>
                  {dayAppts.map(apt => (
                     <div key={apt.id} style={{ 
-                      ...getTypeStyle(apt.aire_test_type),
+                      ...getTypeStyle(apt.aire_test_type, apt.status),
                       padding: '0.5rem', 
                       borderRadius: '8px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
                       position: 'relative',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      cursor: 'grab'
+                    }}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("appointmentId", apt.id);
+                      e.currentTarget.style.opacity = '0.5';
+                    }}
+                    onDragEnd={(e) => {
+                      e.currentTarget.style.opacity = '1';
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedAp(apt);
+                      setSelectedApForEvolution(apt);
                     }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: getBadgeColor(apt.aire_test_type), fontWeight: 800, fontSize: '0.65rem', marginBottom: '0.2rem' }}>
-                        <Clock size={10} />
-                        {format(new Date(apt.appointment_date), "HH:mm")}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: getBadgeColor(apt.aire_test_type), fontWeight: 800, fontSize: '0.65rem', marginBottom: '0.2rem' }}>
+                          <Clock size={10} />
+                          {format(new Date(apt.appointment_date), "HH:mm")}
+                          {apt.status === 'COMPLETADO' && <CheckCircle size={10} color="var(--success)" />}
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAp(apt);
+                          }}
+                          style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
+                        >
+                          <Edit2 size={10} />
+                        </button>
                       </div>
-                      <p style={{ fontWeight: 800, fontSize: '0.75rem', lineHeight: 1.2, color: '#1e293b', margin: 0 }}>{apt.name}</p>
-                      <p style={{ fontSize: '0.6rem', color: '#64748b', marginTop: '0.1rem', fontWeight: 600 }}>{apt.aire_test_type || 'Prueba'}</p>
+                      <p style={{ fontWeight: 800, fontSize: '0.75rem', lineHeight: 1.2, color: apt.status === 'CANCELADO' ? '#64748b' : '#1e293b', margin: 0, textDecoration: apt.status === 'CANCELADO' ? 'line-through' : 'none' }}>{apt.name}</p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.1rem' }}>
+                        <p style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 600 }}>{apt.aire_test_type || 'Prueba'}</p>
+                        {apt.observations && <MessageSquare size={10} color="var(--primary)" />}
+                      </div>
                     </div>
                   ))}
                   {isFull && <div style={{ marginTop: 'auto', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.6rem', fontWeight: 800 }}> <AlertCircle size={10} /> CUPO AGOTADO </div>}
@@ -205,6 +268,19 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
         isOpen={selectedAp !== null}
         onClose={() => setSelectedAp(null)}
         ap={selectedAp}
+      />
+
+      <EvolutionModal
+        isOpen={selectedApForEvolution !== null}
+        onClose={() => setSelectedApForEvolution(null)}
+        ap={selectedApForEvolution}
+      />
+
+      <MoveReasonModal
+        isOpen={isMovingModalOpen}
+        onClose={() => { setIsMovingModalOpen(false); setMovingAppt(null); }}
+        apptId={movingAppt?.id || null}
+        newDate={movingAppt?.targetDate || null}
       />
       
       <style jsx>{`
