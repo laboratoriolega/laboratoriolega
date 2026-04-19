@@ -6,7 +6,7 @@ import { updateEvolution } from "@/actions/appointments";
 
 export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolean, onClose: () => void, ap: any }) {
   const [loading, setLoading] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState(ap.status);
+  const [selectedStatus, setSelectedStatus] = useState(ap?.status || "AGENDADO");
 
   if (!isOpen || !ap) return null;
 
