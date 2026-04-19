@@ -25,6 +25,13 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
     setLoading(true);
     const formData = new FormData(e.currentTarget);
     formData.append("id", ap.id);
+
+    // Normalize Date to ISO with Offset
+    const rawDate = formData.get("appointment_date") as string;
+    if (rawDate) {
+      const formattedDate = format(new Date(rawDate), "yyyy-MM-dd'T'HH:mm:ssxxx");
+      formData.set("appointment_date", formattedDate);
+    }
     
     try {
       const res = await updateAppointment(formData);

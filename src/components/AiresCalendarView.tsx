@@ -149,7 +149,17 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                     alert("No se pueden mover turnos a este día: Límite de 4 alcanzado.");
                     return;
                   }
-                  setMovingAppt({ id: apptId, targetDate: day.toISOString() });
+                  const originalAppt = airesAppts.find(a => a.id === apptId);
+                  let targetDateTime = day.toISOString();
+                  
+                  if (originalAppt && originalAppt.appointment_date) {
+                    const originalDate = new Date(originalAppt.appointment_date);
+                    const newDateWithTime = new Date(day);
+                    newDateWithTime.setHours(originalDate.getHours(), originalDate.getMinutes(), 0, 0);
+                    targetDateTime = format(newDateWithTime, "yyyy-MM-dd'T'HH:mm:ssxxx");
+                  }
+
+                  setMovingAppt({ id: apptId, targetDate: targetDateTime });
                   setIsMovingModalOpen(true);
                 }
               }}

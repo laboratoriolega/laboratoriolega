@@ -84,7 +84,18 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                 e.currentTarget.style.background = isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)';
                 const apptId = e.dataTransfer.getData("appointmentId");
                 if (apptId) {
-                  setMovingAppt({ id: apptId, targetDate: day.toISOString() });
+                  const originalAppt = filteredAppointments.find(a => a.id === apptId);
+                  let targetDateTime = day.toISOString();
+                  
+                  if (originalAppt && originalAppt.appointment_date) {
+                    const originalDate = new Date(originalAppt.appointment_date);
+                    // Combine new day with original time
+                    const newDateWithTime = new Date(day);
+                    newDateWithTime.setHours(originalDate.getHours(), originalDate.getMinutes(), 0, 0);
+                    targetDateTime = format(newDateWithTime, "yyyy-MM-dd'T'HH:mm:ssxxx");
+                  }
+
+                  setMovingAppt({ id: apptId, targetDate: targetDateTime });
                   setIsMovingModalOpen(true);
                 }
               }}

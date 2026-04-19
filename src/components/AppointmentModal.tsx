@@ -30,14 +30,16 @@ export default function AppointmentModal({
     const formData = new FormData(e.currentTarget);
     
     try {
-      // Normalize Date to ISO (Avoid timezone shifts)
+      // Normalize Date to ISO with Offset (Avoid timezone shifts)
       const rawDate = formData.get("appointment_date") as string;
       if (!rawDate) {
         alert("Por favor selecciona una fecha y hora.");
         setLoading(false);
         return;
       }
-      formData.set("appointment_date", new Date(rawDate).toISOString());
+      // new Date(rawDate) will use local time, format(..., "xxx") adds the offset (e.g. -03:00)
+      const formattedDate = format(new Date(rawDate), "yyyy-MM-dd'T'HH:mm:ssxxx");
+      formData.set("appointment_date", formattedDate);
 
       // Image Compression Logic
       const file = formData.get("document") as File;
