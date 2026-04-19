@@ -11,9 +11,18 @@ export default function PendientesTable({ data }: { data: any[] }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<any>({});
   const [showNewRow, setShowNewRow] = useState(false);
+  const [filter, setFilter] = useState<string | null>(null);
+
+  // Stats calculation
+  const stats = items.reduce((acc: any, item: any) => {
+    acc[item.seguimiento] = (acc[item.seguimiento] || 0) + 1;
+    return acc;
+  }, { "Pendiente": 0, "En Proceso": 0, "Finalizado": 0 });
+
+  const filteredItems = filter ? items.filter(it => it.seguimiento === filter) : items;
 
   // Group by month
-  const groups = items.reduce((acc: any, item: any) => {
+  const groups = filteredItems.reduce((acc: any, item: any) => {
     const month = item.month_group;
     if (!acc[month]) acc[month] = [];
     acc[month].push(item);
@@ -42,7 +51,42 @@ export default function PendientesTable({ data }: { data: any[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+           <button 
+             onClick={() => setFilter(filter === "Pendiente" ? null : "Pendiente")}
+             style={{ 
+               padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #EF4444", fontSize: "0.85rem", fontWeight: 600,
+               background: filter === "Pendiente" ? "#EF4444" : "rgba(239, 68, 68, 0.1)",
+               color: filter === "Pendiente" ? "white" : "#EF4444",
+               display: "flex", alignItems: "center", gap: "0.5rem", transition: "all 0.2s"
+             }}
+           >
+             Pendientes <span style={{ padding: "0.1rem 0.4rem", borderRadius: "4px", background: "rgba(0,0,0,0.1)" }}>{stats["Pendiente"]}</span>
+           </button>
+           <button 
+             onClick={() => setFilter(filter === "En Proceso" ? null : "En Proceso")}
+             style={{ 
+               padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #FBBF24", fontSize: "0.85rem", fontWeight: 600,
+               background: filter === "En Proceso" ? "#FBBF24" : "rgba(251, 191, 36, 0.1)",
+               color: filter === "En Proceso" ? "white" : "#FBBF24",
+               display: "flex", alignItems: "center", gap: "0.5rem", transition: "all 0.2s"
+             }}
+           >
+             En Proceso <span style={{ padding: "0.1rem 0.4rem", borderRadius: "4px", background: "rgba(0,0,0,0.1)" }}>{stats["En Proceso"]}</span>
+           </button>
+           <button 
+             onClick={() => setFilter(filter === "Finalizado" ? null : "Finalizado")}
+             style={{ 
+               padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #10B981", fontSize: "0.85rem", fontWeight: 600,
+               background: filter === "Finalizado" ? "#10B981" : "rgba(16, 185, 129, 0.1)",
+               color: filter === "Finalizado" ? "white" : "#10B981",
+               display: "flex", alignItems: "center", gap: "0.5rem", transition: "all 0.2s"
+             }}
+           >
+             Finalizados <span style={{ padding: "0.1rem 0.4rem", borderRadius: "4px", background: "rgba(0,0,0,0.1)" }}>{stats["Finalizado"]}</span>
+           </button>
+        </div>
         <button onClick={() => setShowNewRow(true)} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Plus size={18} /> Nuevo Pendiente
         </button>
