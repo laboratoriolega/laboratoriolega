@@ -20,8 +20,10 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
   const [isMovingModalOpen, setIsMovingModalOpen] = useState(false);
   const [movingAppt, setMovingAppt] = useState<{ id: string, targetDate: string } | null>(null);
 
+  if (!appointments) return null;
+
   // EXCLUDE Breath Tests from Internal Calendar
-  const filteredAppointments = appointments.filter(a => a.analysis_type !== 'Test de aire' && a.analysis_type !== 'Aires');
+  const filteredAppointments = (appointments || []).filter(a => a && a.analysis_type !== 'Test de aire' && a.analysis_type !== 'Aires');
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -112,7 +114,7 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                </p>
 
                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto', flex: 1, maxHeight: '200px' }}>
-                 {dayAppts.map(apt => (
+                 {dayAppts.filter(Boolean).map(apt => (
                     <div key={apt.id} 
                       style={{ 
                         background: 'rgba(0,0,0,0.02)', 

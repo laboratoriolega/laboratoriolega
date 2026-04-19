@@ -18,6 +18,8 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   const [isMovingModalOpen, setIsMovingModalOpen] = useState(false);
   const [movingAppt, setMovingAppt] = useState<{ id: string, targetDate: string } | null>(null);
 
+  if (!appointments) return null;
+
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -31,7 +33,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   }
 
   // Filter ONLY Test de aire appointments
-  const airesAppts = appointments.filter(a => a.analysis_type === 'Test de aire');
+  const airesAppts = (appointments || []).filter(a => a && a.analysis_type === 'Test de aire');
   
   // Stats for the current month view
   const currentMonthAppts = airesAppts.filter(a => isSameMonth(new Date(a.appointment_date), monthStart));
@@ -205,7 +207,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                </div>
 
                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', flex: 1, maxHeight: '220px' }}>
-                 {dayAppts.map(apt => (
+                 {dayAppts.filter(Boolean).map(apt => (
                     <div key={apt.id} style={{ 
                       ...getTypeStyle(apt.aire_test_type, apt.status),
                       padding: '0.5rem', 
