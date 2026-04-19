@@ -1,0 +1,102 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { updateUser } from "@/actions/users";
+import { X, User, Shield, Loader2 } from "lucide-react";
+
+export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boolean, onClose: () => void, user: any }) {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  if (!isOpen || !user) return null;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    formData.append("id", user.id);
+    
+    try {
+      const res = await updateUser(formData);
+      if (res.error) {
+        alert(res.error);
+      } else {
+        onClose();
+        router.refresh();
+      }
+    } catch (err) {
+      alert("Error al actualizar el usuario.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const inputStyle = {
+    width: "100%",
+    padding: "0.6rem 0.8rem",
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    fontSize: "0.9rem",
+    color: "#1e293b",
+    outline: "none"
+  };
+
+  const labelStyle = {
+    display: "block",
+    marginBottom: "0.25rem",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    color: "#64748b"
+  };
+
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100,
+      padding: "1rem"
+    }}>
+      <div className="glass-panel" style={{
+        background: "white", width: "100%", maxWidth: "400px",
+        borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        overflow: "hidden"
+      }}>
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+             Modificar Staff
+          </h3>
+          <button onClick={onClose} style={{ color: "#64748b", background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={labelStyle}>Usuario (No editable)</label>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--primary)" }}>@{user.username}</p>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Nombre Completo</label>
+            <input required name="full_name" defaultValue={user.full_name} type="text" className="input-field" style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Rol en el Laboratorio</label>
+            <select name="role" defaultValue={user.role} className="input-field" style={inputStyle}>
+              <option value="staff">Staff (Lectura/Carga)</option>
+              <option value="admin">Administrador (Control Total)</option>
+            </select>
+          </div>
+
+          <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem" }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: "0.75rem", background: "#f1f5f9", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
+            <button type="submit" disabled={loading} style={{ flex: 1, padding: "0.75rem", background: "var(--primary)", color: "white", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+              {loading ? <Loader2 className="animate-spin" /> : "Actualizar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

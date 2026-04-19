@@ -18,6 +18,7 @@ export default function AppointmentModal({
 }) {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [analysisType, setAnalysisType] = useState("");
   const router = useRouter();
   
   if (!isOpen) return null;
@@ -166,13 +167,53 @@ export default function AppointmentModal({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Obra Social</label>
-              <input required name="health_insurance" type="text" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, Particular" />
+              <input required name="health_insurance" type="text" list="insurance-list" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, Particular" />
+              <datalist id="insurance-list">
+                <option value="Particular" />
+                <option value="OSDE" />
+                <option value="Swiss Medical" />
+                <option value="Galeno" />
+                <option value="PAMI" />
+                <option value="IOMA" />
+                <option value="Medicus" />
+                <option value="OMINT" />
+              </datalist>
             </div>
             <div>
               <label style={labelStyle}>Tipo de Análisis</label>
-              <input required name="analysis_type" type="text" className="modern-input" style={inputStyle} placeholder="Ej: SIBO, Esputo, etc." />
+              <input 
+                required 
+                name="analysis_type" 
+                type="text" 
+                list="analysis-list" 
+                className="modern-input" 
+                style={inputStyle} 
+                placeholder="Ej: SIBO, Rutina, etc."
+                onChange={(e) => setAnalysisType(e.target.value)}
+              />
+              <datalist id="analysis-list">
+                <option value="Aires" />
+                <option value="Rutina" />
+                <option value="Hemograma" />
+                <option value="Orina Completa" />
+                <option value="Esputo" />
+                <option value="Hisopado" />
+                <option value="Cultivo" />
+              </datalist>
             </div>
           </div>
+
+          {analysisType === 'Aires' && (
+            <div style={{ animation: 'fadeIn 0.3s ease' }}>
+              <label style={labelStyle}>Tipo de Aire Espirado</label>
+              <select name="aire_test_type" required className="modern-input" style={inputStyle}>
+                <option value="">-- Seleccionar Prueba --</option>
+                <option value="SIBO">SIBO</option>
+                <option value="Lactosa">Lactosa</option>
+                <option value="Fructuosa">Fructuosa</option>
+              </select>
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div style={{ gridColumn: "span 2" }}>

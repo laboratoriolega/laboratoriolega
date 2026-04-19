@@ -4,12 +4,15 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ShieldCheck, UserPlus, Trash2, History } from "lucide-react";
 import CreateUserModal from "@/components/CreateUserModal";
+import UserManagementClient from "@/components/UserManagementClient";
+import { getSession } from "@/lib/auth";
 
 export const revalidate = 0;
 
 export default async function UsuariosPage() {
   const { data: users, error: userError } = await getUsers();
   const { data: auditLogs, error: auditError } = await getAuditLogs();
+  const session = await getSession() as any;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -29,45 +32,7 @@ export default async function UsuariosPage() {
             <ShieldCheck color="var(--primary)" /> Staff del Laboratorio
           </h3>
           {userError && <p style={{ color: 'var(--danger)' }}>{userError}</p>}
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)', textAlign: 'left' }}>
-                  <th style={{ padding: '1rem' }}>Usuario</th>
-                  <th style={{ padding: '1rem' }}>Nombre Completo</th>
-                  <th style={{ padding: '1rem' }}>Rol</th>
-                  <th style={{ padding: '1rem' }}>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users?.map((u: any) => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                    <td style={{ padding: '1rem', fontWeight: 600 }}>{u.username}</td>
-                    <td style={{ padding: '1rem' }}>{u.full_name || '-'}</td>
-                    <td style={{ padding: '1rem' }}>
-                      <span style={{ 
-                        textTransform: 'capitalize', 
-                        padding: '0.25rem 0.5rem', 
-                        borderRadius: '6px', 
-                        fontSize: '0.8rem',
-                        background: u.role === 'admin' ? '#fee2e2' : '#f1f5f9',
-                        color: u.role === 'admin' ? '#ef4444' : '#64748b'
-                      }}>
-                        {u.role}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem' }}>
-                      <form action={async () => { "use server"; await deleteUser(u.id); }}>
-                         <button type="submit" style={{ color: 'var(--danger)', border: 'none', background: 'none', cursor: 'pointer', padding: '0.5rem' }}>
-                           <Trash2 size={18} />
-                         </button>
-                      </form>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <UserManagementClient initialUsers={users || []} currentUserId={session?.id} />
         </section>
 
         {/* Audit Log / History */}

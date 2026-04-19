@@ -163,7 +163,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         {apt.health_insurance}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem', color: 'var(--accent)', fontWeight: 500 }}>{apt.analysis_type}</td>
+                    <td style={{ padding: '1rem', color: 'var(--accent)', fontWeight: 500 }}>
+                      {apt.analysis_type}
+                      {apt.aire_test_type && (
+                        <span style={{ fontSize: '0.7rem', display: 'block', color: 'var(--text-muted)' }}>
+                          ({apt.aire_test_type})
+                        </span>
+                      )}
+                    </td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{ 
                         background: apt.status === 'AGENDADO' ? 'rgba(14, 165, 233, 0.2)' : 'rgba(16, 185, 129, 0.2)', 

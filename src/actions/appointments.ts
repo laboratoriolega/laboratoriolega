@@ -8,7 +8,7 @@ import { put } from '@vercel/blob';
 export async function getAppointments() {
   try {
     const res = await pool.query(`
-      SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.observations, a.evolution_notes,
+      SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
              a.document_url,
              CASE WHEN (a.document_url IS NOT NULL OR a.document_base64 IS NOT NULL) THEN true ELSE false END as has_document,
              p.name, p.dni, p.health_insurance 
@@ -41,8 +41,21 @@ export async function createAppointment(formData: FormData) {
     const health_insurance = formData.get("health_insurance") as string;
     const appointment_date = formData.get("appointment_date") as string;
     const analysis_type = formData.get("analysis_type") as string;
+    const aire_test_type = formData.get("aire_test_type") as string;
     const observations = formData.get("observations") as string;
     const file = formData.get("document") as File;
+
+    // Turn limit for 'Aires' (Max 4 per day)
+    if (analysis_type === 'Aires') {
+      const targetDateStr = appointment_date.split('T')[0];
+      const countRes = await client.query(
+        "SELECT COUNT(*) FROM appointments WHERE analysis_type = 'Aires' AND DATE(appointment_date) = $1",
+        [targetDateStr]
+      );
+      if (parseInt(countRes.rows[0].count) >= 4) {
+        throw new Error("Límite excedido: Solo se permiten 4 turnos de 'Aires' por día.");
+      }
+    }
 
     // Upload to Vercel Blob (NOT to Postgres)
     let document_url = null;
@@ -71,8 +84,8 @@ export async function createAppointment(formData: FormData) {
 
     // Insert Appointment - store URL, not base64
     await client.query(
-      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, observations, document_url) VALUES ($1, $2, $3, $4, $5)',
-      [patientId, appointment_date, analysis_type, observations, document_url]
+      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, aire_test_type, observations, document_url) VALUES ($1, $2, $3, $4, $5, $6)',
+      [patientId, appointment_date, analysis_type, aire_test_type, observations, document_url]
     );
 
     await client.query('COMMIT');
@@ -113,6 +126,54 @@ export async function updateEvolution(formData: FormData) {
     return { success: true };
   } catch (error: any) {
     console.error("Evolution error:", error);
+    return { error: error.message };
+  }
+}
+
+export async function updateAppointment(formData: FormData) {
+  try {
+    const id = formData.get("id");
+    const appointment_date = formData.get("appointment_date") as string;
+    const analysis_type = formData.get("analysis_type") as string;
+    const aire_test_type = formData.get("aire_test_type") as string;
+    const health_insurance = formData.get("health_insurance") as string;
+    const observations = formData.get("observations") as string;
+
+    // Check limit if changing type to Aires or changing date for an Aires appointment
+    if (analysis_type === 'Aires') {
+      const targetDateStr = appointment_date.split('T')[0];
+      const countRes = await pool.query(
+        "SELECT COUNT(*) FROM appointments WHERE analysis_type = 'Aires' AND DATE(appointment_date) = $1 AND id != $2",
+        [targetDateStr, id]
+      );
+      if (parseInt(countRes.rows[0].count) >= 4) {
+        throw new Error("Límite excedido: Solo se permiten 4 turnos de 'Aires' por día.");
+      }
+    }
+
+    await pool.query(
+      `UPDATE appointments a
+       SET appointment_date = $1, analysis_type = $2, aire_test_type = $3, observations = $4
+       FROM patients p
+       WHERE a.patient_id = p.id AND a.id = $5`,
+      [appointment_date, analysis_type, aire_test_type, observations, id]
+    );
+
+    // Also update health_insurance in patients table if needed (simplified: just do it)
+    await pool.query(
+      `UPDATE patients SET health_insurance = $1 WHERE id = (SELECT patient_id FROM appointments WHERE id = $2)`,
+      [health_insurance, id]
+    );
+
+    await logAction("UPDATE_APPOINTMENT", { appointment_id: id, analysis_type });
+
+    revalidatePath("/");
+    revalidatePath("/calendario");
+    revalidatePath("/pacientes", "layout");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Update appointment error:", error);
     return { error: error.message };
   }
 }

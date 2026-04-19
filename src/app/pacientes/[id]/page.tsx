@@ -85,6 +85,11 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
                         </span>
                         <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>
                           {apt.analysis_type}
+                          {apt.aire_test_type && (
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem', fontWeight: 500 }}>
+                              ({apt.aire_test_type})
+                            </span>
+                          )}
                         </h4>
                       </div>
                       <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

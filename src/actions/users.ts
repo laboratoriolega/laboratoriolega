@@ -78,7 +78,7 @@ export async function deleteUser(userId: number) {
   try {
     const session = await getSession() as any;
     if (!session || session.role !== 'admin') throw new Error("Unauthorized");
-    if (session.id === userId) throw new Error("Cannot delete yourself");
+    if (session.id === userId) throw new Error("No podés eliminarte a vos mismo");
 
     const userRes = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
     const targetUsername = userRes.rows[0]?.username;
@@ -89,6 +89,29 @@ export async function deleteUser(userId: number) {
     revalidatePath("/usuarios");
     return { success: true };
   } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function updateUser(formData: FormData) {
+  try {
+    const session = await getSession() as any;
+    if (!session || session.role !== 'admin') throw new Error("Unauthorized");
+
+    const id = formData.get("id");
+    const full_name = formData.get("full_name") as string;
+    const role = formData.get("role") as string;
+
+    await pool.query(
+      "UPDATE users SET full_name = $1, role = $2 WHERE id = $3",
+      [full_name, role, id]
+    );
+
+    await logAction("UPDATE_USER_ADMIN", { user_id: id, full_name, role, updated_by: session.username });
+    revalidatePath("/usuarios");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Update user error:", error);
     return { error: error.message };
   }
 }
