@@ -13,6 +13,9 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedAp, setSelectedAp] = useState<any>(null);
 
+  // EXCLUDE Breath Tests from Internal Calendar
+  const filteredAppointments = appointments.filter(a => a.analysis_type !== 'Test de aire' && a.analysis_type !== 'Aires');
+
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
   
@@ -58,7 +61,7 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
         
         {/* Grid de días */}
         {daysGrid.map(day => {
-          const dayAppts = appointments.filter(a => isSameDay(new Date(a.appointment_date), day));
+          const dayAppts = filteredAppointments.filter(a => isSameDay(new Date(a.appointment_date), day));
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isToday = isSameDay(day, new Date());
 

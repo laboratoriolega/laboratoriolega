@@ -28,11 +28,13 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   // Filter ONLY Test de aire appointments
   const airesAppts = appointments.filter(a => a.analysis_type === 'Test de aire');
   
-  // Stats
-  const totalGeneral = airesAppts.length;
+  // Stats for the current month view
   const currentMonthAppts = airesAppts.filter(a => isSameMonth(new Date(a.appointment_date), monthStart));
   const completedThisMonth = currentMonthAppts.filter(a => a.status === 'COMPLETADO').length;
-  const remainingThisMonth = currentMonthAppts.length - completedThisMonth;
+  
+  const siboCount = currentMonthAppts.filter(a => a.aire_test_type === 'SIBO').length;
+  const lactosaCount = currentMonthAppts.filter(a => a.aire_test_type === 'Lactosa').length;
+  const fructuosaCount = currentMonthAppts.filter(a => a.aire_test_type === 'Fructuosa').length;
 
   const getTypeStyle = (type?: string) => {
     switch(type) {
@@ -61,21 +63,33 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
           <h3 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
             <Wind size={32} color="var(--primary)" /> Turnos de Aire
           </h3>
-          <p style={{ color: "var(--text-muted)", fontSize: "1rem", marginTop: '0.25rem' }}>Gestión especializada de pruebas respiratorias.</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", marginTop: '0.25rem' }}>Estadísticas y carga mensual especializada.</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem' }}>
-           <div className="stat-card" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', minWidth: '120px' }}>
-              <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Total General</p>
-              <h4 style={{ margin: '0.25rem 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{totalGeneral}</h4>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+           <div className="stat-card" style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', minWidth: '110px' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Cargados Mes</p>
+              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{currentMonthAppts.length}</h4>
            </div>
-           <div className="stat-card" style={{ background: '#f0f9ff', padding: '1rem', borderRadius: '12px', border: '1px solid #bae6fd', minWidth: '120px' }}>
-              <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase' }}>Cargados Mes</p>
-              <h4 style={{ margin: '0.25rem 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{currentMonthAppts.length}</h4>
+           
+           <div className="stat-card" style={{ background: '#faf5ff', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e9d5ff', minWidth: '90px' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#A855F7', textTransform: 'uppercase' }}>SIBO</p>
+              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#A855F7' }}>{siboCount}</h4>
            </div>
-           <div className="stat-card" style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '12px', border: '1px solid #bbf7d0', minWidth: '120px' }}>
-              <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: '#15803d', textTransform: 'uppercase' }}>Completados</p>
-              <h4 style={{ margin: '0.25rem 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{completedThisMonth}</h4>
+           
+           <div className="stat-card" style={{ background: '#fdf2f8', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #fbcfe8', minWidth: '90px' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#EC4899', textTransform: 'uppercase' }}>Lactosa</p>
+              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#EC4899' }}>{lactosaCount}</h4>
+           </div>
+           
+           <div className="stat-card" style={{ background: '#fff7ed', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #ffedd5', minWidth: '90px' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#78350F', textTransform: 'uppercase' }}>Fructuosa</p>
+              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#9a3412' }}>{fructuosaCount}</h4>
+           </div>
+
+           <div className="stat-card" style={{ background: '#f0fdf4', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #bbf7d0', minWidth: '110px' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#15803d', textTransform: 'uppercase' }}>Completados</p>
+              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#16a34a' }}>{completedThisMonth}</h4>
            </div>
         </div>
       </div>
