@@ -19,7 +19,7 @@ export async function getAppointments() {
       ORDER BY a.appointment_date ASC
     `);
     return { 
-      data: res.rows.map(row => ({
+      data: res.rows.filter(row => row !== null).map(row => ({
         ...row,
         appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null
       })), 

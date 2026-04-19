@@ -14,12 +14,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const filters = await searchParams;
 
   // Filter logic
-  let appointments = allAppointments || [];
+  let appointments = (allAppointments || []).filter(Boolean);
   if (filters.status) {
-    appointments = appointments.filter((a: any) => a.status === filters.status);
+    appointments = appointments.filter((a: any) => a && a.status === filters.status);
   }
   if (filters.month) {
     appointments = appointments.filter((a: any) => {
+      if (!a || !a.appointment_date) return false;
       const date = new Date(a.appointment_date);
       return (date.getMonth() + 1).toString().padStart(2, '0') === filters.month;
     });
@@ -65,7 +66,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Confirmados</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a.status === 'COMPLETADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a && a.status === 'COMPLETADO')?.length ?? 0}</h3>
           </div>
         </Link>
 
@@ -75,7 +76,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Pendientes</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a.status === 'AGENDADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a && a.status === 'AGENDADO')?.length ?? 0}</h3>
           </div>
         </Link>
 
@@ -85,7 +86,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Cancelados</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a.status === 'CANCELADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a && a.status === 'CANCELADO')?.length ?? 0}</h3>
           </div>
         </Link>
       </div>
