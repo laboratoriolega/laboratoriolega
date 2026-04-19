@@ -71,6 +71,13 @@ export default async function RootLayout({
               <img 
                 src="/logo.png" 
                 alt="LEGA Laboratorio Logo" 
+                className="logo-light"
+                style={{ width: '15rem', height: 'auto', objectFit: 'contain' }} 
+              />
+              <img 
+                src="/logoB.png" 
+                alt="LEGA Laboratorio Logo" 
+                className="logo-dark"
                 style={{ width: '15rem', height: 'auto', objectFit: 'contain' }} 
               />
             </div>
