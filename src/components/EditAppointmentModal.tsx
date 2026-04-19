@@ -27,7 +27,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
     
     try {
       const res = await updateAppointment(formData);
-      if (res.error) {
+      if (res?.error) {
         alert(res.error);
       } else {
         onClose();

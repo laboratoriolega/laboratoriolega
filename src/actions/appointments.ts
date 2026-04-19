@@ -176,6 +176,7 @@ export async function updateAppointment(formData: FormData) {
     return { success: true };
   } catch (error: any) {
     console.error("Update appointment error:", error);
+    return { error: error.message };
   }
 }
 
