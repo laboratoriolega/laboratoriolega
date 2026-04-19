@@ -167,16 +167,59 @@ export default function AppointmentModal({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Obra Social</label>
-              <input required name="health_insurance" type="text" list="insurance-list" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, Particular" />
+              <input required name="health_insurance" type="text" list="insurance-list" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, PAMI, etc." />
               <datalist id="insurance-list">
                 <option value="Particular" />
-                <option value="OSDE" />
-                <option value="Swiss Medical" />
-                <option value="Galeno" />
+                <option value="A.A.T.R.A. - OSTYR - (SCIS S.A. )" />
+                <option value="A.M.U.R." />
+                <option value="A.P.M." />
+                <option value="APROSS" />
+                <option value="AVALIAN" />
+                <option value="CAJA DE ABOGADOS" />
+                <option value="CAJA NOTARIAL" />
+                <option value="CEA - SAN PEDRO" />
+                <option value="CIENCIAS ECONOMICAS" />
+                <option value="COBERTURA DE SALUD S.A. (BOREAL)" />
+                <option value="D.A.S.P.U." />
+                <option value="DA.SU.Te.N" />
+                <option value="FEDERADA SALUD" />
+                <option value="GRUPO PREMEDIC" />
+                <option value="IOSFA" />
+                <option value="JERARQUICOS SALUD" />
+                <option value="LUIS PASTEUR" />
+                <option value="O.P.D.E.A." />
+                <option value="O.S.P.E.R.Y.H.R.A." />
+                <option value="O.S.P.I.A." />
+                <option value="O.S.P.I.G.P.C." />
+                <option value="OBRA SOCIAL PERSONAL DE FARMACIA (O.S.P.F.)" />
+                <option value="OSADEF" />
+                <option value="OSFFENTOS" />
+                <option value="OSMISS" />
+                <option value="OSPACA" />
+                <option value="OSPCRA" />
+                <option value="OSPECOR" />
+                <option value="OSPEP" />
+                <option value="OSPICAL ENSALUD" />
+                <option value="OSPIHMP" />
+                <option value="OSPIM" />
+                <option value="OSPJTAP" />
+                <option value="OSPL" />
+                <option value="OSSACRA AMA SALUD" />
+                <option value="OSTEL" />
+                <option value="OSTEP" />
                 <option value="PAMI" />
-                <option value="IOMA" />
-                <option value="Medicus" />
-                <option value="OMINT" />
+                <option value="PODER JUDICIAL" />
+                <option value="PREVENCION SALUD" />
+                <option value="S.A.D.A.I.C." />
+                <option value="S.A.P." />
+                <option value="SANCOR SALUD" />
+                <option value="SUPERINTEND.DE BIENESTAR POLICIA FEDERAL ARG." />
+                <option value="UNION PERSONAL" />
+                <option value="VETERANOS DE GUERRA" />
+                <option value="Osde" />
+                <option value="Swiss medical" />
+                <option value="Medife" />
+                <option value="Galeno" />
               </datalist>
             </div>
             <div>
@@ -188,22 +231,24 @@ export default function AppointmentModal({
                 list="analysis-list" 
                 className="modern-input" 
                 style={inputStyle} 
-                placeholder="Ej: SIBO, Rutina, etc."
+                placeholder="Ej: Test de aire, Rutina, etc."
                 onChange={(e) => setAnalysisType(e.target.value)}
               />
               <datalist id="analysis-list">
-                <option value="Aires" />
-                <option value="Rutina" />
-                <option value="Hemograma" />
-                <option value="Orina Completa" />
-                <option value="Esputo" />
-                <option value="Hisopado" />
-                <option value="Cultivo" />
+                <option value="Extraccion" />
+                <option value="Materia fecal" />
+                <option value="Pylori" />
+                <option value="Test de aire" />
+                <option value="Alcat" />
+                <option value="Cibic" />
+                <option value="Derivacion" />
+                <option value="Panel" />
+                <option value="Orina" />
               </datalist>
             </div>
           </div>
 
-          {analysisType === 'Aires' && (
+          {analysisType === 'Test de aire' && (
             <div style={{ animation: 'fadeIn 0.3s ease' }}>
               <label style={labelStyle}>Tipo de Aire Espirado</label>
               <select name="aire_test_type" required className="modern-input" style={inputStyle}>

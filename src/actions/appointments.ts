@@ -45,15 +45,15 @@ export async function createAppointment(formData: FormData) {
     const observations = formData.get("observations") as string;
     const file = formData.get("document") as File;
 
-    // Turn limit for 'Aires' (Max 4 per day)
-    if (analysis_type === 'Aires') {
+    // Turn limit for 'Test de aire' (Max 4 per day)
+    if (analysis_type === 'Test de aire') {
       const targetDateStr = appointment_date.split('T')[0];
       const countRes = await client.query(
-        "SELECT COUNT(*) FROM appointments WHERE analysis_type = 'Aires' AND DATE(appointment_date) = $1",
+        "SELECT COUNT(*) FROM appointments WHERE analysis_type = 'Test de aire' AND DATE(appointment_date) = $1",
         [targetDateStr]
       );
       if (parseInt(countRes.rows[0].count) >= 4) {
-        throw new Error("Límite excedido: Solo se permiten 4 turnos de 'Aires' por día.");
+        throw new Error("Límite excedido: Solo se permiten 4 turnos de 'Test de aire' por día.");
       }
     }
 
@@ -139,15 +139,15 @@ export async function updateAppointment(formData: FormData) {
     const health_insurance = formData.get("health_insurance") as string;
     const observations = formData.get("observations") as string;
 
-    // Check limit if changing type to Aires or changing date for an Aires appointment
-    if (analysis_type === 'Aires') {
+    // Check limit if changing type to Test de aire or changing date for an Test de aire appointment
+    if (analysis_type === 'Test de aire') {
       const targetDateStr = appointment_date.split('T')[0];
       const countRes = await pool.query(
-        "SELECT COUNT(*) FROM appointments WHERE analysis_type = 'Aires' AND DATE(appointment_date) = $1 AND id != $2",
+        "SELECT COUNT(*) FROM appointments WHERE analysis_type = 'Test de aire' AND DATE(appointment_date) = $1 AND id != $2",
         [targetDateStr, id]
       );
       if (parseInt(countRes.rows[0].count) >= 4) {
-        throw new Error("Límite excedido: Solo se permiten 4 turnos de 'Aires' por día.");
+        throw new Error("Límite excedido: Solo se permiten 4 turnos de 'Test de aire' por día.");
       }
     }
 
