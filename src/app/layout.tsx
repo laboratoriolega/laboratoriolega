@@ -8,11 +8,28 @@ import { getSession } from "@/lib/auth";
 import { logoutAction } from "@/actions/auth";
 
 export const metadata: Metadata = {
-  title: "LEGA Laboratorio | Dashboard",
-  description: "Sistema de gestión de turnos para LEGA Laboratorio",
+  title: "LEGA Laboratorio | Sistema de Gestión",
+  description: "Sistema profesional de gestión de turnos para laboratorios.",
   icons: {
     icon: "/logofavicon.png",
-  }
+    apple: "/logofavicon.png",
+  },
+  openGraph: {
+    title: "LEGA Laboratorio | Sistema de Gestión",
+    description: "Gestión avanzada de turnos y pacientes para LEGA Laboratorio.",
+    url: "https://legalaboratorio.vercel.app", // Fallback URL
+    siteName: "LEGA Laboratorio",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "LEGA Laboratorio Logo",
+      },
+    ],
+    locale: "es_AR",
+    type: "website",
+  },
 };
 
 export default async function RootLayout({
