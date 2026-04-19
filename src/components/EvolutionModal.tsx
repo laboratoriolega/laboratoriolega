@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, CheckCircle, FileText } from "lucide-react";
 import { updateEvolution } from "@/actions/appointments";
+import Portal from "./Portal";
 
 export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolean, onClose: () => void, ap: any }) {
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,8 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
   }
 
   return (
-    <div style={{
+    <Portal>
+      <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
       background: "rgba(0, 0, 0, 0.4)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyItems: "center", zIndex: 1000,
@@ -94,5 +96,6 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

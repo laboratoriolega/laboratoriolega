@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateUser } from "@/actions/users";
 import { X, User, Shield, Loader2, UserCog } from "lucide-react";
+import Portal from "./Portal";
 
 export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boolean, onClose: () => void, user: any }) {
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,8 @@ export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boole
   };
 
   return (
-    <div style={{
+    <Portal>
+      <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
       background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100,
@@ -104,5 +106,6 @@ export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boole
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

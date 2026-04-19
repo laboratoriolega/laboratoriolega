@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { updateAppointment } from "@/actions/appointments";
 import { X, Calendar, Edit, Loader2, Info } from "lucide-react";
 import { format } from "date-fns";
+import Portal from "./Portal";
 
 export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: boolean, onClose: () => void, ap: any }) {
   const [loading, setLoading] = useState(false);
@@ -60,7 +61,8 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
   };
 
   return (
-    <div style={{
+    <Portal>
+      <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
       background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100,
@@ -223,5 +225,6 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, CalendarDays, CheckCircle } from "lucide-react";
 import { moveAppointment } from "@/actions/appointments";
+import Portal from "./Portal";
 
 export default function MoveReasonModal({ 
   isOpen, 
@@ -41,7 +42,8 @@ export default function MoveReasonModal({
   }
 
   return (
-    <div style={{
+    <Portal>
+      <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
       background: "rgba(0, 0, 0, 0.4)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyItems: "center", zIndex: 2000,
@@ -90,5 +92,6 @@ export default function MoveReasonModal({
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

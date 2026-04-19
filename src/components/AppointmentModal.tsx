@@ -6,6 +6,7 @@ import { createAppointment } from "@/actions/appointments";
 import { format } from "date-fns";
 import { User, FileText, Calendar, CloudUpload, X, Loader2 } from "lucide-react";
 import { compressImage } from "@/lib/compression";
+import Portal from "./Portal";
 
 export default function AppointmentModal({ 
   isOpen, 
@@ -79,7 +80,8 @@ export default function AppointmentModal({
   };
 
   return (
-    <div style={{
+    <Portal>
+      <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
       background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -356,5 +358,6 @@ export default function AppointmentModal({
         </form>
       </div>
     </div>
+    </Portal>
   );
 }
