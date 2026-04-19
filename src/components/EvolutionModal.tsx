@@ -37,8 +37,9 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
       padding: "1rem", overflowY: "auto"
     }}>
       <div className="glass-panel" style={{
-        background: "white", padding: "1.5rem", borderRadius: "20px",
-        width: "100%", maxWidth: "500px", margin: "auto", position: "relative"
+        background: "var(--glass-bg)", padding: "1.5rem", borderRadius: "20px",
+        width: "100%", maxWidth: "500px", margin: "auto", position: "relative",
+        border: "1px solid var(--glass-border)", boxShadow: "var(--glass-shadow)"
       }}>
         <button onClick={onClose} style={{ position: "absolute", top: "1rem", right: "1rem", color: "var(--text-muted)", padding: "0.5rem" }}>
           <X size={20} />
@@ -48,7 +49,7 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
           <FileText size={20} color="var(--primary)" /> Evaluar Sesión
         </h2>
         <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.25rem" }}>
-          Paciente: <strong>{ap.name}</strong> • {ap.analysis_type}
+          Paciente: <strong style={{color: 'var(--text-main)'}}>{ap.name}</strong> • {ap.analysis_type}
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>

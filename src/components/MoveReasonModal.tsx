@@ -48,8 +48,9 @@ export default function MoveReasonModal({
       padding: "1rem"
     }}>
       <div className="glass-panel" style={{
-        background: "white", padding: "1.5rem", borderRadius: "20px",
-        width: "100%", maxWidth: "400px", margin: "auto", position: "relative"
+        background: "var(--glass-bg)", padding: "1.5rem", borderRadius: "20px",
+        width: "100%", maxWidth: "400px", margin: "auto", position: "relative",
+        border: "1px solid var(--glass-border)", boxShadow: "var(--glass-shadow)"
       }}>
         <button onClick={onClose} style={{ position: "absolute", top: "1rem", right: "1rem", color: "var(--text-muted)", padding: "0.5rem" }}>
           <X size={20} />

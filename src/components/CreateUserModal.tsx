@@ -35,25 +35,25 @@ export default function CreateUserModal() {
       padding: "1rem"
     }}>
       <div className="glass-panel" style={{
-        background: "white", padding: "2rem", borderRadius: "20px",
-        width: "100%", maxWidth: "450px", margin: "auto", position: "relative"
+        background: "var(--glass-bg)", width: "100%", maxWidth: "450px",
+        borderRadius: "16px", boxShadow: "var(--glass-shadow)",
+        overflow: "hidden", border: "1px solid var(--glass-border)", margin: "auto", position: "relative"
       }}>
-        <button onClick={() => setIsOpen(false)} style={{ position: "absolute", top: "1rem", right: "1rem", color: "var(--text-muted)", padding: "0.5rem" }}>
-          <X size={20} />
-        </button>
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-gradient-end)" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, color: "var(--text-main)" }}>
+            <UserPlus size={18} color="var(--primary)" /> Nuevo Usuario
+          </h3>
+          <button onClick={() => setIsOpen(false)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
+        </div>
 
-        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem", color: "var(--text-main)", display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <UserPlus size={24} color="var(--primary)" /> Alta de Personal
-        </h2>
-
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           <div>
-            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem" }}>Usuario (Login)</label>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Usuario (Login)</label>
             <input name="username" required className="input-field" placeholder="ej: jdoe" />
           </div>
 
           <div>
-            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem" }}>Nombre Completo</label>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Nombre Completo</label>
             <input name="full_name" required className="input-field" placeholder="ej: Juan Pérez" />
           </div>
 

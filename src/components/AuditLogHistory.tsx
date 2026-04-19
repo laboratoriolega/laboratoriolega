@@ -61,14 +61,14 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
               style={{
                 padding: '0.4rem 0.8rem',
                 borderRadius: '6px',
-                border: 'none',
-                background: period === p.id ? 'var(--primary)' : 'white',
+                background: period === p.id ? 'var(--primary)' : 'var(--glass-bg)',
                 color: period === p.id ? 'white' : 'var(--text-main)',
                 fontSize: '0.75rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                border: period === p.id ? 'none' : '1px solid var(--glass-border)'
               }}
             >
               {p.label}
@@ -86,7 +86,9 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
               style={{
                 padding: '0.4rem',
                 borderRadius: '6px',
-                border: '1px solid #e2e8f0',
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
+                color: 'var(--text-main)',
                 fontSize: '0.8rem',
                 outline: 'none'
               }}
@@ -99,7 +101,8 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative' }}>
         {loading && (
           <div style={{ 
-            position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', 
+            position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)', 
+            backdropFilter: 'blur(2px)',
             zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
             borderRadius: '10px'
           }}>
@@ -116,11 +119,11 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
         {logs.map((log: any) => (
           <div key={log.id} style={{ 
             padding: '0.85rem', 
-            background: 'white', 
+            background: 'var(--glass-bg)', 
             borderRadius: '10px', 
             fontSize: '0.85rem',
-            border: '1px solid #f1f5f9',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+            border: '1px solid var(--glass-border)',
+            boxShadow: 'var(--glass-shadow)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.8rem' }}>
@@ -130,7 +133,7 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
                  {format(new Date(log.created_at), "d MMM, HH:mm", { locale: es })}
                </span>
             </div>
-            <p style={{ margin: 0, fontWeight: 500, color: '#334155', lineHeight: 1.4, fontSize: '0.8rem' }}>
+            <p style={{ margin: 0, fontWeight: 500, color: 'var(--text-main)', lineHeight: 1.4, fontSize: '0.8rem', opacity: 0.9 }}>
               {formatAuditLog(log)}
             </p>
             {log.action.includes('CREATE_APPOINTMENT') && log.details?.dni && (

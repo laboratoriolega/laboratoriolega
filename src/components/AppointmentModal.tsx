@@ -107,23 +107,24 @@ export default function AppointmentModal({
       <div style={{ 
         width: "100%", maxWidth: "550px", 
         maxHeight: "95vh",
-        background: "#ffffff",
+        background: "var(--glass-bg)",
         borderRadius: "16px",
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        boxShadow: "var(--glass-shadow)",
         display: "flex", flexDirection: "column",
         overflow: "hidden",
-        animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+        animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        border: "1px solid var(--glass-border)"
       }}>
         <div style={{ 
           padding: "1rem 1.5rem", 
-          borderBottom: "1px solid #f1f5f9", 
+          borderBottom: "1px solid var(--glass-border)", 
           display: "flex", 
           justifyContent: "space-between",
           alignItems: "center",
           flexShrink: 0,
-          background: "linear-gradient(to right, #fbfcdb 0%, #e6f2f5 100%)" // Premium soft gradient
+          background: "var(--bg-gradient-end)"
         }}>
-          <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+          <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
             <Calendar size={20} color="var(--primary)" />
             {defaultDate ? `Agendar: ${format(defaultDate, 'dd/MM')}` : "Agendar Nuevo Turno"}
           </h3>

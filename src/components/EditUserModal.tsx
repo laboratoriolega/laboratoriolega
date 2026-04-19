@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateUser } from "@/actions/users";
-import { X, User, Shield, Loader2 } from "lucide-react";
+import { X, User, Shield, Loader2, UserCog } from "lucide-react";
 
 export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boolean, onClose: () => void, user: any }) {
   const [loading, setLoading] = useState(false);
@@ -59,39 +59,40 @@ export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boole
       padding: "1rem"
     }}>
       <div className="glass-panel" style={{
-        background: "white", width: "100%", maxWidth: "400px",
-        borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-        overflow: "hidden"
+        background: "var(--glass-bg)", width: "100%", maxWidth: "450px",
+        borderRadius: "16px", boxShadow: "var(--glass-shadow)",
+        overflow: "hidden", border: "1px solid var(--glass-border)"
       }}>
-        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
-             Modificar Staff
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-gradient-end)" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, color: "var(--text-main)" }}>
+            <UserCog size={18} color="var(--primary)" /> Editar Usuario
           </h3>
-          <button onClick={onClose} style={{ color: "#64748b", background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
+          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           <div>
-            <label style={labelStyle}>Nombre de Usuario</label>
-            <input required name="username" defaultValue={user.username} type="text" className="input-field" style={inputStyle} />
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Nombre de Usuario</label>
+            <input required name="username" defaultValue={user.username} type="text" className="input-field" />
           </div>
 
           <div>
-            <label style={labelStyle}>Nombre Completo</label>
-            <input required name="full_name" defaultValue={user.full_name} type="text" className="input-field" style={inputStyle} />
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Nombre Completo</label>
+            <input name="full_name" required defaultValue={user.full_name} className="input-field" />
           </div>
 
           <div>
-            <label style={labelStyle}>Rol en el Laboratorio</label>
-            <select name="role" defaultValue={user.role} className="input-field" style={inputStyle}>
-              <option value="staff">Staff (Lectura/Carga)</option>
-              <option value="admin">Administrador (Control Total)</option>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Rol</label>
+            <select name="role" defaultValue={user.role} className="input-field">
+              <option value="user">Usuario (Lectura/Carga)</option>
+              <option value="admin">Administrador (Total)</option>
             </select>
           </div>
 
-          <div style={{ padding: '0.75rem', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
-            <label style={{...labelStyle, color: '#991b1b'}}>Nueva Contraseña (Opcional)</label>
-            <input name="password" type="password" placeholder="Solo si deseás resetearla" className="input-field" style={inputStyle} />
+          <div style={{ padding: '0.75rem', background: 'rgba(14, 165, 233, 0.05)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Nueva Contraseña (Opcional)</label>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Dejar en blanco para mantener la actual.</p>
+            <input name="password" type="password" className="input-field" placeholder="••••••••" />
           </div>
 
           <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem" }}>

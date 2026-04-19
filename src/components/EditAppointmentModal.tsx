@@ -44,10 +44,10 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
     width: "100%",
     padding: "0.6rem 0.8rem",
     borderRadius: "8px",
-    border: "1px solid #e2e8f0",
-    background: "#f8fafc",
+    border: "1px solid var(--glass-border)",
+    background: "rgba(0,0,0,0.1)",
     fontSize: "0.9rem",
-    color: "#1e293b",
+    color: "var(--text-main)",
     outline: "none"
   };
 
@@ -56,7 +56,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
     marginBottom: "0.25rem",
     fontSize: "0.8rem",
     fontWeight: 600,
-    color: "#64748b"
+    color: "var(--text-muted)"
   };
 
   return (
@@ -67,15 +67,15 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
       padding: "1rem"
     }}>
       <div className="glass-panel" style={{
-        background: "white", width: "100%", maxWidth: "500px",
-        borderRadius: "16px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-        overflow: "hidden"
+        background: "var(--glass-bg)", width: "100%", maxWidth: "500px",
+        borderRadius: "16px", boxShadow: "var(--glass-shadow)",
+        overflow: "hidden", border: "1px solid var(--glass-border)"
       }}>
-        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-gradient-end)" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, color: "var(--text-main)" }}>
             <Edit size={18} color="var(--primary)" /> Modificar Turno
           </h3>
-          <button onClick={onClose} style={{ color: "#64748b", background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
+          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>

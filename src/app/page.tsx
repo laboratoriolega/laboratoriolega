@@ -80,9 +80,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
         </Link>
 
-        <Link href="/?status=CANCELADO" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'CANCELADO' ? '2px solid #64748b' : '1px solid var(--glass-border)' }}>
-          <div style={{ background: 'rgba(100, 116, 139, 0.1)', padding: '1rem', borderRadius: '12px' }}>
-            <X color="#64748b" size={28} />
+        <Link href="/?status=CANCELADO" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'CANCELADO' ? '2px solid #94a3b8' : '1px solid var(--glass-border)' }}>
+          <div style={{ background: 'rgba(148, 163, 184, 0.1)', padding: '1rem', borderRadius: '12px' }}>
+            <X color="#94a3b8" size={28} />
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Cancelados</p>
@@ -95,7 +95,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Agenda de Laboratorio ({filters.status || 'Todos'})</h3>
-          <Suspense fallback={<div style={{ width: '300px', height: '36px', background: '#f1f5f9', borderRadius: '8px' }} />}>
+          <Suspense fallback={<div style={{ width: '300px', height: '36px', background: 'var(--glass-bg)', borderRadius: '8px', border: '1px solid var(--glass-border)' }} />}>
             <DashboardFilters currentMonth={filters.month} />
           </Suspense>
         </div>
@@ -160,7 +160,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>DNI: {apt.dni}</p>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <span style={{ background: 'rgba(0,0,0,0.05)', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 500 }}>
+                      <span style={{ background: 'var(--glass-bg)', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 500, border: '1px solid var(--glass-border)' }}>
                         {apt.health_insurance}
                       </span>
                     </td>

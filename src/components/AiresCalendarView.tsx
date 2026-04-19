@@ -44,16 +44,21 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   const fructuosaCount = currentMonthAppts.filter(a => a?.aire_test_type === 'Fructuosa').length;
 
   const getTypeStyle = (type?: string, status?: string) => {
-    let base = { border: '1px solid #e2e8f0', borderLeft: '5px solid #e2e8f0', background: 'white', opacity: 1 };
+    let base = { 
+      border: '1px solid var(--glass-border)', 
+      borderLeft: '5px solid var(--glass-border)', 
+      background: 'var(--glass-bg)', 
+      opacity: 1 
+    };
     
     if (status === 'CANCELADO') {
-      return { ...base, opacity: 0.5, background: '#f1f5f9', border: '1px solid #cbd5e1', borderLeft: '5px solid #94a3b8' };
+      return { ...base, opacity: 0.5, background: 'rgba(0,0,0,0.1)', border: '1px solid var(--glass-border)', borderLeft: '5px solid #94a3b8' };
     }
 
     switch(type) {
-      case 'SIBO': base = { ...base, border: '1px solid #A855F7', borderLeft: '5px solid #A855F7', background: status === 'COMPLETADO' ? '#f5f3ff' : '#faf5ff' }; break;
-      case 'Lactosa': base = { ...base, border: '1px solid #EC4899', borderLeft: '5px solid #EC4899', background: status === 'COMPLETADO' ? '#fdf2f8' : '#fff1f2' }; break;
-      case 'Fructuosa': base = { ...base, border: '1px solid #78350F', borderLeft: '5px solid #78350F', background: status === 'COMPLETADO' ? '#fff7ed' : '#fffbeb' }; break;
+      case 'SIBO': base = { ...base, border: '1px solid #A855F7', borderLeft: '5px solid #A855F7', background: status === 'COMPLETADO' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)' }; break;
+      case 'Lactosa': base = { ...base, border: '1px solid #EC4899', borderLeft: '5px solid #EC4899', background: status === 'COMPLETADO' ? 'rgba(236, 72, 153, 0.1)' : 'rgba(236, 72, 153, 0.05)' }; break;
+      case 'Fructuosa': base = { ...base, border: '1px solid #F97316', borderLeft: '5px solid #F97316', background: status === 'COMPLETADO' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(249, 115, 22, 0.05)' }; break;
     }
     
     if (status === 'COMPLETADO') {
@@ -85,53 +90,53 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
           <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", marginTop: '0.25rem' }}>Estadísticas y carga mensual especializada.</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-           <div className="stat-card" style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', minWidth: '110px' }}>
-              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Cargados Mes</p>
-              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{currentMonthAppts.length}</h4>
-           </div>
-           
-           <div className="stat-card" style={{ background: '#faf5ff', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e9d5ff', minWidth: '90px' }}>
-              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#A855F7', textTransform: 'uppercase' }}>SIBO</p>
-              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#A855F7' }}>{siboCount}</h4>
-           </div>
-           
-           <div className="stat-card" style={{ background: '#fdf2f8', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #fbcfe8', minWidth: '90px' }}>
-              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#EC4899', textTransform: 'uppercase' }}>Lactosa</p>
-              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#EC4899' }}>{lactosaCount}</h4>
-           </div>
-           
-           <div className="stat-card" style={{ background: '#fff7ed', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #ffedd5', minWidth: '90px' }}>
-              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#78350F', textTransform: 'uppercase' }}>Fructuosa</p>
-              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#9a3412' }}>{fructuosaCount}</h4>
-           </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>            
+            <div className="stat-card" style={{ background: 'var(--glass-bg)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', minWidth: '110px' }}>
+               <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cargados Mes</p>
+               <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{currentMonthAppts.length}</h4>
+            </div>
+            
+            <div className="stat-card" style={{ background: 'rgba(168, 85, 247, 0.1)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid rgba(168, 85, 247, 0.3)', minWidth: '90px' }}>
+               <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#A855F7', textTransform: 'uppercase' }}>SIBO</p>
+               <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#A855F7' }}>{siboCount}</h4>
+            </div>
+            
+            <div className="stat-card" style={{ background: 'rgba(236, 72, 153, 0.1)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.3)', minWidth: '90px' }}>
+               <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#EC4899', textTransform: 'uppercase' }}>Lactosa</p>
+               <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#EC4899' }}>{lactosaCount}</h4>
+            </div>
+            
+            <div className="stat-card" style={{ background: 'rgba(249, 115, 22, 0.1)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.3)', minWidth: '90px' }}>
+               <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#F97316', textTransform: 'uppercase' }}>Fructuosa</p>
+               <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#F97316' }}>{fructuosaCount}</h4>
+            </div>
 
-           <div className="stat-card" style={{ background: '#f0fdf4', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #bbf7d0', minWidth: '110px' }}>
-              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#15803d', textTransform: 'uppercase' }}>Completados</p>
-              <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#16a34a' }}>{completedThisMonth}</h4>
-           </div>
+            <div className="stat-card" style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)', minWidth: '110px' }}>
+               <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase' }}>Completados</p>
+               <h4 style={{ margin: '0.1rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#16a34a' }}>{completedThisMonth}</h4>
+            </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--glass-bg)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
         <div style={{ display: 'flex', gap: '1.5rem' }}>
-           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700 }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A855F7' }}></span> SIBO (Violeta)
-           </div>
-           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700 }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#EC4899' }}></span> LACTOSA (Rosa)
-           </div>
-           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700 }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#78350F' }}></span> FRUCTUOSA (Marrón)
-           </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#A855F7' }}>
+               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A855F7' }}></span> SIBO
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EC4899' }}>
+               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#EC4899' }}></span> LACTOSA
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#F97316' }}>
+               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#F97316' }}></span> FRUCTUOSA
+            </div>
         </div>
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} style={{ padding: '0.5rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}><ChevronLeft size={20} /></button>
-          <span style={{ fontWeight: 800, minWidth: '180px', textAlign: 'center', fontSize: '1.1rem', color: '#1e293b' }}>
+          <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} style={{ padding: '0.5rem', background: 'var(--glass-bg)', borderRadius: '8px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', cursor: 'pointer' }}><ChevronLeft size={20} /></button>
+          <span style={{ fontWeight: 800, minWidth: '180px', textAlign: 'center', fontSize: '1.1rem', color: 'var(--text-main)' }}>
             {format(monthStart, "MMMM yyyy", { locale: es }).toUpperCase()}
           </span>
-          <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} style={{ padding: '0.5rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}><ChevronRight size={20} /></button>
+          <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} style={{ padding: '0.5rem', background: 'var(--glass-bg)', borderRadius: '8px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', cursor: 'pointer' }}><ChevronRight size={20} /></button>
         </div>
       </div>
 
@@ -158,17 +163,15 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                  setIsModalOpen(true);
               }}
               onDragOver={(e) => {
-                if (!isFull) {
-                  e.preventDefault();
-                  e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)';
-                }
+                e.preventDefault();
+                e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)';
               }}
               onDragLeave={(e) => {
-                e.currentTarget.style.background = isCurrentMonth ? (isFull ? '#fff1f2' : '#FFFFFF') : 'rgba(0,0,0,0.02)';
+                e.currentTarget.style.background = isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)';
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                e.currentTarget.style.background = isCurrentMonth ? (isFull ? '#fff1f2' : '#FFFFFF') : 'rgba(0,0,0,0.02)';
+                e.currentTarget.style.background = isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)';
                 const apptId = e.dataTransfer.getData("appointmentId");
                 if (apptId) {
                   if (isFull) {

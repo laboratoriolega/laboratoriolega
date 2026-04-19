@@ -18,12 +18,12 @@
 [data-theme="dark"] {
   --primary: #38BDF8;
   --primary-hover: #7DD3FC;
-  --bg-gradient-start: #0F172A; /* Slate 900 */
-  --bg-gradient-end: #1E293B;   /* Slate 800 */
-  --glass-bg: rgba(30, 41, 59, 0.85); /* Slate 800 semi-transparent */
+  --bg-gradient-start: #000000; /* Pure Black */
+  --bg-gradient-end: #0a0a0a;   /* Very Dark Grey */
+  --glass-bg: rgba(18, 18, 18, 0.95); /* Deep Dark Grey */
   --glass-border: rgba(56, 189, 248, 0.2);
-  --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --text-main: #F8FAFC;
+  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+  --text-main: #FFFFFF;
   --text-muted: #94A3B8;
   --accent: #0EA5E9;
   --success: #10B981;
@@ -99,12 +99,17 @@ button {
 .input-field {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: #FFFFFF;
+  background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
-  color: #000;
+  color: var(--text-main);
   font-family: inherit;
   transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .input-field {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .input-field:focus {

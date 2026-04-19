@@ -44,21 +44,11 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Agenda del Mes</h3>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <button 
-            onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-            style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.05)', borderRadius: '8px' }}
-          >
-             <ChevronLeft size={20} />
-          </button>
-          <span style={{ fontWeight: 600, minWidth: '180px', textAlign: 'center', fontSize: '1.25rem' }}>
+          <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} style={{ padding: '0.5rem', background: 'var(--glass-bg)', borderRadius: '8px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', cursor: 'pointer' }}><ChevronLeft size={20} /></button>
+          <span style={{ fontWeight: 800, minWidth: '180px', textAlign: 'center', fontSize: '1.25rem', color: 'var(--text-main)' }}>
             {format(monthStart, "MMMM yyyy", { locale: es }).toUpperCase()}
           </span>
-          <button 
-            onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-            style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.05)', borderRadius: '8px' }}
-          >
-             <ChevronRight size={20} />
-          </button>
+          <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} style={{ padding: '0.5rem', background: 'var(--glass-bg)', borderRadius: '8px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', cursor: 'pointer' }}><ChevronRight size={20} /></button>
         </div>
       </div>
 
@@ -86,11 +76,11 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                 e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)';
               }}
               onDragLeave={(e) => {
-                e.currentTarget.style.background = isCurrentMonth ? '#FFFFFF' : 'rgba(0,0,0,0.02)';
+                e.currentTarget.style.background = isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)';
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                e.currentTarget.style.background = isCurrentMonth ? '#FFFFFF' : 'rgba(0,0,0,0.02)';
+                e.currentTarget.style.background = isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)';
                 const apptId = e.dataTransfer.getData("appointmentId");
                 if (apptId) {
                   setMovingAppt({ id: apptId, targetDate: day.toISOString() });
@@ -98,13 +88,13 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                 }
               }}
               style={{ 
-              background: isCurrentMonth ? '#FFFFFF' : 'rgba(0,0,0,0.02)',
+              background: isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)',
               border: isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)', 
               borderRadius: '8px', 
               cursor: 'pointer',
               padding: '0.5rem',
               display: 'flex', flexDirection: 'column', gap: '0.25rem',
-              minHeight: '120px', opacity: isCurrentMonth ? 1 : 0.6
+              minHeight: '120px', opacity: isCurrentMonth ? 1 : 0.4
             }}
             onMouseEnter={(e) => e.currentTarget.style.border = '2px solid var(--primary)'}
             onMouseLeave={(e) => e.currentTarget.style.border = isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)'}
