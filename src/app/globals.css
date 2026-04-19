@@ -143,5 +143,5 @@ button {
 }
 
 [data-theme="dark"] .logo-dark {
-  display: block;
+  display: inline-block;
 }
