@@ -100,8 +100,6 @@ export default function MobileNav({ session }: { session: any }) {
         </div>
       </div>
       
-      {/* Spacer for the fixed top bar */}
-      <div className="show-mobile" style={{ height: '50px' }} />
     </>
   );
 }
