@@ -25,9 +25,10 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
     WHERE patient_id = $1 
     ORDER BY appointment_date DESC
   `, [id]);
-  const appointments = apptsRes.rows.map(row => ({
+  const appointments = (apptsRes.rows || []).filter(row => row && row.id).map(row => ({
     ...row,
-    appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null
+    appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null,
+    status: row.status || 'AGENDADO'
   }));
 
   return (

@@ -66,7 +66,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Confirmados</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a && a.status === 'COMPLETADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'COMPLETADO')?.length ?? 0}</h3>
           </div>
         </Link>
 
@@ -76,7 +76,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Pendientes</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a && a.status === 'AGENDADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'AGENDADO')?.length ?? 0}</h3>
           </div>
         </Link>
 
@@ -86,7 +86,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Cancelados</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a && a.status === 'CANCELADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'CANCELADO')?.length ?? 0}</h3>
           </div>
         </Link>
       </div>
@@ -180,7 +180,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
                       }}>
                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'currentColor' }}></span>
-                        {apt.status}
+                        {apt?.status || 'AGENDADO'}
                       </span>
                     </td>
                     <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

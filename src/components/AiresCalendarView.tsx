@@ -36,12 +36,12 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   const airesAppts = (appointments || []).filter(a => a && a.analysis_type === 'Test de aire');
   
   // Stats for the current month view
-  const currentMonthAppts = airesAppts.filter(a => isSameMonth(new Date(a.appointment_date), monthStart));
-  const completedThisMonth = currentMonthAppts.filter(a => a.status === 'COMPLETADO').length;
+  const currentMonthAppts = airesAppts.filter(a => a && a.appointment_date && isSameMonth(new Date(a.appointment_date), monthStart));
+  const completedThisMonth = currentMonthAppts.filter(a => a?.status === 'COMPLETADO').length;
   
-  const siboCount = currentMonthAppts.filter(a => a.aire_test_type === 'SIBO').length;
-  const lactosaCount = currentMonthAppts.filter(a => a.aire_test_type === 'Lactosa').length;
-  const fructuosaCount = currentMonthAppts.filter(a => a.aire_test_type === 'Fructuosa').length;
+  const siboCount = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO').length;
+  const lactosaCount = currentMonthAppts.filter(a => a?.aire_test_type === 'Lactosa').length;
+  const fructuosaCount = currentMonthAppts.filter(a => a?.aire_test_type === 'Fructuosa').length;
 
   const getTypeStyle = (type?: string, status?: string) => {
     let base = { border: '1px solid #e2e8f0', borderLeft: '5px solid #e2e8f0', background: 'white', opacity: 1 };
@@ -141,7 +141,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
         ))}
         
         {daysGrid.map(day => {
-          const dayAppts = airesAppts.filter(a => isSameDay(new Date(a.appointment_date), day));
+          const dayAppts = (airesAppts || []).filter(a => a && a.appointment_date && isSameDay(new Date(a.appointment_date), day));
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isToday = isSameDay(day, new Date());
           const isFull = dayAppts.length >= 4;
@@ -231,7 +231,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                     }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: getBadgeColor(apt.aire_test_type), fontWeight: 800, fontSize: '0.65rem', marginBottom: '0.2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: getBadgeColor(apt.analysis_type), fontWeight: 800, fontSize: '0.65rem', marginBottom: '0.2rem' }}>
                           <Clock size={10} />
                           {format(new Date(apt.appointment_date), "HH:mm")}
                           {apt.status === 'COMPLETADO' && <CheckCircle size={10} color="var(--success)" />}

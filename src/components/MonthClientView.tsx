@@ -70,7 +70,7 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
         
         {/* Grid de días */}
         {daysGrid.map(day => {
-          const dayAppts = filteredAppointments.filter(a => isSameDay(new Date(a.appointment_date), day));
+          const dayAppts = (filteredAppointments || []).filter(a => a && a.appointment_date && isSameDay(new Date(a.appointment_date), day));
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isToday = isSameDay(day, new Date());
 
@@ -121,12 +121,12 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                         border: '1px solid var(--glass-border)', 
                         padding: '0.5rem', 
                         borderRadius: '4px',
-                        borderLeft: `3px solid ${apt.status === 'AGENDADO' ? 'var(--primary)' : (apt.status === 'CANCELADO' ? '#94a3b8' : 'var(--success)')}`,
+                        borderLeft: `3px solid ${apt?.status === 'AGENDADO' ? 'var(--primary)' : (apt?.status === 'CANCELADO' ? '#94a3b8' : 'var(--success)')}`,
                         cursor: 'grab'
                       }}
                       draggable
                       onDragStart={(e) => {
-                        e.dataTransfer.setData("appointmentId", apt.id);
+                        e.dataTransfer.setData("appointmentId", apt?.id || "");
                         e.currentTarget.style.opacity = '0.5';
                       }}
                       onDragEnd={(e) => {
@@ -154,8 +154,8 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                           <Edit2 size={12} />
                         </button>
                       </div>
-                      <p style={{ fontWeight: 600, fontSize: '0.75rem', lineHeight: 1.1, marginBottom: '0.1rem' }}>{apt.name}</p>
-                      <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{apt.analysis_type}</p>
+                      <p style={{ fontWeight: 600, fontSize: '0.75rem', lineHeight: 1.1, marginBottom: '0.1rem' }}>{apt?.name}</p>
+                      <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{apt?.analysis_type}</p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
                         <p style={{ fontSize: '0.65rem', fontWeight: 500 }}>{apt.health_insurance}</p>
                         {apt.observations && (

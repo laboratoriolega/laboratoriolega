@@ -19,9 +19,10 @@ export async function getAppointments() {
       ORDER BY a.appointment_date ASC
     `);
     return { 
-      data: res.rows.filter(row => row !== null).map(row => ({
+      data: res.rows.filter(row => row && row.id).map(row => ({
         ...row,
-        appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null
+        appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null,
+        status: row.status || 'AGENDADO'
       })), 
       error: null 
     };
