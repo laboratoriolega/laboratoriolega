@@ -43,7 +43,8 @@ export default async function RootLayout({
     return (
       <html lang="es">
         <head>
-          <script dangerouslySetInnerHTML={{ __html: `
+          <script dangerouslySetInnerHTML={{
+            __html: `
             (function() {
               try {
                 const theme = localStorage.getItem('theme') || 'light';
@@ -64,7 +65,8 @@ export default async function RootLayout({
   return (
     <html lang="es">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script dangerouslySetInnerHTML={{
+          __html: `
           (function() {
             try {
               const theme = localStorage.getItem('theme') || 'light';
@@ -77,8 +79,8 @@ export default async function RootLayout({
         <MobileNav session={session} />
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
           {/* Sidebar */}
-          <aside className="glass-panel" style={{ 
-            width: '22rem', 
+          <aside className="glass-panel" style={{
+            width: '22rem',
             padding: '2.5rem 1.5rem',
             margin: '1rem',
             display: 'flex',
@@ -87,17 +89,17 @@ export default async function RootLayout({
             overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '2rem' }}>
-              <img 
-                src="/logo.png" 
-                alt="LEGA Laboratorio Logo" 
+              <img
+                src="/logo.png"
+                alt="LEGA Laboratorio Logo"
                 className="logo-light"
-                style={{ width: '15rem', height: 'auto', objectFit: 'contain' }} 
+                style={{ width: '15rem', height: 'auto', objectFit: 'contain' }}
               />
-              <img 
-                src="/logoB.png" 
-                alt="LEGA Laboratorio Logo" 
+              <img
+                src="/logoB.png"
+                alt="LEGA Laboratorio Logo"
                 className="logo-dark"
-                style={{ width: '15rem', height: 'auto', objectFit: 'contain' }} 
+                style={{ width: '15rem', height: 'auto', objectFit: 'contain' }}
               />
             </div>
 
@@ -115,11 +117,11 @@ export default async function RootLayout({
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, textTransform: 'capitalize' }}>Rol: {session?.role || 'staff'}</p>
                 </div>
               </div>
-              
+
               <form action={logoutAction}>
-                <button type="submit" style={{ 
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', 
-                  padding: '0.75rem', background: 'rgba(0,0,0,0.05)', color: 'var(--danger)', 
+                <button type="submit" style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  padding: '0.75rem', background: 'rgba(0,0,0,0.05)', color: 'var(--danger)',
                   borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', border: 'none', cursor: 'pointer', transition: 'background 0.2s'
                 }}>
                   <LogOut size={16} /> Cerrar Sesión
@@ -129,9 +131,9 @@ export default async function RootLayout({
           </aside>
 
           {/* Main Content */}
-          <main style={{ 
-            flex: 1, 
-            padding: '1rem', 
+          <main style={{
+            flex: 1,
+            padding: '1rem',
             overflowY: 'auto',
             height: '100vh'
           }}>
