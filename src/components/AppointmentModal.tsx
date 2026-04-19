@@ -102,6 +102,11 @@ export default function AppointmentModal({
           background-color: #cbd5e1;
           border-radius: 10px;
         }
+        @media (max-width: 640px) {
+          .modal-grid-2 {
+            grid-template-columns: 1fr !important;
+          }
+        }
       `}</style>
       
       <div style={{ 
@@ -154,7 +159,7 @@ export default function AppointmentModal({
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>DNI</label>
               <input required name="dni" type="text" className="modern-input" style={inputStyle} placeholder="12345678" />
@@ -165,7 +170,7 @@ export default function AppointmentModal({
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Obra Social</label>
               <input required name="health_insurance" type="text" list="insurance-list" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, PAMI, etc." />
@@ -261,7 +266,7 @@ export default function AppointmentModal({
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div style={{ gridColumn: "span 2" }}>
               <label style={labelStyle}>Fecha y Hora</label>
               <input 

@@ -20,7 +20,7 @@ export default function DashboardFilters({ currentMonth }: { currentMonth?: stri
   }
 
   return (
-    <div style={{ display: 'flex', gap: '1rem' }}>
+    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
       <select 
         className="input-field"
         style={{ padding: '0.4rem' }}
@@ -38,7 +38,7 @@ export default function DashboardFilters({ currentMonth }: { currentMonth?: stri
         type="text" 
         placeholder="Buscar por paciente o DNI..." 
         className="input-field"
-        style={{ width: '250px' }}
+        style={{ width: '100%', maxWidth: '300px' }}
         onChange={(e) => {
            // Search logic could also be added here via query params
         }}

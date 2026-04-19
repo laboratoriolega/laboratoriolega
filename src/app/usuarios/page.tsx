@@ -15,7 +15,7 @@ export default async function UsuariosPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <header className="glass-panel" style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className="glass-panel" style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>Administración de Usuarios</h2>
           <p style={{ color: 'var(--text-muted)' }}>Gestioná el personal y visualizá los registros de actividad.</p>
@@ -23,7 +23,7 @@ export default async function UsuariosPage() {
         <CreateUserModal />
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
         
         {/* User Management List */}
         <section className="glass-panel" style={{ padding: '2rem' }}>

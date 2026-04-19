@@ -3,6 +3,7 @@ import "./globals.css";
 import { LogOut } from "lucide-react";
 import SidebarNav from "@/components/SidebarNav";
 import ThemeToggle from "@/components/ThemeToggle";
+import MobileNav from "@/components/MobileNav";
 import { getSession } from "@/lib/auth";
 import { logoutAction } from "@/actions/auth";
 
@@ -56,6 +57,7 @@ export default async function RootLayout({
         `}} />
       </head>
       <body style={{ margin: 0, padding: 0 }}>
+        <MobileNav session={session} />
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
           {/* Sidebar */}
           <aside className="glass-panel" style={{ 
@@ -113,7 +115,6 @@ export default async function RootLayout({
           <main style={{ 
             flex: 1, 
             padding: '1rem', 
-            paddingLeft: 0, 
             overflowY: 'auto',
             height: '100vh'
           }}>

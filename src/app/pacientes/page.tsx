@@ -10,21 +10,21 @@ export default async function PacientesPage() {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <header className="glass-panel" style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
+      <header className="glass-panel" style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
+        <div style={{ minWidth: '200px' }}>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>Directorio de Pacientes</h2>
           <p style={{ color: 'var(--text-muted)' }}>Lista única de todos los pacientes en tu sistema.</p>
         </div>
       </header>
 
       <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Todos los Pacientes</h3>
           <input 
             type="text" 
             placeholder="Buscar por DNI o Nombre..." 
             className="input-field"
-            style={{ width: '300px' }}
+            style={{ width: '100%', maxWidth: '300px' }}
           />
         </div>
 

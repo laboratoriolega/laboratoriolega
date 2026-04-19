@@ -66,6 +66,13 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100,
       padding: "1rem"
     }}>
+      <style>{`
+        @media (max-width: 640px) {
+          .modal-grid-2 {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
       <div className="glass-panel" style={{
         background: "var(--glass-bg)", width: "100%", maxWidth: "500px",
         borderRadius: "16px", boxShadow: "var(--glass-shadow)",
@@ -143,7 +150,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
               </datalist>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Fecha y Hora</label>
               <input 

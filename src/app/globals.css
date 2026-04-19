@@ -145,3 +145,41 @@ button {
 [data-theme="dark"] .logo-dark {
   display: inline-block;
 }
+
+/* Responsive Utilities */
+.hide-mobile {
+  display: flex !important;
+}
+
+.show-mobile {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  .show-mobile {
+    display: flex !important;
+  }
+  
+  aside.glass-panel {
+    display: none !important;
+  }
+
+  main {
+    padding-left: 1rem !important;
+  }
+
+  /* Compact grid for mobile */
+  .grid-mobile-1 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Table scroll wrapper */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
