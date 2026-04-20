@@ -51,7 +51,16 @@ export default function HistoryItem({ apt }: { apt: any }) {
           </div>
           <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <Calendar size={14} />
-            {apt.appointment_date ? format(new Date(apt.appointment_date), "PPP p", { locale: es }) : "Sin fecha"}
+            {(() => {
+              try {
+                if (!apt.appointment_date) return "Sin fecha";
+                const d = new Date(apt.appointment_date);
+                if (isNaN(d.getTime())) return "Fecha inválida";
+                return format(d, "PPP p", { locale: es });
+              } catch (e) {
+                return "Error en fecha";
+              }
+            })()}
           </p>
         </div>
 
@@ -140,14 +149,26 @@ export default function HistoryItem({ apt }: { apt: any }) {
                       details = {};
                     }
                     const statusText = details?.new_status ? ` → ${details.new_status}` : '';
+                    
+                    const safeFormatAudit = (dateStr: string) => {
+                      try {
+                        if (!dateStr) return "---";
+                        const d = new Date(dateStr);
+                        if (isNaN(d.getTime())) return "---";
+                        return format(d, "dd/MM HH:mm");
+                      } catch (e) {
+                        return "---";
+                      }
+                    };
+
                     return (
                       <div key={log.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(0,0,0,0.02)', padding: '0.5rem', borderRadius: '6px' }}>
                         <div>
-                          <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{log.username}</span> {log.action?.replace(/_/g, ' ')}
+                          <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{(log.username || "Sistema")}</span> {log.action?.replace(/_/g, ' ') || "Acción"}
                           {statusText && <span style={{ marginLeft: '5px', color: 'var(--primary)', fontWeight: 600 }}>{statusText}</span>}
                         </div>
                         <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>
-                          {log.created_at ? format(new Date(log.created_at), "dd/MM HH:mm") : "---"}
+                          {safeFormatAudit(log.created_at)}
                         </div>
                       </div>
                     );

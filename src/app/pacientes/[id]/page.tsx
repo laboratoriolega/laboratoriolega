@@ -10,11 +10,16 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
   const { id } = await params;
   
   // Obtener data del paciente
-  const patientRes = await pool.query('SELECT * FROM patients WHERE id = $1', [id]);
+  const patientRes = await pool.query("SELECT * FROM patients WHERE id = $1", [id]);
   const patient = patientRes.rows[0];
 
   if (!patient) {
-    return <div style={{ padding: '2rem' }}>Paciente no encontrado.</div>;
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--danger)' }}>Paciente no encontrado</h2>
+        <p>No se pudo encontrar un paciente con el ID: {id}</p>
+      </div>
+    );
   }
 
   // Obtener historial clinico (Turnos pasados y futuros) con su rastro de auditoría
