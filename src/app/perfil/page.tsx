@@ -292,7 +292,7 @@ export default function PerfilPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><ZoomIn size={14} /> Zoom</span>
-                  <span>{Math.round(zoom * 100)}%</span>
+                  <span>{Math.round((zoom - 0.5) / 2.5 * 100)}%</span>
                 </div>
                 <input 
                   type="range" 
