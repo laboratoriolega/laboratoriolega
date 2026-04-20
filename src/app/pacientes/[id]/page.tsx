@@ -40,14 +40,27 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
   `, [id]);
   
   // Sanitize for Client Component (Serialize Dates and ensure plain objects)
-  const appointmentsData = (apptsRes.rows || []).filter(row => row && row.id).map(apt => ({
-    ...apt,
-    appointment_date: apt.appointment_date ? new Date(apt.appointment_date).toISOString() : null,
-    audit_trail: (apt.audit_trail || []).map((log: any) => ({
-      ...log,
-      created_at: log.created_at ? new Date(log.created_at).toISOString() : null
-    }))
-  }));
+  const appointmentsData = (apptsRes.rows || []).filter(row => row && row.id).map(apt => {
+    try {
+      const safeISO = (d: any) => {
+        if (!d) return null;
+        const date = new Date(d);
+        return isNaN(date.getTime()) ? null : date.toISOString();
+      };
+
+      return {
+        ...apt,
+        appointment_date: safeISO(apt.appointment_date),
+        audit_trail: (apt.audit_trail || []).map((log: any) => ({
+          ...log,
+          created_at: safeISO(log.created_at)
+        }))
+      };
+    } catch (e) {
+      console.error("Error serializing appointment:", apt?.id, e);
+      return null;
+    }
+  }).filter((a): a is any => a !== null);
 
   const appointments = JSON.parse(JSON.stringify(appointmentsData));
 
