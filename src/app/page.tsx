@@ -30,10 +30,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   }
 
   if (filters.q) {
-    const query = filters.q.toLowerCase();
+    const normalize = (s: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+    const query = normalize(filters.q);
     appointments = appointments.filter((a: any) => 
-      a.name?.toLowerCase().includes(query) || 
-      a.dni?.toLowerCase().includes(query)
+      normalize(a.name).includes(query) || 
+      normalize(a.dni).includes(query) ||
+      normalize(a.health_insurance).includes(query)
     );
   }
 

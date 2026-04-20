@@ -8,10 +8,13 @@ import { updateAppointmentStatus } from "@/actions/appointments";
 import AppointmentModal from "./AppointmentModal";
 import MoveReasonModal from "./MoveReasonModal";
 
+import Portal from "./Portal";
+
 export default function DashboardTable({ appointments }: { appointments: any[] }) {
   const router = useRouter();
   const [openDocsId, setOpenDocsId] = useState<string | null>(null);
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const [statusMenuPos, setStatusMenuPos] = useState({ top: 0, left: 0 });
   const [loadingId, setLoadingId] = useState<string | null>(null);
   
   // Rescheduling state
@@ -29,6 +32,19 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
         </div>
       </div>
     );
+  }
+
+  function handleOpenStatus(id: string, e: React.MouseEvent) {
+    if (openStatusId === id) {
+      setOpenStatusId(null);
+    } else {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setStatusMenuPos({ 
+        top: rect.bottom + window.scrollY, 
+        left: rect.left + window.scrollX 
+      });
+      setOpenStatusId(id);
+    }
   }
 
   async function handleStatusChange(id: string, status: string) {
@@ -127,7 +143,7 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
               </td>
               <td style={{ padding: '1rem', position: 'relative' }}>
                 <button 
-                  onClick={() => setOpenStatusId(openStatusId === apt.id ? null : apt.id)}
+                  onClick={(e) => handleOpenStatus(apt.id, e)}
                   disabled={loadingId === apt.id}
                   style={{ 
                     background: apt?.status === 'AGENDADO' ? 'rgba(14, 165, 233, 0.2)' : (apt?.status === 'CANCELADO' ? 'rgba(100, 116, 139, 0.1)' : 'rgba(16, 185, 129, 0.2)'), 
@@ -142,23 +158,33 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
                 </button>
 
                 {openStatusId === apt.id && (
-                  <div style={{ 
-                    position: 'absolute', top: '100%', left: '1rem', marginTop: '0.5rem',
-                    background: 'white', border: '1px solid var(--glass-border)', borderRadius: '12px',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', zIndex: 100, minWidth: '180px', padding: '0.5rem',
-                    display: 'flex', flexDirection: 'column', gap: '0.25rem', animation: 'fadeIn 0.15s ease'
-                  }}>
-                    <button onClick={() => handleStatusChange(apt.id, 'COMPLETADO')} className="status-option" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem', borderRadius: '8px', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}>
-                      <Check size={16} color="var(--success)" /> Confirmar Asistencia
-                    </button>
-                    <button onClick={() => setCancelData({ id: apt.id, name: apt.name })} className="status-option" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem', borderRadius: '8px', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--danger)' }}>
-                      <Trash2 size={16} /> Cancelar Turno
-                    </button>
-                    <button onClick={() => { setRescheduleData(apt); setOpenStatusId(null); }} className="status-option" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem', borderRadius: '8px', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--primary)' }}>
-                      <CalendarPlus size={16} /> Reagendar
-                    </button>
-                    <style>{`.status-option:hover { background: rgba(0,0,0,0.05); }`}</style>
-                  </div>
+                  <Portal>
+                    {/* Overlay to catch clicks outside */}
+                    <div 
+                      onClick={() => setOpenStatusId(null)}
+                      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} 
+                    />
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: statusMenuPos.top, 
+                      left: statusMenuPos.left,
+                      marginTop: '0.5rem',
+                      background: 'white', border: '1px solid var(--glass-border)', borderRadius: '12px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', zIndex: 1000, minWidth: '180px', padding: '0.5rem',
+                      display: 'flex', flexDirection: 'column', gap: '0.25rem', animation: 'fadeIn 0.15s ease'
+                    }}>
+                      <button onClick={() => handleStatusChange(apt.id, 'COMPLETADO')} className="status-option" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem', borderRadius: '8px', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}>
+                        <Check size={16} color="var(--success)" /> Confirmar Asistencia
+                      </button>
+                      <button onClick={() => setCancelData({ id: apt.id, name: apt.name })} className="status-option" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem', borderRadius: '8px', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--danger)' }}>
+                        <Trash2 size={16} /> Cancelar Turno
+                      </button>
+                      <button onClick={() => { setRescheduleData(apt); setOpenStatusId(null); }} className="status-option" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem', borderRadius: '8px', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--primary)' }}>
+                        <CalendarPlus size={16} /> Reagendar
+                      </button>
+                      <style>{`.status-option:hover { background: rgba(0,0,0,0.05); } @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+                    </div>
+                  </Portal>
                 )}
               </td>
               <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', position: 'relative' }}>
