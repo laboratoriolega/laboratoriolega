@@ -14,7 +14,8 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
   const filteredItems = items.filter(item => 
     item.analisis.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.codigo_sistema && item.codigo_sistema.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (item.codigo_nbu && item.codigo_nbu.toLowerCase().includes(searchTerm.toLowerCase()))
+    (item.codigo_nbu && item.codigo_nbu.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (item.ub && item.ub.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   async function handleSave(id: number) {
@@ -72,6 +73,10 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
              <label style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Código NBU / Obs</label>
              <input name="codigo_nbu" className="input-field" placeholder="..." />
            </div>
+           <div>
+             <label style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Unidad Bioq. (UB)</label>
+             <input name="ub" className="input-field" placeholder="-" defaultValue="-" />
+           </div>
            <div style={{ display: "flex", gap: "0.5rem" }}>
              <button type="submit" className="btn-primary">Guardar</button>
              <button type="button" onClick={() => setShowNewRow(false)} style={{ color: "var(--danger)" }}><X /></button>
@@ -87,6 +92,7 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
                 <th style={{ padding: "1rem" }}>Análisis</th>
                 <th style={{ padding: "1rem" }}>Código de Sistema</th>
                 <th style={{ padding: "1rem" }}>Código NBU / Observación</th>
+                <th style={{ padding: "1rem" }}>UB</th>
                 <th style={{ padding: "1rem", width: "120px" }}></th>
               </tr>
             </thead>
@@ -120,6 +126,19 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
                       </span>
                     )}
                   </td>
+                  <td style={{ padding: "1rem" }}>
+                    {editingId === item.id ? (
+                      <input 
+                        className="input-field" 
+                        defaultValue={item.ub} 
+                        onChange={(e) => setEditValues({ ...editValues, ub: e.target.value })}
+                      />
+                    ) : (
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--primary)" }}>
+                         {item.ub || "-"}
+                      </span>
+                    )}
+                  </td>
                   <td style={{ padding: "1rem", textAlign: "right" }}>
                     <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
                       {editingId === item.id ? (
@@ -141,7 +160,7 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
               ))}
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
+                  <td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
                     No se encontraron resultados
                   </td>
                 </tr>

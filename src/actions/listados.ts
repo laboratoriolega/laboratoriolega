@@ -116,9 +116,11 @@ export async function createSystemCode(formData: FormData) {
     const codigo_sistema = formData.get("codigo_sistema") as string;
     const codigo_nbu = formData.get("codigo_nbu") as string;
 
+    const ub = formData.get("ub") as string || "-";
+
     await pool.query(
-      "INSERT INTO system_codes (analisis, codigo_sistema, codigo_nbu) VALUES ($1, $2, $3)",
-      [analisis, codigo_sistema, codigo_nbu]
+      "INSERT INTO system_codes (analisis, codigo_sistema, codigo_nbu, ub) VALUES ($1, $2, $3, $4)",
+      [analisis, codigo_sistema, codigo_nbu, ub]
     );
 
     revalidatePath("/listados/codigos");
