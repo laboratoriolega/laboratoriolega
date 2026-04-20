@@ -19,6 +19,44 @@ export async function getProfileData() {
   }
 }
 
+export async function getUsers() {
+  try {
+    const session = await getSession() as any;
+    if (!session || session.role !== 'admin') throw new Error("Unauthorized");
+
+    const res = await pool.query("SELECT id, username, role, full_name FROM users ORDER BY username ASC");
+    return { data: res.rows, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
+}
+
+export async function createUser(formData: FormData) {
+  try {
+    const session = await getSession() as any;
+    if (!session || session.role !== 'admin') throw new Error("Unauthorized");
+
+    const username = formData.get("username") as string;
+    const password = formData.get("password") as string;
+    const role = formData.get("role") as string;
+    const full_name = formData.get("full_name") as string;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const res = await pool.query(
+      "INSERT INTO users (username, password_hash, role, full_name) VALUES ($1, $2, $3, $4) RETURNING id",
+      [username, hashedPassword, role, full_name]
+    );
+
+    await logAction("CREATE_USER", { username, role, full_name, created_by: session.username });
+    revalidatePath("/usuarios");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Create user error:", error);
+    return { error: error.message };
+  }
+}
+
 export async function updateProfile(formData: FormData) {
   try {
     const session = await getSession() as any;
