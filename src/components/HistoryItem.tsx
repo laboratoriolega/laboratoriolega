@@ -124,6 +124,32 @@ export default function HistoryItem({ apt }: { apt: any }) {
                 </div>
               </div>
             )}
+
+            {/* Historial de Cambios (Audit Trail) */}
+            {apt.audit_trail && apt.audit_trail.length > 0 && (
+              <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
+                <h5 style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Info size={14} color="var(--primary)" /> Historial de Gestiones:
+                </h5>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {apt.audit_trail.map((log: any) => {
+                    const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+                    const statusText = details.new_status ? ` → ${details.new_status}` : '';
+                    return (
+                      <div key={log.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(0,0,0,0.02)', padding: '0.5rem', borderRadius: '6px' }}>
+                        <div>
+                          <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{log.username}</span> {log.action.replace('_', ' ')}
+                          {statusText && <span style={{ marginLeft: '5px', color: 'var(--primary)', fontWeight: 600 }}>{statusText}</span>}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+                          {format(new Date(log.created_at), "dd/MM HH:mm")}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
