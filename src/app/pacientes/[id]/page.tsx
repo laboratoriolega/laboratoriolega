@@ -19,10 +19,10 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
 
   // Obtener historial clinico (Turnos pasados y futuros) con su rastro de auditoría
   const apptsRes = await pool.query(`
-    SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
-           (SELECT json_agg(json_build_object('id', ad.id, 'url', ad.document_url, 'filename', ad.filename)) 
+    SELECT a.id::text, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
+           (SELECT json_agg(json_build_object('id', ad.id::text, 'url', ad.document_url, 'filename', ad.filename)) 
             FROM appointment_documents ad WHERE ad.appointment_id = a.id) as documents,
-           (SELECT json_agg(json_build_object('id', al.id, 'action', al.action, 'details', al.details, 'created_at', al.created_at, 'username', u.username))
+           (SELECT json_agg(json_build_object('id', al.id::text, 'action', al.action, 'details', al.details, 'created_at', al.created_at, 'username', u.username))
             FROM audit_logs al
             JOIN users u ON al.user_id = u.id
             WHERE al.action IN ('CREATE_APPOINTMENT', 'UPDATE_APPOINTMENT', 'UPDATE_EVOLUTION', 'MOVE_APPOINTMENT', 'DELETE_DOCUMENT')
@@ -33,15 +33,17 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
     ORDER BY a.appointment_date DESC
   `, [id]);
   
-  // Sanitize for Client Component (Serialize Dates)
-  const appointments = (apptsRes.rows || []).filter(row => row && row.id).map(apt => ({
+  // Sanitize for Client Component (Serialize Dates and ensure plain objects)
+  const appointmentsData = (apptsRes.rows || []).filter(row => row && row.id).map(apt => ({
     ...apt,
     appointment_date: apt.appointment_date ? new Date(apt.appointment_date).toISOString() : null,
-    audit_trail: apt.audit_trail ? apt.audit_trail.map((log: any) => ({
+    audit_trail: (apt.audit_trail || []).map((log: any) => ({
       ...log,
       created_at: log.created_at ? new Date(log.created_at).toISOString() : null
-    })) : []
+    }))
   }));
+
+  const appointments = JSON.parse(JSON.stringify(appointmentsData));
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
