@@ -5,42 +5,17 @@ import { getSession } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { logAction } from "./audit";
 import { revalidatePath } from "next/cache";
+import { put } from "@vercel/blob";
 
-export async function getUsers() {
+export async function getProfileData() {
   try {
     const session = await getSession() as any;
-    if (!session || session.role !== 'admin') throw new Error("Unauthorized");
+    if (!session) return { data: null, error: "Not authenticated" };
 
-    const res = await pool.query("SELECT id, username, role, full_name FROM users ORDER BY username ASC");
-    return { data: res.rows, error: null };
+    const res = await pool.query("SELECT id, username, full_name, role, avatar_url FROM users WHERE id = $1", [session.id]);
+    return { data: res.rows[0], error: null };
   } catch (error: any) {
     return { data: null, error: error.message };
-  }
-}
-
-export async function createUser(formData: FormData) {
-  try {
-    const session = await getSession() as any;
-    if (!session || session.role !== 'admin') throw new Error("Unauthorized");
-
-    const username = formData.get("username") as string;
-    const password = formData.get("password") as string;
-    const role = formData.get("role") as string;
-    const full_name = formData.get("full_name") as string;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const res = await pool.query(
-      "INSERT INTO users (username, password_hash, role, full_name) VALUES ($1, $2, $3, $4) RETURNING id",
-      [username, hashedPassword, role, full_name]
-    );
-
-    await logAction("CREATE_USER", { username, role, full_name, created_by: session.username });
-    revalidatePath("/usuarios");
-    return { success: true };
-  } catch (error: any) {
-    console.error("Create user error:", error);
-    return { error: error.message };
   }
 }
 
@@ -51,25 +26,55 @@ export async function updateProfile(formData: FormData) {
 
     const full_name = formData.get("full_name") as string;
     const newPassword = formData.get("password") as string;
+    const avatarFile = formData.get("avatar") as File;
+
+    // Ensure avatar_url column exists
+    try {
+      await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT");
+    } catch (e) { /* ignore pg errors related to migration */ }
+
+    let avatarUrl = null;
+    if (avatarFile && avatarFile.size > 0) {
+      const ext = avatarFile.name.split('.').pop() || 'jpg';
+      const filename = `avatars/${session.id}-${Date.now()}.${ext}`;
+      const blob = await put(filename, avatarFile, { access: 'public' });
+      avatarUrl = blob.url;
+    }
 
     if (newPassword && newPassword.trim().length > 0) {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await pool.query(
-        "UPDATE users SET full_name = $1, password_hash = $2 WHERE id = $3",
-        [full_name, hashedPassword, session.id]
-      );
+      if (avatarUrl) {
+        await pool.query(
+          "UPDATE users SET full_name = $1, password_hash = $2, avatar_url = $3 WHERE id = $4",
+          [full_name, hashedPassword, avatarUrl, session.id]
+        );
+      } else {
+        await pool.query(
+          "UPDATE users SET full_name = $1, password_hash = $2 WHERE id = $3",
+          [full_name, hashedPassword, session.id]
+        );
+      }
       await logAction("UPDATE_PROFILE_WITH_PASSWORD", { full_name });
     } else {
-      await pool.query(
-        "UPDATE users SET full_name = $1 WHERE id = $2",
-        [full_name, session.id]
-      );
+      if (avatarUrl) {
+        await pool.query(
+          "UPDATE users SET full_name = $1, avatar_url = $2 WHERE id = $3",
+          [full_name, avatarUrl, session.id]
+        );
+      } else {
+        await pool.query(
+          "UPDATE users SET full_name = $1 WHERE id = $2",
+          [full_name, session.id]
+        );
+      }
       await logAction("UPDATE_PROFILE_NAME", { full_name });
     }
 
     revalidatePath("/perfil");
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (error: any) {
+    console.error("Update profile error:", error);
     return { error: error.message };
   }
 }

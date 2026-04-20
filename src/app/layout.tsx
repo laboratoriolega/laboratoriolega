@@ -6,6 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
 import { getSession } from "@/lib/auth";
 import { logoutAction } from "@/actions/auth";
+import { getProfileData } from "@/actions/users";
 
 export const metadata: Metadata = {
   title: "LEGA Laboratorio | Sistema de Gestión",
@@ -38,6 +39,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getSession() as any;
+  let userData = null;
+  if (session) {
+    const res = await getProfileData();
+    userData = res.data;
+  }
+
+  // Pre-calculate user display info
+  const userDisplayName = userData?.full_name || session?.username || 'Usuario';
+  const userRole = userData?.role || session?.role || 'staff';
+  const avatarUrl = userData?.avatar_url;
 
   if (!session) {
     return (
@@ -76,7 +87,7 @@ export default async function RootLayout({
         `}} />
       </head>
       <body style={{ margin: 0, padding: 0 }}>
-        <MobileNav session={session} />
+        <MobileNav session={session} userData={userData} />
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
           {/* Sidebar */}
           <aside className="glass-panel" style={{
@@ -104,17 +115,26 @@ export default async function RootLayout({
             </div>
 
             <ThemeToggle />
-            <SidebarNav userRole={session.role} />
+            <SidebarNav userRole={userRole} />
 
-            {/* Profile & Logout */}
             <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                  {(session?.username || '?').charAt(0).toUpperCase()}
+                <div style={{ 
+                  width: '45px', height: '45px', background: 'var(--primary)', borderRadius: '50%', 
+                  color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  fontWeight: 'bold', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--glass-border)'
+                }}>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    userDisplayName.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div style={{ overflow: 'hidden' }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden' }}>{session?.username || 'Usuario'}</p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, textTransform: 'capitalize' }}>Rol: {session?.role || 'staff'}</p>
+                  <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    {userDisplayName}
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, textTransform: 'capitalize' }}>Rol: {userRole}</p>
                 </div>
               </div>
 

@@ -6,8 +6,12 @@ import SidebarNav from "./SidebarNav";
 import ThemeToggle from "./ThemeToggle";
 import { logoutAction } from "@/actions/auth";
 
-export default function MobileNav({ session }: { session: any }) {
+export default function MobileNav({ session, userData }: { session: any, userData?: any }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const userDisplayName = userData?.full_name || session?.username || 'Usuario';
+  const userRole = userData?.role || session?.role || 'staff';
+  const avatarUrl = userData?.avatar_url;
 
   return (
     <>
@@ -80,12 +84,20 @@ export default function MobileNav({ session }: { session: any }) {
 
         <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-            <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
-              {(session?.username || '?').charAt(0).toUpperCase()}
+            <div style={{ 
+              width: '36px', height: '36px', background: 'var(--primary)', borderRadius: '50%', 
+              color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              fontWeight: 'bold', fontSize: '0.85rem', overflow: 'hidden', border: '2px solid var(--glass-border)'
+            }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                userDisplayName.charAt(0).toUpperCase()
+              )}
             </div>
             <div>
-              <p style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-main)', margin: 0 }}>{session?.username}</p>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{session?.role}</p>
+              <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-main)', margin: 0 }}>{userDisplayName}</p>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, textTransform: 'capitalize' }}>{userRole}</p>
             </div>
           </div>
           <form action={logoutAction}>
