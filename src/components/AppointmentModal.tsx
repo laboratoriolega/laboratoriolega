@@ -18,7 +18,7 @@ export default function AppointmentModal({
   defaultDate?: Date 
 }) {
   const [loading, setLoading] = useState(false);
-  const [fileName, setFileName] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [analysisType, setAnalysisType] = useState("");
   const router = useRouter();
   
@@ -30,36 +30,50 @@ export default function AppointmentModal({
     const formData = new FormData(e.currentTarget);
     
     try {
-      // Normalize Date to ISO with Offset (Avoid timezone shifts)
+      // Normalize Date to ISO with Offset
       const rawDate = formData.get("appointment_date") as string;
       if (!rawDate) {
         alert("Por favor selecciona una fecha y hora.");
         setLoading(false);
         return;
       }
-      // new Date(rawDate) will use local time, format(..., "xxx") adds the offset (e.g. -03:00)
       const formattedDate = format(new Date(rawDate), "yyyy-MM-dd'T'HH:mm:ssxxx");
       formData.set("appointment_date", formattedDate);
 
-      // Image Compression Logic
-      const file = formData.get("document") as File;
-      if (file && file.size > 0 && file.type.startsWith("image/")) {
-        console.log("Original size:", (file.size / 1024 / 1024).toFixed(2), "MB");
-        const compressedBlob = await compressImage(file);
-        formData.set("document", compressedBlob, "processed_image.jpg");
-        console.log("Compressed size:", (compressedBlob.size / 1024 / 1024).toFixed(2), "MB");
+      // Clean default "document" entry since we append multiple manually
+      formData.delete("document");
+
+      // Process and Append all selected files
+      for (const file of selectedFiles) {
+        if (file.type.startsWith("image/")) {
+          console.log(`Compressing ${file.name}...`);
+          const compressedBlob = await compressImage(file);
+          formData.append("document", compressedBlob, file.name);
+        } else {
+          formData.append("document", file);
+        }
       }
 
       await createAppointment(formData);
       onClose();
       router.refresh();
-    } catch(err) {
+    } catch(err: any) {
       console.error(err);
-      alert("Error al cargar el turno. Verifica que el archivo no sea demasiado grande.");
+      alert(err.message || "Error al cargar el turno.");
     } finally {
       setLoading(false);
     }
   }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles(Array.from(e.target.files));
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const inputStyle = {
     width: "100%",
@@ -290,38 +304,64 @@ export default function AppointmentModal({
           </div>
 
           <div>
-            <label style={{...labelStyle, marginBottom: "0.25rem" }}>Documentación Médica</label>
+            <label style={{...labelStyle, marginBottom: "0.25rem" }}>Documentación Médica (Podés seleccionar varios)</label>
             <div style={{ 
               position: "relative",
-              border: "2px dashed #cbd5e1", 
-              borderRadius: "10px", 
-              background: "#f8fafc",
-              padding: "1rem",
+              border: "2px dashed var(--primary)", 
+              borderRadius: "12px", 
+              background: "rgba(14, 165, 233, 0.05)",
+              padding: "1.5rem 1rem",
               textAlign: "center",
               transition: "all 0.2s ease",
               cursor: "pointer"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--primary)"}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = "#cbd5e1"}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(14, 165, 233, 0.1)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(14, 165, 233, 0.05)"}
             >
-              <CloudUpload size={22} color="var(--primary)" style={{ margin: "0 auto 0.25rem auto" }} />
-              <p style={{ fontSize: "0.8rem", fontWeight: 600, color: "#334155", margin: 0 }}>
-                {fileName ? "Archivo seleccionado:" : "Adjuntar Pedido Médico (Imagen/PDF)"}
+              <CloudUpload size={28} color="var(--primary)" style={{ margin: "0 auto 0.5rem auto" }} />
+              <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-main)", margin: 0 }}>
+                {selectedFiles.length > 0 ? `${selectedFiles.length} archivos seleccionados` : "Subir Pedidos Médicos"}
               </p>
-              <p style={{ fontSize: "0.7rem", color: "#64748b", margin: 0, marginTop: "0.25rem" }}>
-                {fileName ? fileName : "Haz clic o arrastra"}
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.25rem 0 0 0" }}>
+                Hacé clic aquí para seleccionar uno o varios archivos (PDF/Imagen)
               </p>
               <input 
                 name="document" 
                 type="file" 
+                multiple
                 accept="image/*,.pdf" 
-                onChange={(e) => setFileName(e.target.files?.[0]?.name || "")}
+                onChange={handleFileChange}
                 style={{ 
                   position: "absolute", top: 0, left: 0, width: "100%", height: "100%", 
                   opacity: 0, cursor: "pointer" 
                 }} 
               />
             </div>
+            
+            {/* List of selected files with remove buttons */}
+            {selectedFiles.length > 0 && (
+              <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", margin: 0 }}>Archivos para subir:</p>
+                {selectedFiles.map((f, i) => (
+                  <div key={i} style={{ 
+                    display: "flex", alignItems: "center", justifyContent: "space-between", 
+                    padding: "0.6rem 0.8rem", background: "var(--glass-bg)", borderRadius: "10px",
+                    border: "1px solid var(--glass-border)", fontSize: "0.8rem",
+                    animation: "fadeIn 0.2s ease"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", maxWidth: "80%" }}>
+                      <FileText size={14} color="var(--primary)" />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {f.name}
+                      </span>
+                    </div>
+                    <button type="button" onClick={() => removeFile(i)} style={{ color: "var(--danger)", background: "rgba(239, 68, 68, 0.1)", border: "none", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex" }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.75rem", flexShrink: 0 }}>

@@ -11,24 +11,39 @@ export async function getAppointments() {
   try {
     const res = await pool.query(`
       SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
-             a.document_url,
-             CASE WHEN (a.document_url IS NOT NULL OR a.document_base64 IS NOT NULL) THEN true ELSE false END as has_document,
+             json_agg(json_build_object('id', ad.id, 'url', ad.document_url, 'filename', ad.filename)) 
+             FILTER (WHERE ad.id IS NOT NULL) as documents,
              p.name, p.dni, p.health_insurance 
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
+      LEFT JOIN appointment_documents ad ON a.id = ad.appointment_id
+      GROUP BY a.id, p.id
       ORDER BY a.appointment_date ASC
     `);
     return { 
       data: res.rows.filter(row => row && row.id).map(row => ({
         ...row,
         appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null,
-        status: row.status || 'AGENDADO'
+        status: row.status || 'AGENDADO',
+        documents: row.documents || [],
+        has_document: (row.documents && row.documents.length > 0)
       })), 
       error: null 
     };
   } catch (error: any) {
     console.error("Error fetching appointments:", error);
     return { data: null, error: error.message };
+  }
+}
+
+export async function deleteDocument(docId: number) {
+  try {
+    await pool.query('DELETE FROM appointment_documents WHERE id = $1', [docId]);
+    revalidatePath("/");
+    revalidatePath("/calendario");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
   }
 }
 
@@ -46,7 +61,7 @@ export async function createAppointment(formData: FormData) {
     const analysis_type = formData.get("analysis_type") as string;
     const aire_test_type = formData.get("aire_test_type") as string;
     const observations = formData.get("observations") as string;
-    const file = formData.get("document") as File;
+    const files = formData.getAll("document") as File[];
 
     // Turn limit for 'Test de aire' (Max 4 per day)
     if (analysis_type === 'Test de aire') {
@@ -58,18 +73,6 @@ export async function createAppointment(formData: FormData) {
       if (parseInt(countRes.rows[0].count) >= 4) {
         throw new Error("Límite excedido: Solo se permiten 4 turnos de 'Test de aire' por día.");
       }
-    }
-
-    // Upload to Vercel Blob (NOT to Postgres)
-    let document_url = null;
-    if (file && file.size > 0) {
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error("El archivo es demasiado grande (Máximo 10MB).");
-      }
-      const ext = file.name.split('.').pop() || 'bin';
-      const filename = `pedidos/${Date.now()}-${dni}.${ext}`;
-      const blob = await put(filename, file, { access: 'private' });
-      document_url = blob.url;
     }
 
     // UPSERT patient based on DNI
@@ -85,11 +88,29 @@ export async function createAppointment(formData: FormData) {
       patientId = newPatient.rows[0].id;
     }
 
-    // Insert Appointment - store URL, not base64
-    await client.query(
-      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, aire_test_type, observations, document_url) VALUES ($1, $2, $3, $4, $5, $6)',
-      [patientId, appointment_date, analysis_type, aire_test_type, observations, document_url]
+    // Insert Appointment
+    const aptRes = await client.query(
+      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, aire_test_type, observations) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [patientId, appointment_date, analysis_type, aire_test_type, observations]
     );
+    const appointmentId = aptRes.rows[0].id;
+
+    // Upload to Vercel Blob and Insert to documents table
+    for (const file of files) {
+      if (file && file.size > 0) {
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`El archivo ${file.name} es demasiado grande (Máximo 10MB).`);
+        }
+        const ext = file.name.split('.').pop() || 'bin';
+        const filename = `pedidos/${Date.now()}-${dni}-${Math.random().toString(36).substring(7)}.${ext}`;
+        const blob = await put(filename, file, { access: 'private' });
+        
+        await client.query(
+          'INSERT INTO appointment_documents (appointment_id, document_url, filename) VALUES ($1, $2, $3)',
+          [appointmentId, blob.url, file.name]
+        );
+      }
+    }
 
     await client.query('COMMIT');
     
@@ -134,18 +155,22 @@ export async function updateEvolution(formData: FormData) {
 }
 
 export async function updateAppointment(formData: FormData) {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const id = formData.get("id");
     const appointment_date = formData.get("appointment_date") as string;
     const analysis_type = formData.get("analysis_type") as string;
     const aire_test_type = formData.get("aire_test_type") as string;
     const health_insurance = formData.get("health_insurance") as string;
     const observations = formData.get("observations") as string;
+    const files = formData.getAll("document") as File[];
 
     // Check limit if changing type to Test de aire or changing date for an Test de aire appointment
     if (analysis_type === 'Test de aire') {
       const targetDateStr = appointment_date.split('T')[0];
-      const countRes = await pool.query(
+      const countRes = await client.query(
         "SELECT COUNT(*) FROM appointments WHERE analysis_type = 'Test de aire' AND DATE(appointment_date) = $1 AND id != $2",
         [targetDateStr, id]
       );
@@ -154,7 +179,7 @@ export async function updateAppointment(formData: FormData) {
       }
     }
 
-    await pool.query(
+    await client.query(
       `UPDATE appointments a
        SET appointment_date = $1, analysis_type = $2, aire_test_type = $3, observations = $4
        FROM patients p
@@ -162,12 +187,33 @@ export async function updateAppointment(formData: FormData) {
       [appointment_date, analysis_type, aire_test_type, observations, id]
     );
 
-    // Also update health_insurance in patients table if needed (simplified: just do it)
-    await pool.query(
+    await client.query(
       `UPDATE patients SET health_insurance = $1 WHERE id = (SELECT patient_id FROM appointments WHERE id = $2)`,
       [health_insurance, id]
     );
 
+    // Get patient DNI for filename
+    const patientRes = await client.query('SELECT dni FROM patients WHERE id = (SELECT patient_id FROM appointments WHERE id = $1)', [id]);
+    const dni = patientRes.rows[0].dni;
+
+    // Upload new files
+    for (const file of files) {
+      if (file && file.size > 0) {
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`El archivo ${file.name} es demasiado grande (Máximo 10MB).`);
+        }
+        const ext = file.name.split('.').pop() || 'bin';
+        const filename = `pedidos/${Date.now()}-${dni}-${Math.random().toString(36).substring(7)}.${ext}`;
+        const blob = await put(filename, file, { access: 'private' });
+        
+        await client.query(
+          'INSERT INTO appointment_documents (appointment_id, document_url, filename) VALUES ($1, $2, $3)',
+          [id, blob.url, file.name]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
     await logAction("UPDATE_APPOINTMENT", { appointment_id: id, analysis_type });
 
     revalidatePath("/");
@@ -176,8 +222,11 @@ export async function updateAppointment(formData: FormData) {
 
     return { success: true };
   } catch (error: any) {
+    await client.query('ROLLBACK');
     console.error("Update appointment error:", error);
     return { error: error.message };
+  } finally {
+    client.release();
   }
 }
 

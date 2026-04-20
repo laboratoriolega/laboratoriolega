@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { updateAppointment } from "@/actions/appointments";
-import { X, Calendar, Edit, Loader2, Info } from "lucide-react";
+import { deleteDocument, updateAppointment } from "@/actions/appointments";
+import { X, Calendar, Edit, Loader2, Info, CloudUpload, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { compressImage } from "@/lib/compression";
 import Portal from "./Portal";
 
 export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: boolean, onClose: () => void, ap: any }) {
   const [loading, setLoading] = useState(false);
   const [analysisType, setAnalysisType] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,21 +34,61 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
       const formattedDate = format(new Date(rawDate), "yyyy-MM-dd'T'HH:mm:ssxxx");
       formData.set("appointment_date", formattedDate);
     }
-    
+
+    // Clean default "document" entry
+    formData.delete("document");
+
+    // Process and Append all NEW selected files
     try {
+      for (const file of selectedFiles) {
+        if (file.type.startsWith("image/")) {
+          const compressedBlob = await compressImage(file);
+          formData.append("document", compressedBlob, file.name);
+        } else {
+          formData.append("document", file);
+        }
+      }
+
       const res = await updateAppointment(formData);
       if (res?.error) {
         alert(res.error);
       } else {
+        setSelectedFiles([]);
         onClose();
         router.refresh();
       }
-    } catch (err) {
-      alert("Error al actualizar el turno.");
+    } catch (err: any) {
+      alert(err.message || "Error al actualizar el turno.");
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleDeleteDoc(docId: number) {
+    if (!confirm("¿Borrar este archivo?")) return;
+    try {
+      const res = await deleteDocument(docId);
+      if (res.success) {
+        // We could also filter it out locally if we had a local docs state, 
+        // but router.refresh() + getAppointments again will work.
+        router.refresh();
+      } else {
+        alert(res.error);
+      }
+    } catch (e) {
+      alert("Error eliminando archivo");
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const inputStyle = {
     width: "100%",
@@ -212,6 +254,82 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
           <div>
             <label style={labelStyle}>Observaciones</label>
             <textarea name="observations" defaultValue={ap.observations || ""} className="input-field" style={{...inputStyle, resize: 'vertical'}} rows={3} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Documentación Médica</label>
+            
+            {/* Current Documents */}
+            {ap.documents && ap.documents.length > 0 && (
+              <div style={{ marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", margin: 0 }}>Archivos actuales:</p>
+                {ap.documents.map((doc: any) => (
+                  <div key={doc.id} style={{ 
+                    display: "flex", alignItems: "center", justifyContent: "space-between", 
+                    padding: "0.5rem 0.75rem", background: "rgba(0,0,0,0.05)", borderRadius: "8px",
+                    border: "1px solid var(--glass-border)"
+                  }}>
+                    <a href={doc.url} target="_blank" style={{ fontSize: "0.8rem", color: "var(--primary)", textDecoration: "none", fontWeight: 600, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {doc.filename || "Ver archivo"}
+                    </a>
+                    <button type="button" onClick={() => handleDeleteDoc(doc.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload New Files */}
+            <div style={{ 
+              position: "relative",
+              border: "2px dashed var(--primary)", 
+              borderRadius: "12px", 
+              background: "rgba(14, 165, 233, 0.05)",
+              padding: "1.5rem 1rem",
+              textAlign: "center",
+              cursor: "pointer",
+              transition: "all 0.2s ease"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(14, 165, 233, 0.1)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(14, 165, 233, 0.05)"}
+            >
+              <CloudUpload size={24} color="var(--primary)" style={{ margin: "0 auto 0.4rem auto" }} />
+              <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-main)", margin: 0 }}>
+                {selectedFiles.length > 0 ? `${selectedFiles.length} nuevos seleccionados` : "Agregar más documentos"}
+              </p>
+              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0.2rem 0 0 0" }}>
+                Hacé clic aquí para elegir uno o varios (PDF/Imagen)
+              </p>
+              <input 
+                name="document" 
+                type="file" 
+                multiple
+                accept="image/*,.pdf" 
+                onChange={handleFileChange}
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }} 
+              />
+            </div>
+
+            {/* List of NEW files */}
+            {selectedFiles.length > 0 && (
+              <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                {selectedFiles.map((f, i) => (
+                  <div key={i} style={{ 
+                    display: "flex", alignItems: "center", justifyContent: "space-between", 
+                    padding: "0.4rem 0.6rem", background: "var(--glass-bg)", borderRadius: "6px",
+                    border: "1px solid var(--glass-border)", fontSize: "0.75rem"
+                  }}>
+                    <span style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {f.name}
+                    </span>
+                    <button type="button" onClick={() => removeSelectedFile(i)} style={{ color: "var(--danger)", background: "none", border: "none", cursor: "pointer" }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {analysisType === 'Test de aire' && (

@@ -54,6 +54,27 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
           Paciente: <strong style={{color: 'var(--text-main)'}}>{ap.name}</strong> • {ap.analysis_type}
         </p>
 
+        {/* Document Links for Context */}
+        {ap.documents && ap.documents.length > 0 && (
+          <div style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", margin: 0 }}>Documentación Adjunta:</p>
+            {ap.documents.map((doc: any) => (
+              <a 
+                key={doc.id}
+                href={`/api/doc/file/${doc.id}`} 
+                target="_blank" 
+                style={{ 
+                  display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", 
+                  background: "rgba(0,0,0,0.05)", borderRadius: "8px", border: "1px solid var(--glass-border)",
+                  color: "var(--primary)", textDecoration: "none", fontSize: "0.8rem", fontWeight: 600
+                }}
+              >
+                📎 {doc.filename || "Ver Pedido"}
+              </a>
+            ))}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           
           <div>

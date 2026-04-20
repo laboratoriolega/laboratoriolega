@@ -10,21 +10,31 @@ import { Suspense } from "react";
 
 export const revalidate = 0; // Disable cache for this page since data changes
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ status?: string, month?: string }> }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ status?: string, month?: string, q?: string }> }) {
   const { data: allAppointments, error } = await getAppointments();
   const filters = await searchParams;
 
   // Filter logic
   let appointments = (allAppointments || []).filter(Boolean);
+  
   if (filters.status) {
     appointments = appointments.filter((a: any) => a && a.status === filters.status);
   }
+  
   if (filters.month) {
     appointments = appointments.filter((a: any) => {
       if (!a || !a.appointment_date) return false;
       const date = new Date(a.appointment_date);
       return (date.getMonth() + 1).toString().padStart(2, '0') === filters.month;
     });
+  }
+
+  if (filters.q) {
+    const query = filters.q.toLowerCase();
+    appointments = appointments.filter((a: any) => 
+      a.name?.toLowerCase().includes(query) || 
+      a.dni?.toLowerCase().includes(query)
+    );
   }
 
   return (

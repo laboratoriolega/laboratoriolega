@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { format } from "date-fns";
-import { Clock, FileText } from "lucide-react";
+import { Clock, FileText, ChevronDown, ExternalLink } from "lucide-react";
 
 export default function DashboardTable({ appointments }: { appointments: any[] }) {
+  const [openDocsId, setOpenDocsId] = useState<string | null>(null);
+
   if (!appointments || appointments.length === 0) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -25,7 +28,7 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
             <th style={{ padding: '1rem', fontWeight: 500 }}>Obra Social</th>
             <th style={{ padding: '1rem', fontWeight: 500 }}>Análisis</th>
             <th style={{ padding: '1rem', fontWeight: 500 }}>Estado</th>
-            <th style={{ padding: '1rem', fontWeight: 500 }}>Observaciones</th>
+            <th style={{ padding: '1rem', fontWeight: 500 }}>Observaciones / Pedido</th>
           </tr>
         </thead>
         <tbody>
@@ -37,7 +40,6 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
                   {(() => {
                     try {
                       if (!apt.appointment_date) return "--:--";
-                      // Client component: this will be the user's local time
                       const d = new Date(apt.appointment_date);
                       if (isNaN(d.getTime())) return "--:--";
                       return format(d, "HH:mm");
@@ -87,13 +89,70 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
                   {apt?.status || 'AGENDADO'}
                 </span>
               </td>
-              <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {apt.observations || '-'}
-                {apt.has_document && (
+              <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', position: 'relative' }}>
+                <div style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {apt.observations || '-'}
+                </div>
+                
+                {apt.documents && apt.documents.length > 0 && (
                   <div style={{ marginTop: '0.5rem' }}>
-                      <a href={`/api/doc/${apt.id}`} target="_blank" style={{ color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none' }}>
+                    {apt.documents.length === 1 ? (
+                      <a 
+                        href={`/api/doc/file/${apt.documents[0].id}`} 
+                        target="_blank" 
+                        style={{ color: 'var(--primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none', fontSize: '0.8rem' }}
+                      >
                         📎 Ver Pedido
                       </a>
+                    ) : (
+                      <div style={{ position: 'relative' }}>
+                        <button 
+                          onClick={() => setOpenDocsId(openDocsId === apt.id ? null : apt.id)}
+                          style={{ 
+                            background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', 
+                            border: '1px solid rgba(14, 165, 233, 0.2)', borderRadius: '6px',
+                            padding: '0.3rem 0.6rem', fontSize: '0.75rem', fontWeight: 700,
+                            display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer'
+                          }}
+                        >
+                          📎 Ver Pedidos ({apt.documents.length})
+                          <ChevronDown size={14} style={{ transform: openDocsId === apt.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                        </button>
+                        
+                        {openDocsId === apt.id && (
+                          <div style={{ 
+                            position: 'absolute', top: '100%', left: 0, marginTop: '0.4rem',
+                            background: 'var(--glass-bg)', backdropFilter: 'blur(10px)',
+                            border: '1px solid var(--glass-border)', borderRadius: '8px',
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                            zIndex: 50, minWidth: '200px', padding: '0.5rem',
+                            display: 'flex', flexDirection: 'column', gap: '0.25rem',
+                            animation: 'fadeIn 0.2s ease'
+                          }}>
+                            <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+                            <p style={{ margin: '0 0 0.4rem 0.4rem', fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Seleccionar archivo:</p>
+                            {apt.documents.map((doc: any) => (
+                              <a 
+                                key={doc.id}
+                                href={`/api/doc/file/${doc.id}`} 
+                                target="_blank" 
+                                onClick={() => setOpenDocsId(null)}
+                                style={{ 
+                                  display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.6rem',
+                                  borderRadius: '6px', color: 'var(--text-main)', textDecoration: 'none',
+                                  fontSize: '0.75rem', transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <ExternalLink size={12} color="var(--primary)" />
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.filename || 'Ver Pedido'}</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </td>
