@@ -290,6 +290,7 @@ export default function AppointmentModal({
               <select name="aire_test_type" required className="modern-input" style={inputStyle}>
                 <option value="">-- Seleccionar Prueba --</option>
                 <option value="SIBO">SIBO</option>
+                <option value="SIBO c/Lactulon">SIBO c/Lactulon</option>
                 <option value="Lactosa">Lactosa</option>
                 <option value="Fructuosa">Fructuosa</option>
               </select>

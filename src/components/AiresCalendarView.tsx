@@ -40,6 +40,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   const completedThisMonth = currentMonthAppts.filter(a => a?.status === 'COMPLETADO').length;
   
   const siboCount = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO').length;
+  const siboLactulonCount = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO c/Lactulon').length;
   const lactosaCount = currentMonthAppts.filter(a => a?.aire_test_type === 'Lactosa').length;
   const fructuosaCount = currentMonthAppts.filter(a => a?.aire_test_type === 'Fructuosa').length;
 
@@ -57,6 +58,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
 
     switch(type) {
       case 'SIBO': base = { ...base, border: '1px solid #A855F7', borderLeft: '5px solid #A855F7', background: status === 'COMPLETADO' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)' }; break;
+      case 'SIBO c/Lactulon': base = { ...base, border: '1px solid #06B6D4', borderLeft: '5px solid #06B6D4', background: status === 'COMPLETADO' ? 'rgba(6, 182, 212, 0.1)' : 'rgba(6, 182, 212, 0.05)' }; break;
       case 'Lactosa': base = { ...base, border: '1px solid #EC4899', borderLeft: '5px solid #EC4899', background: status === 'COMPLETADO' ? 'rgba(236, 72, 153, 0.1)' : 'rgba(236, 72, 153, 0.05)' }; break;
       case 'Fructuosa': base = { ...base, border: '1px solid #F97316', borderLeft: '5px solid #F97316', background: status === 'COMPLETADO' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(249, 115, 22, 0.05)' }; break;
     }
@@ -72,6 +74,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   const getBadgeColor = (type?: string) => {
     switch(type) {
       case 'SIBO': return '#A855F7';
+      case 'SIBO c/Lactulon': return '#06B6D4';
       case 'Lactosa': return '#EC4899';
       case 'Fructuosa': return '#78350F';
       default: return 'var(--primary)';
@@ -100,6 +103,9 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
       <div style={{ display: 'flex', gap: '1.5rem', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#A855F7' }}>
              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A855F7' }}></span> SIBO ({siboCount})
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#06B6D4' }}>
+             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#06B6D4' }}></span> SIBO C/ LACTULON ({siboLactulonCount})
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EC4899' }}>
              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#EC4899' }}></span> LACTOSA ({lactosaCount})

@@ -246,6 +246,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
               <select name="aire_test_type" defaultValue={ap.aire_test_type || ""} required className="input-field" style={inputStyle}>
                 <option value="">-- Seleccionar --</option>
                 <option value="SIBO">SIBO</option>
+                <option value="SIBO c/Lactulon">SIBO c/Lactulon</option>
                 <option value="Lactosa">Lactosa</option>
                 <option value="Fructuosa">Fructuosa</option>
               </select>
