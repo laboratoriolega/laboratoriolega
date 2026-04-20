@@ -39,36 +39,38 @@ export default function ShellLayout({ children, session, userData }: ShellLayout
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
           style={{
-            position: 'absolute', top: '1.25rem', right: isCollapsed ? '50%' : '1rem',
-            transform: isCollapsed ? 'translateX(50%)' : 'none',
+            position: 'absolute', top: '0.75rem', right: '0.75rem',
             background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
-            borderRadius: '50%', width: '30px', height: '30px',
+            borderRadius: '50%', width: '28px', height: '28px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: 'var(--primary)', zIndex: 10,
-            transition: 'all 0.3s ease'
+            cursor: 'pointer', color: 'var(--primary)', zIndex: 100,
+            transition: 'all 0.3s ease',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
           }}
+          title={isCollapsed ? "Expandir menú" : "Colapsar menú"}
         >
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
 
         {/* Logo Section */}
         <div style={{ 
           display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'flex-start', 
-          gap: '0.75rem', paddingBottom: '2rem', height: '60px'
+          gap: '0.75rem', paddingBottom: '2rem', height: '80px', paddingTop: isCollapsed ? '1rem' : '0'
         }}>
           {!isCollapsed ? (
-            <>
-              <img src="/logo.png" alt="Logo" className="logo-light" style={{ width: '15rem', height: 'auto', objectFit: 'contain' }} />
-              <img src="/logoB.png" alt="Logo" className="logo-dark" style={{ width: '15rem', height: 'auto', objectFit: 'contain' }} />
-            </>
-          ) : (
-            <div style={{ 
-              width: '40px', height: '40px', background: 'var(--primary)', 
-              borderRadius: '8px', color: 'white', display: 'flex', 
-              alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem'
-            }}>
-              L
+            <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+              <img src="/logo.png" alt="Logo" className="logo-light" style={{ width: '100%', maxWidth: '14rem', height: 'auto', maxHeight: '70px', objectFit: 'contain' }} />
+              <img src="/logoB.png" alt="Logo" className="logo-dark" style={{ width: '100%', maxWidth: '14rem', height: 'auto', maxHeight: '70px', objectFit: 'contain' }} />
             </div>
+          ) : (
+            <img 
+              src="/logofavicon.png" 
+              alt="Logo" 
+              style={{ 
+                width: '45px', height: '45px', objectFit: 'contain',
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+              }} 
+            />
           )}
         </div>
 
