@@ -30,6 +30,9 @@ export default function AppointmentModal({
     if (isOpen) {
       setSelectedFiles([]);
       setAnalysisType("");
+      if (formRef.current) {
+        formRef.current.reset();
+      }
     }
   }, [isOpen]);
   

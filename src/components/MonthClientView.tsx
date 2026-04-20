@@ -176,6 +176,7 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
       </div>
 
       <AppointmentModal 
+        key={selectedDate ? selectedDate.toISOString() : "new"}
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         defaultDate={selectedDate} 

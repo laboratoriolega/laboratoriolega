@@ -41,6 +41,7 @@ export default function PatientTableActions({ patient }: { patient: any }) {
       </button>
 
       <AppointmentModal 
+        key={patient.id + isModalOpen}
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         initialData={{
