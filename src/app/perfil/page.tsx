@@ -29,7 +29,8 @@ export default function PerfilPage() {
       const res = await getProfileData();
       if (res.data) {
         setUser(res.data);
-        if (res.data.avatar_url) setPreview(`/api/avatar/${res.data.id}`);
+        const v = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
+        if (res.data.avatar_url) setPreview(`/api/avatar/${res.data.id}?v=${v}`);
       }
       setInitialLoading(false);
     }

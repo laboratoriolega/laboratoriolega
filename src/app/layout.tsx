@@ -49,6 +49,7 @@ export default async function RootLayout({
   const userDisplayName = userData?.full_name || session?.username || 'Usuario';
   const userRole = userData?.role || session?.role || 'staff';
   const avatarUrl = userData?.avatar_url;
+  const updatedTime = userData?.updated_at ? new Date(userData.updated_at).getTime() : Date.now();
 
   if (!session) {
     return (
@@ -125,7 +126,7 @@ export default async function RootLayout({
                   fontWeight: 'bold', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--glass-border)'
                 }}>
                   {avatarUrl ? (
-                    <img src={`/api/avatar/${userData.id}?v=${Date.now()}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={`/api/avatar/${userData.id}?v=${updatedTime}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     userDisplayName.charAt(0).toUpperCase()
                   )}

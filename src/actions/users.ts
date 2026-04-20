@@ -12,7 +12,7 @@ export async function getProfileData() {
     const session = await getSession() as any;
     if (!session) return { data: null, error: "Not authenticated" };
 
-    const res = await pool.query("SELECT id, username, full_name, role, avatar_url FROM users WHERE id = $1", [session.id]);
+    const res = await pool.query("SELECT id, username, full_name, role, avatar_url, updated_at FROM users WHERE id = $1", [session.id]);
     return { data: res.rows[0], error: null };
   } catch (error: any) {
     return { data: null, error: error.message };
@@ -66,9 +66,10 @@ export async function updateProfile(formData: FormData) {
     const newPassword = formData.get("password") as string;
     const avatarFile = formData.get("avatar") as File;
 
-    // Ensure avatar_url column exists
+    // Ensure avatar_url and updated_at columns exist
     try {
       await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT");
+      await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP");
     } catch (e) { /* ignore pg errors related to migration */ }
 
     let avatarUrl = null;
@@ -80,7 +81,7 @@ export async function updateProfile(formData: FormData) {
       avatarUrl = blob.url;
     }
 
-    let query = "UPDATE users SET ";
+    let query = "UPDATE users SET updated_at = CURRENT_TIMESTAMP, ";
     const params = [];
     let count = 1;
 
