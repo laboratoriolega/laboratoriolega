@@ -136,7 +136,7 @@ export default function HistoryItem({ apt }: { apt: any }) {
                   </h5>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                     {apt.documents.map((doc: any) => (
-                      <a key={doc.id} href={`/api/documents?url=${encodeURIComponent(doc.url)}`} target="_blank" style={{
+                      <a key={doc.id} href={`/api/doc/file/${doc.id}`} target="_blank" style={{
                         display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem',
                         background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--primary)',
                         fontWeight: 600, fontSize: '0.75rem', textDecoration: 'none', transition: 'all 0.2s',

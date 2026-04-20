@@ -289,7 +289,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
                     padding: "0.5rem 0.75rem", background: "rgba(0,0,0,0.05)", borderRadius: "8px",
                     border: "1px solid var(--glass-border)"
                   }}>
-                    <a href={doc.url} target="_blank" style={{ fontSize: "0.8rem", color: "var(--primary)", textDecoration: "none", fontWeight: 600, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                     <a href={`/api/doc/file/${doc.id}`} target="_blank" style={{ fontSize: "0.8rem", color: "var(--primary)", textDecoration: "none", fontWeight: 600, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {doc.filename || "Ver archivo"}
                     </a>
                     <button type="button" onClick={() => handleDeleteDoc(doc.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>
