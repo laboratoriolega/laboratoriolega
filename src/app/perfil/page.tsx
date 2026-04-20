@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { UserCircle, Key, Save, CheckCircle, Camera, Loader2 } from "lucide-react";
+import { UserCircle, Key, Save, CheckCircle, Camera, Loader2, X, Move, ZoomIn } from "lucide-react";
 import { updateProfile, getProfileData } from "@/actions/users";
+import Portal from "@/components/Portal";
 
 export default function PerfilPage() {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,18 @@ export default function PerfilPage() {
   const [user, setUser] = useState<any>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
+  
+  // Crop Modal State
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [cropSource, setCropSource] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -28,8 +40,71 @@ export default function PerfilPage() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result as string);
+      reader.onloadend = () => {
+        setCropSource(reader.result as string);
+        setZoom(1);
+        setOffset({ x: 0, y: 0 });
+        setIsCropOpen(true);
+      };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDragging(true);
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    setDragStart({ x: clientX - offset.x, y: clientY - offset.y });
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging) return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    setOffset({
+      x: clientX - dragStart.x,
+      y: clientY - dragStart.y
+    });
+  };
+
+  const handleConfirmCrop = () => {
+    const canvas = document.createElement('canvas');
+    const size = 400; // Final avatar size
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    if (ctx && imageRef.current) {
+      const img = imageRef.current;
+      const displayWidth = img.clientWidth * zoom;
+      const displayHeight = img.clientHeight * zoom;
+      
+      // Calculate position relative to the 250px container in the modal
+      // Container is 250x250, centered.
+      // Offset 0,0 means image center is at container center.
+      const centerX = size / 2;
+      const centerY = size / 2;
+      
+      // Map modal coordinates (250px) to canvas coordinates (400px)
+      const scaleFactor = size / 250;
+      
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, size, size);
+      
+      ctx.save();
+      ctx.translate(centerX + offset.x * scaleFactor, centerY + offset.y * scaleFactor);
+      ctx.scale(zoom * scaleFactor * (img.naturalWidth / img.clientWidth), zoom * scaleFactor * (img.naturalWidth / img.clientWidth));
+      // Since zoom scale is already applied via transform, we draw at natural size centered
+      ctx.drawImage(img, -img.clientWidth / 2, -img.clientHeight / 2, img.clientWidth, img.clientHeight);
+      ctx.restore();
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          setCroppedBlob(blob);
+          setPreview(URL.createObjectURL(blob));
+          setIsCropOpen(false);
+        }
+      }, 'image/jpeg', 0.9);
     }
   };
 
@@ -39,12 +114,19 @@ export default function PerfilPage() {
     setMessage(null);
     
     const formData = new FormData(e.currentTarget);
+    
+    // If we have a cropped blob, replace the file input data
+    if (croppedBlob) {
+      formData.set("avatar", croppedBlob, "avatar.jpg");
+    } else {
+      formData.delete("avatar");
+    }
+    
     const res = await updateProfile(formData);
     
     if (res.success) {
       setMessage({ type: 'success', text: "¡Perfil actualizado correctamente!" });
-      // Reload to ensure all components see the change
-      window.location.reload();
+      setTimeout(() => window.location.reload(), 1500);
     } else {
       setMessage({ type: 'error', text: res.error || "Error al actualizar" });
       setLoading(false);
@@ -157,6 +239,94 @@ export default function PerfilPage() {
           {loading ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Guardar Cambios</>}
         </button>
       </form>
+
+      {/* Crop Modal */}
+      {isCropOpen && cropSource && (
+        <Portal>
+          <div style={{ 
+            position: 'fixed', inset: 0, zIndex: 2000, 
+            background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(10px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+          }}>
+            <div style={{ 
+              width: '100%', maxWidth: '400px', background: 'var(--glass-bg)', 
+              borderRadius: '20px', padding: '2rem', border: '1px solid var(--glass-border)',
+              boxShadow: 'var(--glass-shadow)', display: 'flex', flexDirection: 'column', gap: '1.5rem',
+              animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              <style>{`@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>Ajustar Foto</h3>
+                <button onClick={() => setIsCropOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
+              </div>
+
+              <div style={{ 
+                width: '250px', height: '250px', margin: '0 auto', 
+                borderRadius: '50%', overflow: 'hidden', position: 'relative',
+                background: '#000', border: '4px solid var(--primary)',
+                cursor: 'grab'
+              }}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={() => setIsDragging(false)}
+              onMouseLeave={() => setIsDragging(false)}
+              onTouchStart={handleDragStart}
+              onTouchMove={handleDragMove}
+              onTouchEnd={() => setIsDragging(false)}
+              >
+                <img 
+                  ref={imageRef}
+                  src={cropSource} 
+                  alt="Ajustar" 
+                  style={{ 
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                    maxWidth: 'none', maxHeight: 'none',
+                    pointerEvents: 'none'
+                  }} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><ZoomIn size={14} /> Zoom</span>
+                  <span>{Math.round(zoom * 100)}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0.5" 
+                  max="3" 
+                  step="0.01" 
+                  value={zoom} 
+                  onChange={(e) => setZoom(parseFloat(e.target.value))} 
+                  style={{ width: '100%', accentColor: 'var(--primary)' }}
+                />
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.5rem' }}>
+                  <Move size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} /> 
+                  Arrastrá la imagen para centrarla
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button 
+                  onClick={() => setIsCropOpen(false)}
+                  style={{ flex: 1, padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--glass-border)', background: 'none', color: 'var(--text-main)', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleConfirmCrop}
+                  style={{ flex: 1, padding: '0.8rem', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px rgba(14, 165, 233, 0.2)' }}
+                >
+                  Aceptar
+                </button>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }
