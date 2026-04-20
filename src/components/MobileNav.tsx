@@ -90,7 +90,7 @@ export default function MobileNav({ session, userData }: { session: any, userDat
               fontWeight: 'bold', fontSize: '0.85rem', overflow: 'hidden', border: '2px solid var(--glass-border)'
             }}>
               {avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={`/api/avatar/${userData.id}?v=${Date.now()}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 userDisplayName.charAt(0).toUpperCase()
               )}

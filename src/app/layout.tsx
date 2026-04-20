@@ -125,7 +125,7 @@ export default async function RootLayout({
                   fontWeight: 'bold', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--glass-border)'
                 }}>
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={`/api/avatar/${userData.id}?v=${Date.now()}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     userDisplayName.charAt(0).toUpperCase()
                   )}

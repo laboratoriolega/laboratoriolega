@@ -75,38 +75,41 @@ export async function updateProfile(formData: FormData) {
     if (avatarFile && avatarFile.size > 0) {
       const ext = avatarFile.name.split('.').pop() || 'jpg';
       const filename = `avatars/${session.id}-${Date.now()}.${ext}`;
-      const blob = await put(filename, avatarFile, { access: 'public' });
+      // Switch to private for private stores
+      const blob = await put(filename, avatarFile, { access: 'private' });
       avatarUrl = blob.url;
+    }
+
+    let query = "UPDATE users SET ";
+    const params = [];
+    let count = 1;
+
+    if (full_name && full_name.trim().length > 0) {
+      query += `full_name = $${count++}, `;
+      params.push(full_name);
     }
 
     if (newPassword && newPassword.trim().length > 0) {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      if (avatarUrl) {
-        await pool.query(
-          "UPDATE users SET full_name = $1, password_hash = $2, avatar_url = $3 WHERE id = $4",
-          [full_name, hashedPassword, avatarUrl, session.id]
-        );
-      } else {
-        await pool.query(
-          "UPDATE users SET full_name = $1, password_hash = $2 WHERE id = $3",
-          [full_name, hashedPassword, session.id]
-        );
-      }
-      await logAction("UPDATE_PROFILE_WITH_PASSWORD", { full_name });
-    } else {
-      if (avatarUrl) {
-        await pool.query(
-          "UPDATE users SET full_name = $1, avatar_url = $2 WHERE id = $3",
-          [full_name, avatarUrl, session.id]
-        );
-      } else {
-        await pool.query(
-          "UPDATE users SET full_name = $1 WHERE id = $2",
-          [full_name, session.id]
-        );
-      }
-      await logAction("UPDATE_PROFILE_NAME", { full_name });
+      query += `password_hash = $${count++}, `;
+      params.push(hashedPassword);
     }
+
+    if (avatarUrl) {
+      query += `avatar_url = $${count++}, `;
+      params.push(avatarUrl);
+    }
+
+    // Remove last comma and space
+    if (params.length === 0) {
+      return { success: true, message: "No change" };
+    }
+
+    query = query.slice(0, -2) + ` WHERE id = $${count}`;
+    params.push(session.id);
+
+    await pool.query(query, params);
+    await logAction("UPDATE_PROFILE_REFINED", { full_name_provided: !!full_name, avatar_updated: !!avatarUrl });
 
     revalidatePath("/perfil");
     revalidatePath("/", "layout");

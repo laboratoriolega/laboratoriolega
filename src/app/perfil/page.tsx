@@ -17,7 +17,7 @@ export default function PerfilPage() {
       const res = await getProfileData();
       if (res.data) {
         setUser(res.data);
-        if (res.data.avatar_url) setPreview(res.data.avatar_url);
+        if (res.data.avatar_url) setPreview(`/api/avatar/${res.data.id}`);
       }
       setInitialLoading(false);
     }
@@ -117,7 +117,6 @@ export default function PerfilPage() {
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, color: 'var(--text-main)' }}>Nombre Completo</label>
           <input 
             name="full_name" 
-            required 
             className="input-field" 
             placeholder="Tu nombre y apellido" 
             defaultValue={user?.full_name}
