@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 export default async function PacienteHistorialPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
-  // Obtener data del paciente
-  const patientRes = await pool.query("SELECT * FROM patients WHERE id = $1", [id]);
+  // Obtener data del paciente (incluyendo casting a text para evitar BigInt)
+  const patientRes = await pool.query("SELECT id::text, name, dni::text, phone, health_insurance FROM patients WHERE id = $1", [id]);
   const patient = patientRes.rows[0];
 
   if (!patient) {
@@ -24,11 +24,12 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
   }
 
   // Obtener historial clinico (Turnos pasados y futuros) con su rastro de auditoría
+  // Forzamos casting a text de IDs y detalles (JSONB) para evitar errores de serialización de BigInt en server components
   const apptsRes = await pool.query(`
     SELECT a.id::text, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
            (SELECT json_agg(json_build_object('id', ad.id::text, 'url', ad.document_url, 'filename', ad.filename)) 
             FROM appointment_documents ad WHERE ad.appointment_id = a.id) as documents,
-           (SELECT json_agg(json_build_object('id', al.id::text, 'action', al.action, 'details', al.details, 'created_at', al.created_at, 'username', u.username))
+           (SELECT json_agg(json_build_object('id', al.id::text, 'action', al.action, 'details', al.details::text, 'created_at', al.created_at, 'username', u.username))
             FROM audit_logs al
             JOIN users u ON al.user_id = u.id
             WHERE al.action IN ('CREATE_APPOINTMENT', 'UPDATE_APPOINTMENT', 'UPDATE_EVOLUTION', 'MOVE_APPOINTMENT', 'DELETE_DOCUMENT')
