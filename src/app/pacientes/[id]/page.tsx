@@ -93,7 +93,7 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
             <Stethoscope size={20} color="var(--primary)" />
             Historial de Consultas
           </h3>
-          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '20px', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', background: 'rgba(148, 163, 184, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '20px', fontWeight: 600 }}>
             {appointments.length} Visitas
           </span>
         </div>
