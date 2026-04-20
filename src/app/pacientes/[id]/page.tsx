@@ -19,17 +19,15 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
 
   // Obtener historial clinico (Turnos pasados y futuros)
   const apptsRes = await pool.query(`
-    SELECT id, appointment_date, status, analysis_type, observations,
-           CASE WHEN (document_url IS NOT NULL OR document_base64 IS NOT NULL) THEN true ELSE false END as has_document
-    FROM appointments 
-    WHERE patient_id = $1 
-    ORDER BY appointment_date DESC
+    SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
+           (SELECT json_agg(json_build_object('id', ad.id, 'url', ad.document_url, 'filename', ad.filename)) 
+            FROM appointment_documents ad WHERE ad.appointment_id = a.id) as documents
+    FROM appointments a
+    WHERE a.patient_id = $1 
+    ORDER BY a.appointment_date DESC
   `, [id]);
-  const appointments = (apptsRes.rows || []).filter(row => row && row.id).map(row => ({
-    ...row,
-    appointment_date: row.appointment_date ? new Date(row.appointment_date).toISOString() : null,
-    status: row.status || 'AGENDADO'
-  }));
+  
+  const appointments = (apptsRes.rows || []).filter(row => row && row.id);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -54,10 +52,10 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Stethoscope size={20} color="var(--primary)" />
-            Historial Clínico
+            Historial de Consultas
           </h3>
           <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '20px', fontWeight: 600 }}>
-            {appointments.length} Consultas Registradas
+            {appointments.length} Visitas
           </span>
         </div>
 
@@ -68,63 +66,9 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {appointments.map((apt) => {
-                const isPast = new Date(apt.appointment_date) < new Date();
-                return (
-                  <div key={apt.id} style={{ 
-                    border: '1px solid var(--glass-border)', padding: '1.25rem', borderRadius: '12px', 
-                    background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem'
-                  }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                        <span style={{ 
-                          background: isPast ? '#e2e8f0' : 'var(--primary)', 
-                          color: isPast ? '#64748b' : 'white', 
-                          padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 
-                        }}>
-                          {isPast ? 'Completado' : (apt?.status || 'AGENDADO')}
-                        </span>
-                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                          {apt?.analysis_type}
-                          {apt?.aire_test_type && (
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem', fontWeight: 500 }}>
-                              ({apt.aire_test_type})
-                            </span>
-                          )}
-                        </h4>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Calendar size={14} />
-                        {(() => {
-                          try {
-                            if (!apt.appointment_date) return "Sin fecha definida";
-                            const d = new Date(apt.appointment_date);
-                            if (isNaN(d.getTime())) return "Fecha inválida";
-                            return format(d, "PPPPp", { locale: es });
-                          } catch (e) {
-                            return "Error fecha";
-                          }
-                        })()}
-                      </p>
-                      {apt.observations && (
-                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                          " {apt.observations} "
-                        </p>
-                      )}
-                    </div>
-                    
-                    {apt.has_document && (
-                      <a href={`/api/doc/${apt.id}`} target="_blank" className="hoverable-link" style={{
-                        display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem',
-                        background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', color: 'var(--primary)',
-                        fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                      }}>
-                         📎 Pedido Médico
-                      </a>
-                    )}
-                  </div>
-                )
-              })}
+              {appointments.map((apt) => (
+                <HistoryItem key={apt.id} apt={apt} />
+              ))}
             </div>
           )}
         </div>
@@ -132,3 +76,5 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
     </div>
   );
 }
+
+import HistoryItem from '@/components/HistoryItem';
