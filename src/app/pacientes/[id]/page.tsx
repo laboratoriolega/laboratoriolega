@@ -29,12 +29,15 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
     SELECT a.id::text, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
            (SELECT json_agg(json_build_object('id', ad.id::text, 'url', ad.document_url, 'filename', ad.filename)) 
             FROM appointment_documents ad WHERE ad.appointment_id = a.id) as documents,
-           (SELECT json_agg(json_build_object('id', al.id::text, 'action', al.action, 'details', al.details::text, 'created_at', al.created_at, 'username', u.username))
-            FROM audit_logs al
-            JOIN users u ON al.user_id = u.id
-            WHERE al.action IN ('CREATE_APPOINTMENT', 'UPDATE_APPOINTMENT', 'UPDATE_EVOLUTION', 'MOVE_APPOINTMENT', 'DELETE_DOCUMENT')
-              AND (al.details::text LIKE '%' || a.id::text || '%')
-            ORDER BY al.created_at ASC) as audit_trail
+           (SELECT json_agg(row_to_json(audit_ordered))
+            FROM (
+              SELECT al.id::text, al.action, al.details::text as details, al.created_at, u.username
+              FROM audit_logs al
+              JOIN users u ON al.user_id = u.id
+              WHERE al.action IN ('CREATE_APPOINTMENT', 'UPDATE_APPOINTMENT', 'UPDATE_EVOLUTION', 'MOVE_APPOINTMENT', 'DELETE_DOCUMENT', 'UPDATE_APPOINTMENT_STATUS')
+                AND (al.details::text LIKE '%' || a.id::text || '%')
+              ORDER BY al.created_at ASC
+            ) audit_ordered) as audit_trail
     FROM appointments a
     WHERE a.patient_id = $1 
     ORDER BY a.appointment_date DESC
