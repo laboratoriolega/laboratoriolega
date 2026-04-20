@@ -3,6 +3,7 @@ import { Calendar, Stethoscope, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import HistoryItem from '@/components/HistoryItem';
 
 export const dynamic = "force-dynamic";
 
@@ -97,5 +98,3 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
     </div>
   );
 }
-
-import HistoryItem from '@/components/HistoryItem';
