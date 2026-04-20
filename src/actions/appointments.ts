@@ -75,18 +75,20 @@ export async function createAppointment(formData: FormData) {
       }
     }
 
-    // UPSERT patient based on DNI
-    let patientId;
-    const existingPatient = await client.query('SELECT id FROM patients WHERE dni = $1', [dni]);
-    if (existingPatient.rows.length > 0) {
-      patientId = existingPatient.rows[0].id;
-    } else {
-      const newPatient = await client.query(
-        'INSERT INTO patients (name, dni, email, phone, health_insurance) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-        [name, dni, email, phone, health_insurance]
-      );
-      patientId = newPatient.rows[0].id;
-    }
+    // UPSERT patient based on DNI and update their details to ensure synchronization
+    const patientRes = await client.query(
+      `INSERT INTO patients (name, dni, email, phone, health_insurance) 
+       VALUES ($1, $2, $3, $4, $5) 
+       ON CONFLICT (dni) 
+       DO UPDATE SET 
+         name = EXCLUDED.name, 
+         email = EXCLUDED.email, 
+         phone = EXCLUDED.phone, 
+         health_insurance = EXCLUDED.health_insurance 
+       RETURNING id`,
+      [name, dni, email, phone, health_insurance]
+    );
+    const patientId = patientRes.rows[0].id;
 
     // Insert Appointment
     const aptRes = await client.query(
