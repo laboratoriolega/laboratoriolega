@@ -17,7 +17,14 @@ export default function AppointmentModal({
   isOpen: boolean, 
   onClose: () => void, 
   defaultDate?: Date,
-  initialData?: { name?: string, dni?: string, phone?: string, health_insurance?: string }
+  initialData?: { 
+    name?: string, 
+    dni?: string, 
+    phone?: string, 
+    health_insurance?: string,
+    analysis_type?: string,
+    aire_test_type?: string
+  }
 }) {
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);

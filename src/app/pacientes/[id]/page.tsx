@@ -26,14 +26,22 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
             FROM audit_logs al
             JOIN users u ON al.user_id = u.id
             WHERE al.action IN ('CREATE_APPOINTMENT', 'UPDATE_APPOINTMENT', 'UPDATE_EVOLUTION', 'MOVE_APPOINTMENT', 'DELETE_DOCUMENT')
-              AND (al.details::text LIKE '%' || a.id || '%')
+              AND (al.details::text LIKE '%' || a.id::text || '%')
             ORDER BY al.created_at ASC) as audit_trail
     FROM appointments a
     WHERE a.patient_id = $1 
     ORDER BY a.appointment_date DESC
   `, [id]);
   
-  const appointments = (apptsRes.rows || []).filter(row => row && row.id);
+  // Sanitize for Client Component (Serialize Dates)
+  const appointments = (apptsRes.rows || []).filter(row => row && row.id).map(apt => ({
+    ...apt,
+    appointment_date: apt.appointment_date ? new Date(apt.appointment_date).toISOString() : null,
+    audit_trail: apt.audit_trail ? apt.audit_trail.map((log: any) => ({
+      ...log,
+      created_at: log.created_at ? new Date(log.created_at).toISOString() : null
+    })) : []
+  }));
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>

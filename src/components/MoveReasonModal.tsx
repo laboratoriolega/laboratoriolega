@@ -9,16 +9,28 @@ export default function MoveReasonModal({
   isOpen, 
   onClose, 
   apptId, 
-  newDate 
+  newDate,
+  onConfirm,
+  title,
+  confirmLabel,
+  placeholder,
+  patientName
 }: { 
   isOpen: boolean, 
   onClose: () => void, 
-  apptId: string | null, 
-  newDate: string | null 
+  apptId?: string | null, 
+  newDate?: string | null,
+  onConfirm?: (reason: string) => void,
+  title?: string,
+  confirmLabel?: string,
+  placeholder?: string,
+  patientName?: string
 }) {
   const [loading, setLoading] = useState(false);
 
-  if (!isOpen || !apptId || !newDate) return null;
+  if (!isOpen) return null;
+  // If not using onConfirm, apptId and newDate are required for the default moveAppointment logic
+  if (!onConfirm && (!apptId || !newDate)) return null;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,7 +38,12 @@ export default function MoveReasonModal({
     const reason = formData.get("reason") as string;
 
     if (!reason || reason.trim().length < 5) {
-      alert("Por favor, ingresá un motivo válido para el cambio (mínimo 5 caracteres).");
+      alert("Por favor, ingresá un motivo válido (mínimo 5 caracteres).");
+      return;
+    }
+
+    if (onConfirm) {
+      onConfirm(reason);
       return;
     }
 
@@ -59,10 +76,10 @@ export default function MoveReasonModal({
         </button>
 
         <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem", color: "var(--text-main)", display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <CalendarDays size={20} color="var(--primary)" /> Mover Turno
+          <CalendarDays size={20} color="var(--primary)" /> {title || "Mover Turno"}
         </h2>
         <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.25rem" }}>
-          ¿Por qué estás cambiando la fecha de este turno? Este motivo quedará registrado.
+          {onConfirm ? `Confirmar acción para el paciente ${patientName || ''}.` : "¿Por qué estás cambiando la fecha de este turno? Este motivo quedará registrado."}
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -72,7 +89,7 @@ export default function MoveReasonModal({
               required
               className="input-field" 
               rows={3}
-              placeholder="Indica el motivo del cambio de fecha..."
+              placeholder={placeholder || "Indica el motivo..."}
               style={{ resize: "none" }}
               autoFocus
             />
@@ -85,8 +102,8 @@ export default function MoveReasonModal({
                 disabled={loading}
                 className="btn-primary" 
                 style={{ flex: 1, padding: "0.75rem", opacity: loading ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              >
-                {loading ? "Moviendo..." : <><CheckCircle size={18} /> Confirmar</>}
+               >
+                {loading ? "Procesando..." : <><CheckCircle size={18} /> {confirmLabel || "Confirmar"}</>}
              </button>
           </div>
         </form>

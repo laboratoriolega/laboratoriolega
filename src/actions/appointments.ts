@@ -301,3 +301,33 @@ export async function deleteAppointment(id: string) {
     return { error: error.message };
   }
 }
+export async function updateAppointmentStatus(id: string, status: string, reason?: string) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autorizado");
+
+    if (reason) {
+      await pool.query(
+        "UPDATE appointments SET status = $1, observations = COALESCE(observations, '') || $2 WHERE id = $3",
+        [status, `\n[${status} - ${format(new Date(), "dd/MM")}] Motivo: ${reason}`, id]
+      );
+    } else {
+      await pool.query("UPDATE appointments SET status = $1 WHERE id = $2", [status, id]);
+    }
+
+    await logAction("UPDATE_APPOINTMENT_STATUS", { 
+      appointment_id: id, 
+      new_status: status,
+      reason: reason || null
+    });
+
+    revalidatePath("/");
+    revalidatePath("/calendario");
+    revalidatePath("/pacientes", "layout");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Update status error:", error);
+    return { error: error.message };
+  }
+}
