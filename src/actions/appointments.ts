@@ -105,7 +105,7 @@ export async function createAppointment(formData: FormData) {
         }
         const ext = file.name.split('.').pop() || 'bin';
         const filename = `pedidos/${Date.now()}-${dni}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const blob = await put(filename, file, { access: 'public' });
+        const blob = await put(filename, file, { access: 'private' });
         
         await client.query(
           'INSERT INTO appointment_documents (appointment_id, document_url, filename) VALUES ($1, $2, $3)',
@@ -206,7 +206,7 @@ export async function updateAppointment(formData: FormData) {
         }
         const ext = file.name.split('.').pop() || 'bin';
         const filename = `pedidos/${Date.now()}-${dni}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const blob = await put(filename, file, { access: 'public' });
+        const blob = await put(filename, file, { access: 'private' });
         
         await client.query(
           'INSERT INTO appointment_documents (appointment_id, document_url, filename) VALUES ($1, $2, $3)',
