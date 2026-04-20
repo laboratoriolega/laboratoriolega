@@ -5,6 +5,17 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar, FileText, ChevronDown, ChevronUp, Clock, Info } from "lucide-react";
 
+const ACTION_LABELS: Record<string, string> = {
+  CREATE_APPOINTMENT:         "creó el turno",
+  UPDATE_APPOINTMENT:         "modificó el turno",
+  UPDATE_EVOLUTION:           "actualizó evolución / notas",
+  MOVE_APPOINTMENT:           "reprogramó el turno",
+  DELETE_DOCUMENT:            "eliminó un documento",
+  DELETE_APPOINTMENT:         "eliminó el turno",
+  UPDATE_APPOINTMENT_STATUS:  "cambió el estado del turno",
+  ADD_DOCUMENT:               "adjuntó un documento",
+};
+
 export default function HistoryItem({ apt }: { apt: any }) {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -151,7 +162,12 @@ export default function HistoryItem({ apt }: { apt: any }) {
                       } catch (e) {
                         details = {};
                       }
-                      const statusText = details?.new_status ? ` → ${details.new_status}` : '';
+                      const actionLabel = ACTION_LABELS[log.action] || log.action?.replace(/_/g, ' ') || "Acción";
+                      const STATUS_ES: Record<string, string> = {
+                        AGENDADO: "Agendado", COMPLETADO: "Completado",
+                        CANCELADO: "Cancelado", REAGENDADO: "Reagendado",
+                      };
+                      const statusTextEs = details?.new_status ? ` → ${STATUS_ES[details.new_status] || details.new_status}` : '';
                       
                       const safeFormatAudit = (dateStr: string) => {
                         try {
@@ -167,8 +183,8 @@ export default function HistoryItem({ apt }: { apt: any }) {
                       return (
                         <div key={log.id} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(0,0,0,0.02)', padding: '0.5rem', borderRadius: '6px' }}>
                           <div>
-                            <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{(log.username || "Sistema")}</span> {log.action?.replace(/_/g, ' ') || "Acción"}
-                            {statusText && <span style={{ marginLeft: '5px', color: 'var(--primary)', fontWeight: 600 }}>{statusText}</span>}
+                            <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{(log.username || "Sistema")}</span> {actionLabel}
+                            {statusTextEs && <span style={{ marginLeft: '5px', color: 'var(--primary)', fontWeight: 600 }}>{statusTextEs}</span>}
                           </div>
                           <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>
                             {safeFormatAudit(log.created_at)}
