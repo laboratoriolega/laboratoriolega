@@ -33,6 +33,8 @@ export const metadata: Metadata = {
   },
 };
 
+import ShellLayout from "@/components/ShellLayout";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -44,12 +46,6 @@ export default async function RootLayout({
     const res = await getProfileData();
     userData = res.data;
   }
-
-  // Pre-calculate user display info
-  const userDisplayName = userData?.full_name || session?.username || 'Usuario';
-  const userRole = userData?.role || session?.role || 'staff';
-  const avatarUrl = userData?.avatar_url;
-  const updatedTime = userData?.updated_at ? new Date(userData.updated_at).getTime() : Date.now();
 
   if (!session) {
     return (
@@ -89,80 +85,9 @@ export default async function RootLayout({
       </head>
       <body style={{ margin: 0, padding: 0 }}>
         <MobileNav session={session} userData={userData} />
-        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-          {/* Sidebar */}
-          <aside className="glass-panel" style={{
-            width: '22rem',
-            padding: '2.5rem 1.5rem',
-            margin: '1rem',
-            display: 'flex',
-            flexDirection: 'column',
-            flexShrink: 0,
-            overflowY: 'auto'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '2rem' }}>
-              <img
-                src="/logo.png"
-                alt="LEGA Laboratorio Logo"
-                className="logo-light"
-                style={{ width: '15rem', height: 'auto', objectFit: 'contain' }}
-              />
-              <img
-                src="/logoB.png"
-                alt="LEGA Laboratorio Logo"
-                className="logo-dark"
-                style={{ width: '15rem', height: 'auto', objectFit: 'contain' }}
-              />
-            </div>
-
-            <ThemeToggle />
-            <SidebarNav userRole={userRole} />
-
-            <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ 
-                  width: '45px', height: '45px', background: 'var(--primary)', borderRadius: '50%', 
-                  color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                  fontWeight: 'bold', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--glass-border)'
-                }}>
-                  {avatarUrl ? (
-                    <img src={`/api/avatar/${userData.id}?v=${updatedTime}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    userDisplayName.charAt(0).toUpperCase()
-                  )}
-                </div>
-                <div style={{ overflow: 'hidden' }}>
-                  <p style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                    {userDisplayName}
-                  </p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, textTransform: 'capitalize' }}>Rol: {userRole}</p>
-                </div>
-              </div>
-
-              <form action={logoutAction}>
-                <button type="submit" style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                  padding: '0.75rem', background: 'rgba(0,0,0,0.05)', color: 'var(--danger)',
-                  borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', border: 'none', cursor: 'pointer', transition: 'background 0.2s'
-                }}>
-                  <LogOut size={16} /> Cerrar Sesión
-                </button>
-              </form>
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <main style={{
-            flex: 1,
-            padding: '1rem',
-            overflowY: 'auto',
-            height: '100vh'
-          }}>
-            <div style={{ minHeight: '100%' }}>
-              {children}
-            </div>
-          </main>
-        </div>
+        <ShellLayout session={session} userData={userData}>
+          {children}
+        </ShellLayout>
       </body>
     </html>
   );

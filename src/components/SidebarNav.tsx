@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarDays, Users, UserCircle, ShieldCheck, Calendar, Wind, ListTodo } from "lucide-react";
 
-export default function SidebarNav({ userRole }: { userRole?: string }) {
+export default function SidebarNav({ userRole, isCollapsed }: { userRole?: string, isCollapsed?: boolean }) {
   const pathname = usePathname();
 
   const navItems = [
@@ -29,17 +29,21 @@ export default function SidebarNav({ userRole }: { userRole?: string }) {
           <Link 
             key={item.path}
             href={item.path} 
+            title={isCollapsed ? item.name : ""}
             style={{
-              display: 'flex', alignItems: 'center', gap: '0.75rem',
-              padding: '0.75rem 1rem', borderRadius: '8px',
+              display: 'flex', alignItems: 'center', gap: isCollapsed ? '0' : '0.75rem',
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
+              padding: '0.75rem', borderRadius: '8px',
               background: isActive ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
               color: isActive ? 'var(--primary)' : 'var(--text-muted)',
               fontWeight: isActive ? 600 : 500,
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              width: isCollapsed ? '44px' : 'auto',
+              margin: isCollapsed ? '0 auto' : '0'
              }}
           >
              {item.icon}
-             <span>{item.name}</span>
+             {!isCollapsed && <span>{item.name}</span>}
           </Link>
         )
       })}
