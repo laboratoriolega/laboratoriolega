@@ -25,25 +25,13 @@ export default function AppointmentModal({
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
-  // Reset state and form when modal is opened
+  // Reset state when modal is opened
   useEffect(() => {
     if (isOpen) {
       setSelectedFiles([]);
       setAnalysisType("");
-      if (formRef.current) {
-        formRef.current.reset();
-        
-        // If we have initialData, pre-fill the form after reset
-        if (initialData) {
-          const form = formRef.current;
-          if (initialData.name) (form.elements.namedItem("name") as HTMLInputElement).value = initialData.name;
-          if (initialData.dni) (form.elements.namedItem("dni") as HTMLInputElement).value = initialData.dni;
-          if (initialData.phone) (form.elements.namedItem("phone") as HTMLInputElement).value = initialData.phone;
-          if (initialData.health_insurance) (form.elements.namedItem("health_insurance") as HTMLInputElement).value = initialData.health_insurance;
-        }
-      }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen]);
   
   if (!isOpen) return null;
 
@@ -196,25 +184,25 @@ export default function AppointmentModal({
             <label style={labelStyle}>Nombre del Paciente</label>
             <div style={{ position: "relative" }}>
               <User size={16} color="#94a3b8" style={{ position: "absolute", left: "0.8rem", top: "50%", transform: "translateY(-50%)" }} />
-              <input required name="name" type="text" className="modern-input" style={{...inputStyle, paddingLeft: "2.5rem"}} placeholder="Ej: Walter Gómez" />
+              <input required name="name" type="text" className="modern-input" style={{...inputStyle, paddingLeft: "2.5rem"}} placeholder="Ej: Walter Gómez" defaultValue={initialData?.name} />
             </div>
           </div>
 
           <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>DNI</label>
-              <input required name="dni" type="text" className="modern-input" style={inputStyle} placeholder="12345678" />
+              <input required name="dni" type="text" className="modern-input" style={inputStyle} placeholder="12345678" defaultValue={initialData?.dni} />
             </div>
             <div>
               <label style={labelStyle}>Teléfono</label>
-              <input required name="phone" type="tel" className="modern-input" style={inputStyle} placeholder="Ej: 11 1234-5678" />
+              <input required name="phone" type="tel" className="modern-input" style={inputStyle} placeholder="Ej: 11 1234-5678" defaultValue={initialData?.phone} />
             </div>
           </div>
 
           <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Obra Social</label>
-              <input required name="health_insurance" type="text" list="insurance-list" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, PAMI, etc." />
+              <input required name="health_insurance" type="text" list="insurance-list" className="modern-input" style={inputStyle} placeholder="Ej: OSDE, PAMI, etc." defaultValue={initialData?.health_insurance} />
               <datalist id="insurance-list">
                 <option value="Particular" />
                 <option value="A.A.T.R.A. - OSTYR - (SCIS S.A. )" />
