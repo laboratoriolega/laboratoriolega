@@ -82,7 +82,7 @@ export default async function PacienteHistorialPage({ params }: { params: Promis
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {appointments.map((apt) => (
+              {appointments.map((apt: any) => (
                 <HistoryItem key={apt.id} apt={apt} />
               ))}
             </div>
