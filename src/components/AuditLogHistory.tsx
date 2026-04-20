@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Filter, Loader2 } from "lucide-react";
-import { getAuditLogs } from "@/actions/audit";
+import { Calendar, Loader2, User } from "lucide-react";
+import { getAuditLogs, getAuditUsers } from "@/actions/audit";
 import { formatAuditLog } from "@/lib/audit-format";
 
 export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] }) {
@@ -12,10 +12,17 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
   const [loading, setLoading] = useState(false);
   const [period, setPeriod] = useState<string>('all');
   const [customDate, setCustomDate] = useState<string>('');
+  const [username, setUsername] = useState<string>('all');
+  const [users, setUsers] = useState<string[]>([]);
 
-  const fetchLogs = async (p: string, d: string = '') => {
+  // Load available users on mount
+  useEffect(() => {
+    getAuditUsers().then(res => { if (res.data) setUsers(res.data); });
+  }, []);
+
+  const fetchLogs = async (p: string, d: string = '', u: string = username) => {
     setLoading(true);
-    const res = await getAuditLogs({ period: p, date: d });
+    const res = await getAuditLogs({ period: p, date: d, username: u === 'all' ? undefined : u });
     if (res.data) setLogs(res.data);
     setLoading(false);
   };
@@ -23,16 +30,20 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
   const handlePeriodChange = (p: string) => {
     setPeriod(p);
     if (p !== 'date') {
-      fetchLogs(p);
+      fetchLogs(p, '', username);
     }
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const d = e.target.value;
     setCustomDate(d);
-    if (d) {
-      fetchLogs('date', d);
-    }
+    if (d) fetchLogs('date', d, username);
+  };
+
+  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const u = e.target.value;
+    setUsername(u);
+    fetchLogs(period, customDate, u);
   };
 
   return (
@@ -48,6 +59,7 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
         borderRadius: '12px',
         border: '1px solid rgba(14, 165, 233, 0.1)'
       }}>
+        {/* Period filters */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {[
             { id: 'all', label: 'Todo' },
@@ -76,25 +88,55 @@ export default function AuditLogHistory({ initialLogs }: { initialLogs: any[] })
           ))}
         </div>
 
-        {period === 'date' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', animation: 'fadeIn 0.2s ease' }}>
-            <Calendar size={14} color="var(--primary)" />
-            <input 
-              type="date" 
-              value={customDate}
-              onChange={handleDateChange}
+        {/* User + Date combined row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* User filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <User size={14} color="var(--primary)" />
+            <select
+              value={username}
+              onChange={handleUserChange}
               style={{
-                padding: '0.4rem',
+                padding: '0.35rem 0.6rem',
                 borderRadius: '6px',
                 background: 'var(--glass-bg)',
-                border: '1px solid var(--glass-border)',
+                border: username !== 'all' ? '1.5px solid var(--primary)' : '1px solid var(--glass-border)',
                 color: 'var(--text-main)',
                 fontSize: '0.8rem',
-                outline: 'none'
+                outline: 'none',
+                cursor: 'pointer',
+                fontWeight: username !== 'all' ? 600 : 400,
               }}
-            />
+            >
+              <option value="all">Todos los usuarios</option>
+              {users.map(u => (
+                <option key={u} value={u}>@{u}</option>
+              ))}
+            </select>
           </div>
-        )}
+
+          {/* Custom date picker */}
+          {period === 'date' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', animation: 'fadeIn 0.2s ease' }}>
+              <Calendar size={14} color="var(--primary)" />
+              <input 
+                type="date" 
+                value={customDate}
+                onChange={handleDateChange}
+                style={{
+                  padding: '0.35rem',
+                  borderRadius: '6px',
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--glass-border)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.8rem',
+                  outline: 'none'
+                }}
+              />
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Logs List */}
