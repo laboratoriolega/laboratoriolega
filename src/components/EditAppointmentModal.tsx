@@ -17,6 +17,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
   useEffect(() => {
     if (ap) {
       setAnalysisType(ap.analysis_type || "");
+      setSelectedFiles([]); // Reset new files when opening a different appointment
     }
   }, [ap]);
 

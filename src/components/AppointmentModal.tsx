@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createAppointment } from "@/actions/appointments";
 import { format } from "date-fns";
@@ -20,7 +20,19 @@ export default function AppointmentModal({
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [analysisType, setAnalysisType] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+
+  // Reset state and form when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedFiles([]);
+      setAnalysisType("");
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+    }
+  }, [isOpen]);
   
   if (!isOpen) return null;
 
@@ -167,7 +179,7 @@ export default function AppointmentModal({
           </button>
         </div>
 
-        <form className="modal-body" onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "1.25rem 1.5rem", display: "flex", flexDirection: "column", gap: "1rem", overflowY: "auto" }}>
+        <form ref={formRef} className="modal-body" onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "1.25rem 1.5rem", display: "flex", flexDirection: "column", gap: "1rem", overflowY: "auto" }}>
           
           <div>
             <label style={labelStyle}>Nombre del Paciente</label>
