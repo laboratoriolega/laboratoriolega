@@ -273,3 +273,29 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
     return { error: error.message };
   }
 }
+
+export async function deleteAppointment(id: string) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autorizado");
+
+    // Get info for logging before deleting
+    const current = await pool.query("SELECT p.name FROM appointments a JOIN patients p ON a.patient_id = p.id WHERE a.id = $1", [id]);
+    const name = current.rows[0]?.name || "Desconocido";
+
+    await pool.query("DELETE FROM appointment_documents WHERE appointment_id = $1", [id]);
+    await pool.query("DELETE FROM appointments WHERE id = $1", [id]);
+
+    await logAction("DELETE_APPOINTMENT", { appointment_id: id, patient_name: name });
+
+    revalidatePath("/calendario");
+    revalidatePath("/");
+    revalidatePath("/turnos-lista");
+    revalidatePath("/pacientes", "layout");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Delete appointment error:", error);
+    return { error: error.message };
+  }
+}

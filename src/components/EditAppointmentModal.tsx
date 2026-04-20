@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { deleteDocument, updateAppointment } from "@/actions/appointments";
+import { deleteDocument, updateAppointment, deleteAppointment } from "@/actions/appointments";
 import { X, Calendar, Edit, Loader2, Info, CloudUpload, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { compressImage } from "@/lib/compression";
@@ -78,6 +78,24 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
       }
     } catch (e) {
       alert("Error eliminando archivo");
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`¿Estás seguro de que deseas eliminar el turno de ${ap.name}? Esta acción no se puede deshacer.`)) return;
+    setLoading(true);
+    try {
+      const res = await deleteAppointment(ap.id);
+      if (res.success) {
+        onClose();
+        router.refresh();
+      } else {
+        alert(res.error);
+        setLoading(false);
+      }
+    } catch (err: any) {
+      alert(err.message || "Error al eliminar el turno.");
+      setLoading(false);
     }
   }
 
@@ -344,8 +362,24 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
           )}
 
           <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem" }}>
-            <button type="button" onClick={onClose} style={{ flex: 1, padding: "0.75rem", background: "#f1f5f9", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600 }}>Cerrar</button>
-            <button type="submit" disabled={loading} style={{ flex: 1, padding: "0.75rem", background: "var(--primary)", color: "white", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+            <button 
+              type="button" 
+              onClick={handleDelete} 
+              disabled={loading}
+              style={{ 
+                padding: "0.75rem", background: "none", color: "var(--danger)", 
+                borderRadius: "8px", border: "1px solid rgba(239, 68, 68, 0.2)", 
+                cursor: loading ? "wait" : "pointer", fontWeight: 600, fontSize: "0.9rem",
+                display: "flex", alignItems: "center", gap: "0.5rem", transition: "all 0.2s"
+              }}
+              onMouseEnter={(e) => { if(!loading) e.currentTarget.style.background = "rgba(239, 68, 68, 0.05)" }}
+              onMouseLeave={(e) => { if(!loading) e.currentTarget.style.background = "none" }}
+            >
+              <Trash2 size={18} /> Borrar Turno
+            </button>
+            <div style={{ flex: 1 }} />
+            <button type="button" onClick={onClose} style={{ padding: "0.75rem 1.5rem", background: "#f1f5f9", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, color: "#475569" }}>Cerrar</button>
+            <button type="submit" disabled={loading} style={{ padding: "0.75rem 1.5rem", background: "var(--primary)", color: "white", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600 }}>
               {loading ? <Loader2 className="animate-spin" /> : "Guardar Cambios"}
             </button>
           </div>
