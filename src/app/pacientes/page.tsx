@@ -1,12 +1,25 @@
 import { getPatients } from "@/actions/patients";
-import { Users, FileText } from "lucide-react";
+import { Users } from "lucide-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import PatientFilters from "@/components/PatientFilters";
+import PatientTableActions from "@/components/PatientTableActions";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
-export default async function PacientesPage() {
-  const { data: patients, error } = await getPatients();
+export default async function PacientesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { data: allPatients, error } = await getPatients();
+  const { q } = await searchParams;
+
+  let patients = allPatients || [];
+  if (q) {
+    const query = q.toLowerCase();
+    patients = patients.filter((p: any) => 
+      p.name?.toLowerCase().includes(query) || 
+      p.dni?.toLowerCase().includes(query) ||
+      p.health_insurance?.toLowerCase().includes(query)
+    );
+  }
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -19,13 +32,10 @@ export default async function PacientesPage() {
 
       <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Todos los Pacientes</h3>
-          <input 
-            type="text" 
-            placeholder="Buscar por DNI o Nombre..." 
-            className="input-field"
-            style={{ width: '100%', maxWidth: '300px' }}
-          />
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Todos los Pacientes ({patients.length})</h3>
+          <Suspense fallback={<div style={{ width: '300px', height: '40px', background: 'var(--glass-bg)', borderRadius: '8px' }} />}>
+            <PatientFilters />
+          </Suspense>
         </div>
 
         {error && <div style={{ color: 'var(--danger)', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>Error cargando base de datos: {error}</div>}
@@ -46,11 +56,10 @@ export default async function PacientesPage() {
             <tbody>
               {!patients || patients.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
                       <Users size={48} style={{ opacity: 0.5 }} />
-                      <p>Todavía no tienes pacientes registrados en el sistema.</p>
-                      <br />
+                      <p>{q ? "No se encontraron pacientes para tu búsqueda." : "Todavía no tienes pacientes registrados en el sistema."}</p>
                     </div>
                   </td>
                 </tr>
@@ -86,12 +95,7 @@ export default async function PacientesPage() {
                     </td>
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{p.email || '-'}</td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>
-                      <a href={`/pacientes/${p.id}`} className="hoverable-link" style={{
-                        display: 'inline-block', padding: '0.4rem 1rem', background: 'rgba(14, 165, 233, 0.1)', 
-                        color: 'var(--primary)', fontWeight: 600, fontSize: '0.85rem', borderRadius: '6px', transition: 'all 0.2s', textDecoration: 'none'
-                      }}>
-                        Ver Historial
-                      </a>
+                      <PatientTableActions patient={p} />
                     </td>
                   </tr>
                 ))

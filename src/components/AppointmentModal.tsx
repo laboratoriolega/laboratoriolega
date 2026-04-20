@@ -11,11 +11,13 @@ import Portal from "./Portal";
 export default function AppointmentModal({ 
   isOpen, 
   onClose, 
-  defaultDate 
+  defaultDate,
+  initialData
 }: { 
   isOpen: boolean, 
   onClose: () => void, 
-  defaultDate?: Date 
+  defaultDate?: Date,
+  initialData?: { name?: string, dni?: string, phone?: string, health_insurance?: string }
 }) {
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -30,9 +32,18 @@ export default function AppointmentModal({
       setAnalysisType("");
       if (formRef.current) {
         formRef.current.reset();
+        
+        // If we have initialData, pre-fill the form after reset
+        if (initialData) {
+          const form = formRef.current;
+          if (initialData.name) (form.elements.namedItem("name") as HTMLInputElement).value = initialData.name;
+          if (initialData.dni) (form.elements.namedItem("dni") as HTMLInputElement).value = initialData.dni;
+          if (initialData.phone) (form.elements.namedItem("phone") as HTMLInputElement).value = initialData.phone;
+          if (initialData.health_insurance) (form.elements.namedItem("health_insurance") as HTMLInputElement).value = initialData.health_insurance;
+        }
       }
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
   
   if (!isOpen) return null;
 
