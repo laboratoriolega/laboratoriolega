@@ -54,7 +54,7 @@ export default function ShellLayout({ children, session, userData }: ShellLayout
 
         {/* Logo Section */}
         <div style={{ 
-          display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'flex-start', 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
           gap: '0.75rem', paddingBottom: '2rem', height: '80px', paddingTop: isCollapsed ? '1rem' : '0'
         }}>
           {!isCollapsed ? (
