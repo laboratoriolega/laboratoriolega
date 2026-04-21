@@ -115,13 +115,13 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                  {format(day, 'dd', { locale: es })}
                </p>
 
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto', flex: 1, maxHeight: '200px' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', flex: 1, maxHeight: '250px' }}>
                  {dayAppts.filter(Boolean).map(apt => (
                     <div key={apt.id} 
                       style={{ 
                         background: 'rgba(0,0,0,0.02)', 
                         border: '1px solid var(--glass-border)', 
-                        padding: '0.5rem', 
+                        padding: '0.65rem', 
                         borderRadius: '4px',
                         borderLeft: `3px solid ${apt?.status === 'AGENDADO' ? 'var(--primary)' : (apt?.status === 'CANCELADO' ? '#94a3b8' : 'var(--success)')}`,
                         cursor: 'grab'
@@ -156,7 +156,7 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                           <Edit2 size={12} />
                         </button>
                       </div>
-                      <p style={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.1, marginBottom: '0.15rem' }}>{apt?.name}</p>
+                      <p style={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.2, marginBottom: '0.15rem', wordBreak: 'break-word' }}>{apt?.name}</p>
                       <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>{apt?.analysis_type}</p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
                         <p style={{ fontSize: '0.8rem', fontWeight: 600 }}>{apt.health_insurance}</p>

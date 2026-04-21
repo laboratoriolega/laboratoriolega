@@ -202,11 +202,11 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                  </span>
                </div>
 
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', flex: 1, maxHeight: '220px' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', flex: 1, maxHeight: '280px' }}>
                  {dayAppts.filter(Boolean).map(apt => (
                     <div key={apt.id} style={{ 
                       ...getTypeStyle(apt.aire_test_type, apt.status),
-                      padding: '0.5rem', 
+                      padding: '0.65rem', 
                       borderRadius: '8px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
                       position: 'relative',
@@ -242,7 +242,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                           <Edit2 size={10} />
                         </button>
                       </div>
-                      <p style={{ fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.2, color: apt?.status === 'CANCELADO' ? 'var(--text-muted)' : 'var(--text-main)', margin: 0, textDecoration: apt?.status === 'CANCELADO' ? 'line-through' : 'none', opacity: apt?.status === 'CANCELADO' ? 0.6 : 1 }}>{apt?.name}</p>
+                      <p style={{ fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.2, color: apt?.status === 'CANCELADO' ? 'var(--text-muted)' : 'var(--text-main)', margin: '0.1rem 0', textDecoration: apt?.status === 'CANCELADO' ? 'line-through' : 'none', opacity: apt?.status === 'CANCELADO' ? 0.6 : 1, wordBreak: 'break-word' }}>{apt?.name}</p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.1rem' }}>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>{apt.aire_test_type || 'Prueba'}</p>
                         {apt.observations && <MessageSquare size={10} color="var(--primary)" />}
