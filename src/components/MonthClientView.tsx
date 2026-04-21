@@ -140,8 +140,8 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--primary)', marginBottom: '0.1rem', fontWeight: 600, fontSize: '0.7rem' }}>
-                          <Clock size={10} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--primary)', marginBottom: '0.15rem', fontWeight: 700, fontSize: '0.85rem' }}>
+                          <Clock size={12} />
                           {format(new Date(apt.appointment_date), "HH:mm")}
                         </div>
                         <button 
@@ -156,10 +156,10 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
                           <Edit2 size={12} />
                         </button>
                       </div>
-                      <p style={{ fontWeight: 600, fontSize: '0.75rem', lineHeight: 1.1, marginBottom: '0.1rem' }}>{apt?.name}</p>
-                      <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{apt?.analysis_type}</p>
+                      <p style={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.1, marginBottom: '0.15rem' }}>{apt?.name}</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>{apt?.analysis_type}</p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
-                        <p style={{ fontSize: '0.65rem', fontWeight: 500 }}>{apt.health_insurance}</p>
+                        <p style={{ fontSize: '0.8rem', fontWeight: 600 }}>{apt.health_insurance}</p>
                         {apt.observations && (
                           <span title={apt.observations} style={{ display: 'flex' }}>
                             <MessageSquare size={10} color="var(--primary)" />
