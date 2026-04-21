@@ -10,9 +10,11 @@ import { Suspense } from "react";
 
 export const revalidate = 0; // Disable cache for this page since data changes
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ status?: string, month?: string, q?: string }> }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ status?: string, date?: string, q?: string }> }) {
   const { data: allAppointments, error } = await getAppointments();
   const filters = await searchParams;
+  const today = format(new Date(), "yyyy-MM-dd");
+  const selectedDate = filters.date || today;
 
   // Filter logic
   let appointments = (allAppointments || []).filter(Boolean);
@@ -21,13 +23,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     appointments = appointments.filter((a: any) => a && a.status === filters.status);
   }
   
-  if (filters.month) {
-    appointments = appointments.filter((a: any) => {
-      if (!a || !a.appointment_date) return false;
-      const date = new Date(a.appointment_date);
-      return (date.getMonth() + 1).toString().padStart(2, '0') === filters.month;
-    });
-  }
+  // Filter by exact date (default to today if no date provided)
+  appointments = appointments.filter((a: any) => {
+    if (!a || !a.appointment_date) return false;
+    const aptDate = format(new Date(a.appointment_date), "yyyy-MM-dd");
+    return aptDate === selectedDate;
+  });
 
   if (filters.q) {
     const normalize = (s: string) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
@@ -109,7 +110,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Agenda de Laboratorio ({filters.status || 'Todos'})</h3>
           <Suspense fallback={<div style={{ width: '300px', height: '36px', background: 'var(--glass-bg)', borderRadius: '8px', border: '1px solid var(--glass-border)' }} />}>
-            <DashboardFilters currentMonth={filters.month} />
+            <DashboardFilters />
           </Suspense>
         </div>
 

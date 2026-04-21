@@ -39,10 +39,17 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
   const currentMonthAppts = airesAppts.filter(a => a && a.appointment_date && isSameMonth(new Date(a.appointment_date), monthStart));
   const completedThisMonth = currentMonthAppts.filter(a => a?.status === 'COMPLETADO').length;
   
-  const siboCount = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO').length;
-  const siboLactulonCount = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO c/Lactulon').length;
-  const lactosaCount = currentMonthAppts.filter(a => a?.aire_test_type === 'Lactosa').length;
-  const fructuosaCount = currentMonthAppts.filter(a => a?.aire_test_type === 'Fructuosa').length;
+  const siboTotal = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO').length;
+  const siboCompleted = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO' && a?.status === 'COMPLETADO').length;
+
+  const siboLactulonTotal = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO c/Lactulon').length;
+  const siboLactulonCompleted = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO c/Lactulon' && a?.status === 'COMPLETADO').length;
+
+  const lactosaTotal = currentMonthAppts.filter(a => a?.aire_test_type === 'Lactosa').length;
+  const lactosaCompleted = currentMonthAppts.filter(a => a?.aire_test_type === 'Lactosa' && a?.status === 'COMPLETADO').length;
+
+  const fructuosaTotal = currentMonthAppts.filter(a => a?.aire_test_type === 'Fructuosa').length;
+  const fructuosaCompleted = currentMonthAppts.filter(a => a?.aire_test_type === 'Fructuosa' && a?.status === 'COMPLETADO').length;
 
   const getTypeStyle = (type?: string, status?: string) => {
     let base = { 
@@ -102,16 +109,16 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
 
       <div style={{ display: 'flex', gap: '1.5rem', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#A855F7' }}>
-             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A855F7' }}></span> SIBO ({siboCount})
+             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A855F7' }}></span> SIBO ({siboTotal}/{siboCompleted})
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#06B6D4' }}>
-             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#06B6D4' }}></span> SIBO C/ LACTULON ({siboLactulonCount})
+             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#06B6D4' }}></span> SIBO C/ LACTULON ({siboLactulonTotal}/{siboLactulonCompleted})
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EC4899' }}>
-             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#EC4899' }}></span> LACTOSA ({lactosaCount})
+             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#EC4899' }}></span> LACTOSA ({lactosaTotal}/{lactosaCompleted})
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#F97316' }}>
-             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#F97316' }}></span> FRUCTUOSA ({fructuosaCount})
+             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#F97316' }}></span> FRUCTUOSA ({fructuosaTotal}/{fructuosaCompleted})
           </div>
       </div>
 

@@ -4,17 +4,20 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-export default function DashboardFilters({ currentMonth }: { currentMonth?: string }) {
+export default function DashboardFilters() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
 
-  function handleMonthChange(month: string) {
+  const today = format(new Date(), "yyyy-MM-dd");
+  const currentDate = searchParams.get('date') || today;
+
+  function handleDateChange(date: string) {
     const params = new URLSearchParams(searchParams);
-    if (month) {
-      params.set('month', month);
+    if (date) {
+      params.set('date', date);
     } else {
-      params.delete('month');
+      params.delete('date');
     }
     replace(`${pathname}?${params.toString()}`);
   }
@@ -31,26 +34,20 @@ export default function DashboardFilters({ currentMonth }: { currentMonth?: stri
 
   return (
     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-      <select 
+      <input 
+        type="date"
         className="input-field"
-        style={{ padding: '0.45rem', height: '40px' }}
-        value={currentMonth || ""}
-        onChange={(e) => handleMonthChange(e.target.value)}
-      >
-        <option value="">Todos los meses</option>
-        {["01","02","03","04","05","06","07","08","09","10","11","12"].map(m => (
-          <option key={m} value={m}>
-            {format(new Date(2024, parseInt(m)-1, 1), "MMMM", { locale: es })}
-          </option>
-        ))}
-      </select>
+        style={{ padding: '0.45rem', height: '40px', colorScheme: 'auto' }}
+        value={currentDate}
+        onChange={(e) => handleDateChange(e.target.value)}
+      />
       <div style={{ position: 'relative', width: '100%', maxWidth: '300px' }}>
         <input 
           type="text" 
           placeholder="Buscar paciente o DNI..." 
           className="input-field"
           style={{ width: '100%', height: '40px', paddingRight: '2.5rem' }}
-          defaultValue={searchParams.get('q')?.toString()}
+          defaultValue={searchParams.get('q')?.toString() || ""}
           onChange={(e) => {
              handleSearch(e.target.value);
           }}
