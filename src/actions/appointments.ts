@@ -13,7 +13,7 @@ export async function getAppointments() {
       SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
              json_agg(json_build_object('id', ad.id, 'url', ad.document_url, 'filename', ad.filename)) 
              FILTER (WHERE ad.id IS NOT NULL) as documents,
-             p.name, p.dni, p.health_insurance 
+             p.name, p.dni, p.phone, p.health_insurance 
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
       LEFT JOIN appointment_documents ad ON a.id = ad.appointment_id

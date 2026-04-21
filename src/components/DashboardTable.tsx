@@ -188,7 +188,7 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
                 )}
               </td>
               <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', position: 'relative' }}>
-                <div style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ maxWidth: '300px', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                   {apt.observations || '-'}
                 </div>
                 
