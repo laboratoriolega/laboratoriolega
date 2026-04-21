@@ -111,20 +111,20 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
 
   const inputStyle = {
     width: "100%",
-    padding: "0.6rem 0.8rem",
+    padding: "0.5rem 0.7rem",
     borderRadius: "8px",
     border: "1px solid var(--glass-border)",
     background: "rgba(0,0,0,0.1)",
-    fontSize: "0.9rem",
+    fontSize: "0.85rem",
     color: "var(--text-main)",
     outline: "none"
   };
 
   const labelStyle = {
     display: "block",
-    marginBottom: "0.25rem",
-    fontSize: "0.8rem",
-    fontWeight: 600,
+    marginBottom: "0.15rem",
+    fontSize: "0.75rem",
+    fontWeight: 700,
     color: "var(--text-muted)"
   };
 
@@ -145,8 +145,10 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
       `}</style>
       <div className="glass-panel" style={{
         background: "var(--glass-bg)", width: "100%", maxWidth: "500px",
+        maxHeight: "90vh",
         borderRadius: "16px", boxShadow: "var(--glass-shadow)",
-        overflow: "hidden", border: "1px solid var(--glass-border)"
+        overflow: "hidden", border: "1px solid var(--glass-border)",
+        display: "flex", flexDirection: "column"
       }}>
         <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-gradient-end)" }}>
           <h3 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, color: "var(--text-main)" }}>
@@ -155,7 +157,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
           <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <form onSubmit={handleSubmit} style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.8rem", overflowY: "auto" }}>
           <div>
             <label style={labelStyle}>Paciente (Informativo)</label>
             <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem" }}>{ap.name}</p>

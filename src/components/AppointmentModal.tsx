@@ -98,11 +98,11 @@ export default function AppointmentModal({
 
   const inputStyle = {
     width: "100%",
-    padding: "0.6rem 0.8rem",
+    padding: "0.5rem 0.7rem",
     borderRadius: "8px",
     border: "1px solid #e2e8f0",
     background: "#f8fafc",
-    fontSize: "0.9rem",
+    fontSize: "0.85rem",
     color: "#1e293b",
     outline: "none",
     transition: "all 0.2s ease"
@@ -110,9 +110,9 @@ export default function AppointmentModal({
 
   const labelStyle = {
     display: "block",
-    marginBottom: "0.25rem",
-    fontSize: "0.8rem",
-    fontWeight: 600,
+    marginBottom: "0.15rem",
+    fontSize: "0.75rem",
+    fontWeight: 700,
     color: "#64748b"
   };
 
@@ -149,8 +149,8 @@ export default function AppointmentModal({
       `}</style>
       
       <div style={{ 
-        width: "100%", maxWidth: "550px", 
-        maxHeight: "95vh",
+        width: "100%", maxWidth: "520px", 
+        maxHeight: "90vh",
         background: "var(--glass-bg)",
         borderRadius: "16px",
         boxShadow: "var(--glass-shadow)",
@@ -188,7 +188,7 @@ export default function AppointmentModal({
           </button>
         </div>
 
-        <form ref={formRef} className="modal-body" onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "1.25rem 1.5rem", display: "flex", flexDirection: "column", gap: "1rem", overflowY: "auto" }}>
+        <form ref={formRef} className="modal-body" onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem", overflowY: "auto" }}>
           
           <div>
             <label style={labelStyle}>Nombre del Paciente</label>

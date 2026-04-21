@@ -97,9 +97,21 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
         <tbody>
           {appointments.map((apt: any) => (
             <tr key={apt.id} className="hoverable-row" style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s ease' }}>
-              <td style={{ padding: '1rem', fontWeight: 500 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Clock size={16} color="var(--primary)" />
+              <td style={{ padding: '1rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)', marginBottom: '0.2rem' }}>
+                  {(() => {
+                    try {
+                      if (!apt.appointment_date) return "Sin fecha";
+                      const d = new Date(apt.appointment_date);
+                      if (isNaN(d.getTime())) return "Fecha inválida";
+                      return format(d, "dd/MM/yyyy");
+                    } catch (e) {
+                      return "Error fecha";
+                    }
+                  })()}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  <Clock size={12} />
                   {(() => {
                     try {
                       if (!apt.appointment_date) return "--:--";
@@ -111,18 +123,6 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
                     }
                   })()}
                 </div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {(() => {
-                    try {
-                      if (!apt.appointment_date) return "Sin fecha";
-                      const d = new Date(apt.appointment_date);
-                      if (isNaN(d.getTime())) return "Fecha inválida";
-                      return format(d, "dd/MM/yyyy");
-                    } catch (e) {
-                      return "Error fecha";
-                    }
-                  })()}
-                </span>
               </td>
               <td style={{ padding: '1rem' }}>
                 <p style={{ fontWeight: 600 }}>{apt.name}</p>

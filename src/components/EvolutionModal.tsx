@@ -39,9 +39,11 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
       padding: "1rem", overflowY: "auto"
     }}>
       <div className="glass-panel" style={{
-        background: "var(--glass-bg)", padding: "1.5rem", borderRadius: "20px",
+        background: "var(--glass-bg)", padding: "1.25rem", borderRadius: "20px",
         width: "100%", maxWidth: "500px", margin: "auto", position: "relative",
-        border: "1px solid var(--glass-border)", boxShadow: "var(--glass-shadow)"
+        maxHeight: "90vh", display: "flex", flexDirection: "column",
+        border: "1px solid var(--glass-border)", boxShadow: "var(--glass-shadow)",
+        overflow: "hidden"
       }}>
         <button onClick={onClose} style={{ position: "absolute", top: "1rem", right: "1rem", color: "var(--text-muted)", padding: "0.5rem" }}>
           <X size={20} />
@@ -75,7 +77,7 @@ export default function EvolutionModal({ isOpen, onClose, ap }: { isOpen: boolea
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.8rem", overflowY: "auto" }}>
           
           <div>
             <label style={{ display: "block", marginBottom: "0.25rem", fontWeight: 600, fontSize: "0.85rem", color: "var(--text-muted)" }}>Estado de la Consulta</label>
