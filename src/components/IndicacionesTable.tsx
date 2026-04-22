@@ -1,36 +1,110 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toggleIndicationsStatus } from "@/actions/appointments";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CheckCircle, Clock, Loader2, MessageSquare, Phone } from "lucide-react";
+import { CheckCircle, Clock, Loader2, MessageSquare, Phone, Search, Wind } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function IndicacionesTable({ data }: { data: any[] }) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "sent" | "pending">("all");
 
-  // Stats calculation
+  // Filter logic
+  const filteredData = useMemo(() => {
+    let result = [...data];
+
+    // Status Filter
+    if (filterStatus === "sent") {
+      result = result.filter(a => a.indications_sent);
+    } else if (filterStatus === "pending") {
+      result = result.filter(a => !a.indications_sent);
+    }
+
+    // Search Filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(a => 
+        a.name?.toLowerCase().includes(q) || 
+        a.dni?.toLowerCase().includes(q) || 
+        a.phone?.toLowerCase().includes(q) ||
+        a.aire_test_type?.toLowerCase().includes(q)
+      );
+    }
+
+    return result.sort((a,b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime());
+  }, [data, filterStatus, searchQuery]);
+
+  // Original data stats
   const total = data.length;
   const sent = data.filter(a => a.indications_sent).length;
   const pending = total - sent;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-      {/* Stats Summary */}
+      {/* Stats Summary - Interactive */}
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-        <div className="glass-panel" style={{ padding: "1rem 1.5rem", flex: 1, minWidth: "150px" }}>
+        <div 
+          className="glass-panel" 
+          onClick={() => setFilterStatus("all")}
+          style={{ 
+            padding: "1rem 1.5rem", flex: 1, minWidth: "150px", cursor: "pointer",
+            border: filterStatus === "all" ? "2px solid var(--primary)" : "1px solid var(--glass-border)",
+            transition: "all 0.2s ease"
+          }}
+        >
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>Total Pacientes Aire</p>
           <h3 style={{ fontSize: "1.5rem", fontWeight: 700, margin: "0.2rem 0" }}>{total}</h3>
         </div>
-        <div className="glass-panel" style={{ padding: "1rem 1.5rem", flex: 1, minWidth: "150px", borderLeft: "4px solid var(--success)" }}>
+        <div 
+          className="glass-panel" 
+          onClick={() => setFilterStatus("sent")}
+          style={{ 
+            padding: "1rem 1.5rem", flex: 1, minWidth: "150px", cursor: "pointer",
+            border: filterStatus === "sent" ? "2px solid var(--success)" : "1px solid var(--glass-border)",
+            borderLeft: "4px solid var(--success)",
+            transition: "all 0.2s ease",
+            background: filterStatus === "sent" ? "rgba(16, 185, 129, 0.05)" : "var(--glass-bg)"
+          }}
+        >
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>Indicaciones Enviadas</p>
           <h3 style={{ fontSize: "1.5rem", fontWeight: 700, margin: "0.2rem 0", color: "var(--success)" }}>{sent}</h3>
         </div>
-        <div className="glass-panel" style={{ padding: "1rem 1.5rem", flex: 1, minWidth: "150px", borderLeft: "4px solid var(--danger)" }}>
+        <div 
+          className="glass-panel" 
+          onClick={() => setFilterStatus("pending")}
+          style={{ 
+            padding: "1rem 1.5rem", flex: 1, minWidth: "150px", cursor: "pointer",
+            border: filterStatus === "pending" ? "2px solid var(--danger)" : "1px solid var(--glass-border)",
+            borderLeft: "4px solid var(--danger)",
+            transition: "all 0.2s ease",
+            background: filterStatus === "pending" ? "rgba(239, 68, 68, 0.05)" : "var(--glass-bg)"
+          }}
+        >
           <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>Pendientes de Envío</p>
           <h3 style={{ fontSize: "1.5rem", fontWeight: 700, margin: "0.2rem 0", color: "var(--danger)" }}>{pending}</h3>
+        </div>
+      </div>
+
+      <div className="glass-panel" style={{ padding: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <h3 style={{ fontSize: "1.1rem", fontWeight: 600, margin: 0 }}>
+          {filterStatus === "all" ? "Todos los turnos" : (filterStatus === "sent" ? "Enviados" : "Pendientes")} ({filteredData.length})
+        </h3>
+        <div style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
+          <input 
+            type="text" 
+            placeholder="Buscar por nombre, DNI o teléfono..." 
+            className="input-field"
+            style={{ width: '100%', paddingLeft: '2.5rem' }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}>
+            <Search size={18} />
+          </div>
         </div>
       </div>
 
@@ -47,7 +121,7 @@ export default function IndicacionesTable({ data }: { data: any[] }) {
               </tr>
             </thead>
             <tbody>
-              {data.sort((a,b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime()).map((apt: any) => (
+              {filteredData.map((apt: any) => (
                 <tr key={apt.id} style={{ borderBottom: "1px solid var(--glass-border)", background: apt.indications_sent ? "rgba(16, 185, 129, 0.02)" : "transparent" }}>
                   <td style={{ padding: "1rem" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
@@ -110,10 +184,13 @@ export default function IndicacionesTable({ data }: { data: any[] }) {
                   </td>
                 </tr>
               ))}
-              {data.length === 0 && (
+              {filteredData.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
-                    No hay turnos de aire programados.
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                      <Wind size={40} style={{ opacity: 0.2 }} />
+                      <p>No se encontraron resultados para los filtros aplicados.</p>
+                    </div>
                   </td>
                 </tr>
               )}
