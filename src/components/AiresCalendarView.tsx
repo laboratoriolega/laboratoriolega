@@ -214,8 +214,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                        borderRadius: '8px',
                        boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
                        position: 'relative',
-                       border: '1px solid var(--glass-border)',
-                       borderLeft: `5px solid ${getBadgeColor(apt?.analysis_type)}`,
+                       borderLeft: `5px solid ${getBadgeColor(apt?.aire_test_type)}`,
                        cursor: 'pointer',
                        transition: 'all 0.2s ease',
                        flexShrink: 0,
@@ -226,7 +225,7 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                      }}
                      >
                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: getBadgeColor(apt?.analysis_type), fontWeight: 800, fontSize: '0.75rem' }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: getBadgeColor(apt?.aire_test_type), fontWeight: 800, fontSize: '0.75rem' }}>
                            <Clock size={11} />
                            {format(new Date(apt?.appointment_date || new Date()), "HH:mm")}
                            {apt?.status === 'COMPLETADO' && <CheckCircle size={11} color="var(--success)" />}
