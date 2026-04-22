@@ -20,7 +20,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   let appointments = (allAppointments || []).filter(Boolean);
   
   if (filters.status) {
-    appointments = appointments.filter((a: any) => a && a.status === filters.status);
+    if (filters.status === 'INDICACIONES') {
+      appointments = appointments.filter((a: any) => a && a.analysis_type === 'Test de aire');
+    } else {
+      appointments = appointments.filter((a: any) => a && a.status === filters.status);
+    }
   }
   
   // Filter by exact date (default to today if no date provided)
@@ -105,6 +109,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </Link>
       </div>
 
+      <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '1.5rem' }}>
+        <Link href="/?status=INDICACIONES" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'INDICACIONES' ? '2px solid #4a90e2' : '1px solid var(--glass-border)' }}>
+          <div style={{ background: 'rgba(74, 144, 226, 0.1)', padding: '1rem', borderRadius: '12px' }}>
+            <Activity color="#4a90e2" size={28} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+            <div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Indicaciones (Turnos Aire)</p>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire')?.length ?? 0}</h3>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Pendientes de Envío</p>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--danger)' }}>{allAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire' && !a?.indications_sent)?.length ?? 0}</h3>
+            </div>
+          </div>
+        </Link>
+      </div>
+
       {/* Main Table */}
       <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -116,7 +138,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
         {error && <div style={{ color: 'var(--danger)', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>Error cargando base de datos: {error}</div>}
 
-        <DashboardTable appointments={appointments} />
+        <DashboardTable appointments={appointments} currentFilter={filters.status} />
       </div>
     </div>
   );

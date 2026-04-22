@@ -13,7 +13,7 @@ export async function getAppointments() {
       SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
              json_agg(json_build_object('id', ad.id, 'url', ad.document_url, 'filename', ad.filename)) 
              FILTER (WHERE ad.id IS NOT NULL) as documents,
-             p.name, p.dni, p.phone, p.health_insurance 
+             p.name, p.dni, p.phone, p.health_insurance, a.indications_sent 
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
       LEFT JOIN appointment_documents ad ON a.id = ad.appointment_id
@@ -328,6 +328,28 @@ export async function updateAppointmentStatus(id: string, status: string, reason
     return { success: true };
   } catch (error: any) {
     console.error("Update status error:", error);
+    return { error: error.message };
+  }
+}
+
+export async function toggleIndicationsStatus(id: string, status: boolean) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autorizado");
+
+    await pool.query("UPDATE appointments SET indications_sent = $1 WHERE id = $2", [status, id]);
+
+    await logAction("UPDATE_INDICATIONS_STATUS", { 
+      appointment_id: id, 
+      indications_sent: status 
+    });
+
+    revalidatePath("/");
+    revalidatePath("/calendario-aire");
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Toggle indications error:", error);
     return { error: error.message };
   }
 }

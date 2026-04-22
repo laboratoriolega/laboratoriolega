@@ -3,13 +3,17 @@
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, subMonths, addMonths } from "date-fns";
 import { es } from "date-fns/locale";
-import { Clock, ChevronLeft, ChevronRight, Wind, AlertCircle, Edit2, CheckCircle, MessageSquare } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Wind, AlertCircle, Edit2, CheckCircle, MessageSquare, Loader2 } from "lucide-react";
+import { toggleIndicationsStatus } from "@/actions/appointments";
+import { useRouter } from "next/navigation";
 import AppointmentModal from "./AppointmentModal";
 import EditAppointmentModal from "./EditAppointmentModal";
 import EvolutionModal from "./EvolutionModal";
 import MoveReasonModal from "./MoveReasonModal";
 
 export default function AiresCalendarView({ appointments }: { appointments: any[] }) {
+  const router = useRouter();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -232,15 +236,45 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
                           {format(new Date(apt?.appointment_date || new Date()), "HH:mm")}
                           {apt?.status === 'COMPLETADO' && <CheckCircle size={12} color="var(--success)" />}
                         </div>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAp(apt);
-                          }}
-                          style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
-                        >
-                          <Edit2 size={10} />
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAp(apt);
+                            }}
+                            style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
+                          >
+                            <Edit2 size={10} />
+                          </button>
+                          
+                          {loadingId === apt.id ? (
+                            <Loader2 size={12} className="animate-spin" color="var(--primary)" />
+                          ) : (
+                            <input 
+                              type="checkbox" 
+                              title="Indicaciones Enviadas"
+                              checked={apt.indications_sent || false}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={async (e) => {
+                                const newStatus = e.target.checked;
+                                setLoadingId(apt.id);
+                                try {
+                                  const res = await toggleIndicationsStatus(apt.id, newStatus);
+                                  if (res.success) {
+                                    router.refresh();
+                                  } else {
+                                    alert(res.error);
+                                  }
+                                } catch (err) {
+                                  alert("Error al actualizar indicaciones");
+                                } finally {
+                                  setLoadingId(null);
+                                }
+                              }}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                            />
+                          )}
+                        </div>
                       </div>
                       <p style={{ fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.2, color: apt?.status === 'CANCELADO' ? 'var(--text-muted)' : 'var(--text-main)', margin: '0.1rem 0', textDecoration: apt?.status === 'CANCELADO' ? 'line-through' : 'none', opacity: apt?.status === 'CANCELADO' ? 0.6 : 1, wordBreak: 'break-word' }}>{apt?.name}</p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.1rem' }}>

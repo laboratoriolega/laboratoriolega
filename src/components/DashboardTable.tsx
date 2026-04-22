@@ -4,13 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Clock, FileText, ChevronDown, ExternalLink, Check, Trash2, CalendarPlus, X, Loader2 } from "lucide-react";
-import { updateAppointmentStatus } from "@/actions/appointments";
+import { updateAppointmentStatus, toggleIndicationsStatus } from "@/actions/appointments";
 import AppointmentModal from "./AppointmentModal";
 import MoveReasonModal from "./MoveReasonModal";
 
 import Portal from "./Portal";
 
-export default function DashboardTable({ appointments }: { appointments: any[] }) {
+export default function DashboardTable({ appointments, currentFilter }: { appointments: any[], currentFilter?: string }) {
   const router = useRouter();
   const [openDocsId, setOpenDocsId] = useState<string | null>(null);
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
@@ -92,6 +92,7 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
             <th style={{ padding: '1rem', fontWeight: 500 }}>Análisis</th>
             <th style={{ padding: '1rem', fontWeight: 500 }}>Estado</th>
             <th style={{ padding: '1rem', fontWeight: 500 }}>Observaciones / Pedido</th>
+            {currentFilter === 'INDICACIONES' && <th style={{ padding: '1rem', fontWeight: 500, textAlign: 'center' }}>¿WS Enviado?</th>}
           </tr>
         </thead>
         <tbody>
@@ -253,6 +254,31 @@ export default function DashboardTable({ appointments }: { appointments: any[] }
                   </div>
                 )}
               </td>
+              {currentFilter === 'INDICACIONES' && (
+                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={apt.indications_sent || false}
+                    onChange={async (e) => {
+                      const newStatus = e.target.checked;
+                      setLoadingId(apt.id);
+                      try {
+                        const res = await toggleIndicationsStatus(apt.id, newStatus);
+                        if (res.success) {
+                          router.refresh();
+                        } else {
+                          alert(res.error);
+                        }
+                      } catch (err) {
+                        alert("Error al actualizar indicaciones");
+                      } finally {
+                        setLoadingId(null);
+                      }
+                    }}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
