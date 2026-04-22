@@ -196,20 +196,6 @@ export default function AppointmentModal({
           
           <input type="hidden" name="is_domicilio" value={isDomicilio ? "true" : "false"} />
 
-          {isDomicilio && (
-            <div style={{ animation: 'fadeIn 0.3s ease' }}>
-              <label style={labelStyle}>Dirección Domicilio</label>
-              <input 
-                name="domicilio_address" 
-                type="text" 
-                defaultValue={initialData?.domicilio_address || ""}
-                placeholder="Calle, Número, Localidad..."
-                className="input-field" 
-                style={inputStyle}
-                required
-              />
-            </div>
-          )}
           
           <div>
             <label style={labelStyle}>Nombre del Paciente</label>
@@ -352,6 +338,21 @@ export default function AppointmentModal({
               />
             </div>
           </div>
+
+          {isDomicilio && (
+            <div style={{ animation: 'fadeIn 0.3s ease' }}>
+              <label style={labelStyle}>Dirección Domicilio</label>
+              <input 
+                name="domicilio_address" 
+                type="text" 
+                defaultValue={initialData?.domicilio_address || ""}
+                placeholder="Calle, Número, Localidad..."
+                className="input-field" 
+                style={inputStyle}
+                required
+              />
+            </div>
+          )}
 
           <div>
             <label style={labelStyle}>Observaciones Adicionales</label>
