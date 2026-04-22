@@ -208,80 +208,74 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
 
                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', flex: 1, maxHeight: '280px' }}>
                  {dayAppts.filter(Boolean).map(apt => (
-                    <div key={apt.id} style={{ 
-                      ...getTypeStyle(apt.aire_test_type, apt.status),
-                      padding: '0.65rem', 
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      cursor: 'grab'
-                    }}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("appointmentId", apt.id);
-                      e.currentTarget.style.opacity = '0.5';
-                    }}
-                    onDragEnd={(e) => {
-                      e.currentTarget.style.opacity = '1';
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedApForEvolution(apt);
-                    }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: getBadgeColor(apt?.analysis_type), fontWeight: 800, fontSize: '0.8rem', marginBottom: '0.25rem' }}>
-                          <Clock size={12} />
-                          {format(new Date(apt?.appointment_date || new Date()), "HH:mm")}
-                          {apt?.status === 'COMPLETADO' && <CheckCircle size={12} color="var(--success)" />}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedAp(apt);
-                            }}
-                            style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
-                          >
-                            <Edit2 size={10} />
-                          </button>
-                          
-                          {loadingId === apt.id ? (
-                            <Loader2 size={12} className="animate-spin" color="var(--primary)" />
-                          ) : (
-                            <input 
-                              type="checkbox" 
-                              title="Indicaciones Enviadas"
-                              checked={apt.indications_sent || false}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={async (e) => {
-                                const newStatus = e.target.checked;
-                                setLoadingId(apt.id);
-                                try {
-                                  const res = await toggleIndicationsStatus(apt.id, newStatus);
-                                  if (res.success) {
-                                    router.refresh();
-                                  } else {
-                                    alert(res.error);
-                                  }
-                                } catch (err) {
-                                  alert("Error al actualizar indicaciones");
-                                } finally {
-                                  setLoadingId(null);
-                                }
-                              }}
-                              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--primary)' }}
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <p style={{ fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.2, color: apt?.status === 'CANCELADO' ? 'var(--text-muted)' : 'var(--text-main)', margin: '0.1rem 0', textDecoration: apt?.status === 'CANCELADO' ? 'line-through' : 'none', opacity: apt?.status === 'CANCELADO' ? 0.6 : 1, wordBreak: 'break-word' }}>{apt?.name}</p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.1rem' }}>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>{apt.aire_test_type || 'Prueba'}</p>
-                        {apt.observations && <MessageSquare size={10} color="var(--primary)" />}
-                      </div>
-                    </div>
+                     <div key={apt.id} style={{ 
+                       ...getTypeStyle(apt.aire_test_type, apt.status),
+                       padding: '0.65rem', 
+                       borderRadius: '8px',
+                       boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                       position: 'relative',
+                       border: '1px solid var(--glass-border)',
+                       borderLeft: `5px solid ${getBadgeColor(apt?.analysis_type)}`,
+                       cursor: 'pointer',
+                       transition: 'all 0.2s ease',
+                       flexShrink: 0,
+                       minHeight: 'fit-content'
+                     }}
+                     onClick={() => {
+                       setSelectedAp(apt);
+                     }}
+                     >
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: getBadgeColor(apt?.analysis_type), fontWeight: 800, fontSize: '0.75rem' }}>
+                           <Clock size={11} />
+                           {format(new Date(apt?.appointment_date || new Date()), "HH:mm")}
+                           {apt?.status === 'COMPLETADO' && <CheckCircle size={11} color="var(--success)" />}
+                         </div>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                           {loadingId === apt.id ? (
+                             <Loader2 size={11} className="animate-spin" color="var(--primary)" />
+                           ) : (
+                             <input 
+                               type="checkbox" 
+                               title="Indicaciones Enviadas"
+                               checked={apt.indications_sent || false}
+                               onClick={(e) => e.stopPropagation()}
+                               onChange={async (e) => {
+                                 const newStatus = e.target.checked;
+                                 setLoadingId(apt.id);
+                                 try {
+                                   const res = await toggleIndicationsStatus(apt.id, newStatus);
+                                   if (res.success) {
+                                     router.refresh();
+                                   } else {
+                                     alert(res.error);
+                                   }
+                                 } catch (err) {
+                                   alert("Error al actualizar indicaciones");
+                                 } finally {
+                                   setLoadingId(null);
+                                 }
+                               }}
+                               style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--primary)', margin: 0 }}
+                             />
+                           )}
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setSelectedAp(apt);
+                             }}
+                             style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: '1px' }}
+                           >
+                             <Edit2 size={10} />
+                           </button>
+                         </div>
+                       </div>
+                       <p style={{ fontWeight: 800, fontSize: '0.9rem', lineHeight: 1.15, color: apt?.status === 'CANCELADO' ? 'var(--text-muted)' : 'var(--text-main)', margin: '0.1rem 0', textDecoration: apt?.status === 'CANCELADO' ? 'line-through' : 'none', opacity: apt?.status === 'CANCELADO' ? 0.6 : 1, wordBreak: 'break-word' }}>{apt?.name}</p>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.05rem' }}>
+                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, margin: 0 }}>{apt.aire_test_type || 'Prueba'}</p>
+                         {apt.observations && <MessageSquare size={10} color="var(--primary)" />}
+                       </div>
+                     </div>
                   ))}
                   {isFull && <div style={{ marginTop: 'auto', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.6rem', fontWeight: 800 }}> <AlertCircle size={10} /> CUPO AGOTADO </div>}
                </div>

@@ -67,7 +67,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </header>
 
       {/* Stats Cards */}
-      <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+      <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
         <Link href="/" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: !filters.status ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}>
           <div style={{ background: 'rgba(14, 165, 233, 0.1)', padding: '1rem', borderRadius: '12px' }}>
             <Calendar color="var(--primary)" size={28} />
@@ -88,13 +88,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
         </Link>
 
-        <Link href="/?status=AGENDADO" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'AGENDADO' ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}>
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '12px' }}>
-            <Clock color="var(--danger)" size={28} />
+        <Link href="/?status=AGENDADO" className="glass-panel" style={{ padding: '1.25rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'AGENDADO' ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}>
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '10px' }}>
+            <Clock color="var(--danger)" size={24} />
           </div>
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Pendientes</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'AGENDADO')?.length ?? 0}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 }}>Pendientes</p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'AGENDADO')?.length ?? 0}</h3>
           </div>
         </Link>
 
@@ -107,25 +107,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'CANCELADO')?.length ?? 0}</h3>
           </div>
         </Link>
-      </div>
 
-      <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '1.5rem' }}>
-        <Link href="/?status=INDICACIONES" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'INDICACIONES' ? '2px solid #4a90e2' : '1px solid var(--glass-border)' }}>
-          <div style={{ background: 'rgba(74, 144, 226, 0.1)', padding: '1rem', borderRadius: '12px' }}>
-            <Activity color="#4a90e2" size={28} />
+        <Link href="/?status=INDICACIONES" className="glass-panel" style={{ padding: '1.25rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', border: filters.status === 'INDICACIONES' ? '2px solid #4a90e2' : '1px solid var(--glass-border)' }}>
+          <div style={{ background: 'rgba(74, 144, 226, 0.1)', padding: '0.75rem', borderRadius: '10px' }}>
+            <Activity color="#4a90e2" size={24} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-            <div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Indicaciones (Turnos Aire)</p>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire')?.length ?? 0}</h3>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Pendientes de Envío</p>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--danger)' }}>{allAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire' && !a?.indications_sent)?.length ?? 0}</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, whiteSpace: 'nowrap' }}>Indicaciones (Aire)</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire')?.length ?? 0}</h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>({allAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire' && !a?.indications_sent)?.length ?? 0} p.)</span>
             </div>
           </div>
         </Link>
       </div>
+
 
       {/* Main Table */}
       <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
