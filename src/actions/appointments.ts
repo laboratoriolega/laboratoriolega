@@ -346,6 +346,7 @@ export async function toggleIndicationsStatus(id: string, status: boolean) {
 
     revalidatePath("/");
     revalidatePath("/calendario-aire");
+    revalidatePath("/listados/indicaciones");
     
     return { success: true };
   } catch (error: any) {
