@@ -7,7 +7,7 @@ import AppointmentModal from "./AppointmentModal";
 import EvolutionModal from "./EvolutionModal";
 import EditAppointmentModal from "./EditAppointmentModal";
 import MoveReasonModal from "./MoveReasonModal";
-import { Clock, ChevronLeft, ChevronRight, Edit2, MessageSquare, Car } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Edit2, MessageSquare, Car, MapPin, ExternalLink } from "lucide-react";
 
 export default function DomicilioCalendarView({ appointments }: { appointments: any[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -42,7 +42,7 @@ export default function DomicilioCalendarView({ appointments }: { appointments: 
     <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <h3 style={{ fontSize: '1.5rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Car size={24} color="#f59e0b" /> Agenda Domicilios
+          <Car size={24} color="var(--primary)" /> Agenda Domicilios
         </h3>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} style={{ padding: '0.5rem', background: 'var(--glass-bg)', borderRadius: '8px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', cursor: 'pointer' }}><ChevronLeft size={20} /></button>
@@ -73,7 +73,7 @@ export default function DomicilioCalendarView({ appointments }: { appointments: 
               }}
               onDragOver={(e) => {
                 e.preventDefault();
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)';
               }}
               onDragLeave={(e) => {
                 e.currentTarget.style.background = isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)';
@@ -99,17 +99,17 @@ export default function DomicilioCalendarView({ appointments }: { appointments: 
               }}
               style={{ 
               background: isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)',
-              border: isToday ? '2px solid #f59e0b' : '1px solid var(--glass-border)', 
+              border: isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)', 
               borderRadius: '8px', 
               cursor: 'pointer',
               padding: '0.5rem',
               display: 'flex', flexDirection: 'column', gap: '0.25rem',
               minHeight: '120px', opacity: isCurrentMonth ? 1 : 0.4
             }}
-            onMouseEnter={(e) => e.currentTarget.style.border = '2px solid #f59e0b'}
-            onMouseLeave={(e) => e.currentTarget.style.border = isToday ? '2px solid #f59e0b' : '1px solid var(--glass-border)'}
+            onMouseEnter={(e) => e.currentTarget.style.border = '2px solid var(--primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.border = isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)'}
             >
-               <p style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.25rem', color: isToday ? '#f59e0b' : (isCurrentMonth ? 'var(--text-main)' : 'var(--text-muted)') }}>
+               <p style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.25rem', color: isToday ? 'var(--primary)' : (isCurrentMonth ? 'var(--text-main)' : 'var(--text-muted)') }}>
                  {format(day, 'dd', { locale: es })}
                </p>
 
@@ -117,11 +117,11 @@ export default function DomicilioCalendarView({ appointments }: { appointments: 
                  {dayAppts.filter(Boolean).map(apt => (
                     <div key={apt.id} 
                       style={{ 
-                        background: 'rgba(245, 158, 11, 0.05)', 
-                        border: '1px solid rgba(245, 158, 11, 0.2)', 
+                        background: 'rgba(14, 165, 233, 0.05)', 
+                        border: '1px solid rgba(14, 165, 233, 0.2)', 
                         padding: '0.65rem', 
                         borderRadius: '4px',
-                        borderLeft: `3px solid ${apt?.status === 'AGENDADO' ? '#f59e0b' : (apt?.status === 'CANCELADO' ? '#94a3b8' : 'var(--success)')}`,
+                        borderLeft: `3px solid ${apt?.status === 'AGENDADO' ? 'var(--primary)' : (apt?.status === 'CANCELADO' ? '#94a3b8' : 'var(--success)')}`,
                         cursor: 'grab'
                       }}
                       draggable
@@ -138,7 +138,7 @@ export default function DomicilioCalendarView({ appointments }: { appointments: 
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#f59e0b', fontWeight: 700, fontSize: '0.8rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--primary)', fontWeight: 700, fontSize: '0.8rem' }}>
                           <Clock size={11} />
                           {format(new Date(apt.appointment_date), "HH:mm")}
                         </div>
@@ -155,14 +155,26 @@ export default function DomicilioCalendarView({ appointments }: { appointments: 
                         </button>
                       </div>
                       <p style={{ fontWeight: 700, fontSize: '0.85rem', lineHeight: 1.2, marginBottom: '0.1rem', wordBreak: 'break-word' }}>{apt?.name}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, margin: 0 }}>{apt?.analysis_type}</p>
+                      {apt.domicilio_address && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', margin: '0.2rem 0' }}>
+                          <MapPin size={10} color="var(--text-muted)" />
+                          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{apt.domicilio_address}</p>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
-                        <p style={{ fontSize: '0.75rem', fontWeight: 600, margin: 0 }}>{apt.health_insurance}</p>
-                        {apt.observations && (
-                          <span title={apt.observations} style={{ display: 'flex' }}>
-                            <MessageSquare size={10} color="#f59e0b" />
-                          </span>
-                        )}
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, margin: 0 }}>{apt?.analysis_type}</p>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          {apt.google_maps_link && (
+                            <a href={apt.google_maps_link} target="_blank" onClick={(e) => e.stopPropagation()} title="Abrir en Maps" style={{ display: 'flex' }}>
+                              <ExternalLink size={10} color="var(--primary)" />
+                            </a>
+                          )}
+                          {apt.observations && (
+                            <span title={apt.observations} style={{ display: 'flex' }}>
+                              <MessageSquare size={10} color="var(--primary)" />
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

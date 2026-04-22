@@ -25,7 +25,8 @@ export default function AppointmentModal({
     health_insurance?: string,
     analysis_type?: string,
     aire_test_type?: string,
-    is_domicilio?: boolean
+    is_domicilio?: boolean,
+    domicilio_address?: string
   },
   isDomicilio?: boolean
 }) {
@@ -194,6 +195,21 @@ export default function AppointmentModal({
         <form ref={formRef} className="modal-body" onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem", overflowY: "auto" }}>
           
           <input type="hidden" name="is_domicilio" value={isDomicilio ? "true" : "false"} />
+
+          {isDomicilio && (
+            <div style={{ animation: 'fadeIn 0.3s ease' }}>
+              <label style={labelStyle}>Dirección Domicilio</label>
+              <input 
+                name="domicilio_address" 
+                type="text" 
+                defaultValue={initialData?.domicilio_address || ""}
+                placeholder="Calle, Número, Localidad..."
+                className="input-field" 
+                style={inputStyle}
+                required
+              />
+            </div>
+          )}
           
           <div>
             <label style={labelStyle}>Nombre del Paciente</label>

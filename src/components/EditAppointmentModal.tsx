@@ -164,6 +164,22 @@ export default function EditAppointmentModal({ isOpen, onClose, ap }: { isOpen: 
             <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>DNI: {ap.dni}</p>
           </div>
 
+          {ap.is_domicilio && (
+            <div style={{ animation: 'fadeIn 0.3s ease' }}>
+              <label style={labelStyle}>Dirección Domicilio</label>
+              <input 
+                name="domicilio_address" 
+                type="text" 
+                defaultValue={ap.domicilio_address || ""}
+                placeholder="Calle, Número, Localidad..."
+                className="input-field" 
+                style={inputStyle}
+                required
+              />
+              <input type="hidden" name="is_domicilio" value="true" />
+            </div>
+          )}
+
           <div>
             <label style={labelStyle}>Obra Social</label>
             <input required name="health_insurance" defaultValue={ap.health_insurance} type="text" list="insurance-list-edit" className="input-field" style={inputStyle} />
