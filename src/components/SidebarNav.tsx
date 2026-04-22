@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users, UserCircle, ShieldCheck, Calendar, Wind, ListTodo } from "lucide-react";
+import { CalendarDays, Users, UserCircle, ShieldCheck, Calendar, Wind, ListTodo, Car } from "lucide-react";
 
 export default function SidebarNav({ userRole, isCollapsed }: { userRole?: string, isCollapsed?: boolean }) {
   const pathname = usePathname();
@@ -12,6 +12,7 @@ export default function SidebarNav({ userRole, isCollapsed }: { userRole?: strin
     { name: "Pacientes", path: "/pacientes", icon: <Users size={20} /> },
     { name: "Calendario Interno", path: "/calendario", icon: <Calendar size={20} /> },
     { name: "Turnos Aire", path: "/calendario-aire", icon: <Wind size={20} /> },
+    { name: "Domicilio", path: "/calendario-domicilio", icon: <Car size={20} /> },
     { name: "Listados", path: "/listados", icon: <ListTodo size={20} /> },
   ];
 

@@ -12,7 +12,8 @@ export default function AppointmentModal({
   isOpen, 
   onClose, 
   defaultDate,
-  initialData
+  initialData,
+  isDomicilio
 }: { 
   isOpen: boolean, 
   onClose: () => void, 
@@ -23,8 +24,10 @@ export default function AppointmentModal({
     phone?: string, 
     health_insurance?: string,
     analysis_type?: string,
-    aire_test_type?: string
-  }
+    aire_test_type?: string,
+    is_domicilio?: boolean
+  },
+  isDomicilio?: boolean
 }) {
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -190,6 +193,8 @@ export default function AppointmentModal({
 
         <form ref={formRef} className="modal-body" onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem", overflowY: "auto" }}>
           
+          <input type="hidden" name="is_domicilio" value={isDomicilio ? "true" : "false"} />
+          
           <div>
             <label style={labelStyle}>Nombre del Paciente</label>
             <div style={{ position: "relative" }}>
@@ -280,15 +285,27 @@ export default function AppointmentModal({
                 onChange={(e) => setAnalysisType(e.target.value)}
               />
               <datalist id="analysis-list">
-                <option value="Extraccion" />
-                <option value="Materia fecal" />
-                <option value="Pylori" />
-                <option value="Test de aire" />
-                <option value="Alcat" />
-                <option value="Cibic" />
-                <option value="Derivacion" />
-                <option value="Panel" />
-                <option value="Orina" />
+                {isDomicilio ? (
+                  <>
+                    <option value="Extraccion" />
+                    <option value="Materia fecal" />
+                    <option value="Alcat" />
+                    <option value="Panel" />
+                    <option value="Orina" />
+                  </>
+                ) : (
+                  <>
+                    <option value="Extraccion" />
+                    <option value="Materia fecal" />
+                    <option value="Pylori" />
+                    <option value="Test de aire" />
+                    <option value="Alcat" />
+                    <option value="Cibic" />
+                    <option value="Derivacion" />
+                    <option value="Panel" />
+                    <option value="Orina" />
+                  </>
+                )}
               </datalist>
             </div>
           </div>

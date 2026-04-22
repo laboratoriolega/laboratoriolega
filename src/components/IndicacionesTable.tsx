@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { toggleIndicationsStatus } from "@/actions/appointments";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CheckCircle, Clock, Loader2, MessageSquare, Phone, Search, Wind } from "lucide-react";
+import { CheckCircle, Clock, Loader2, MessageSquare, Phone, Search, Wind, Car } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function IndicacionesTable({ data }: { data: any[] }) {
@@ -56,7 +56,7 @@ export default function IndicacionesTable({ data }: { data: any[] }) {
             transition: "all 0.2s ease"
           }}
         >
-          <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>Total Pacientes Aire</p>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>Total Pacientes (Aire/Dom)</p>
           <h3 style={{ fontSize: "1.5rem", fontWeight: 700, margin: "0.2rem 0" }}>{total}</h3>
         </div>
         <div 
@@ -138,12 +138,16 @@ export default function IndicacionesTable({ data }: { data: any[] }) {
                     </div>
                   </td>
                   <td style={{ padding: "1rem" }}>
-                    <span style={{ 
-                      padding: "0.25rem 0.6rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600,
-                      background: "rgba(74, 144, 226, 0.1)", color: "#4a90e2"
-                    }}>
-                      {apt.aire_test_type || "Test de aire"}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      {apt.is_domicilio ? <Car size={14} color="#f59e0b" /> : <Wind size={14} color="#4a90e2" />}
+                      <span style={{ 
+                        padding: "0.25rem 0.6rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600,
+                        background: apt.is_domicilio ? "rgba(245, 158, 11, 0.1)" : "rgba(74, 144, 226, 0.1)", 
+                        color: apt.is_domicilio ? "#f59e0b" : "#4a90e2"
+                      }}>
+                        {apt.aire_test_type || apt.analysis_type || "General"}
+                      </span>
+                    </div>
                   </td>
                   <td style={{ padding: "1rem" }}>
                     {apt.phone ? (

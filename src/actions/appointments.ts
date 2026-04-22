@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 export async function getAppointments() {
   try {
     const res = await pool.query(`
-      SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes,
+      SELECT a.id, a.appointment_date, a.status, a.analysis_type, a.aire_test_type, a.observations, a.evolution_notes, a.is_domicilio,
              json_agg(json_build_object('id', ad.id, 'url', ad.document_url, 'filename', ad.filename)) 
              FILTER (WHERE ad.id IS NOT NULL) as documents,
              p.name, p.dni, p.phone, p.health_insurance, a.indications_sent 
@@ -61,6 +61,7 @@ export async function createAppointment(formData: FormData) {
     const analysis_type = formData.get("analysis_type") as string;
     const aire_test_type = formData.get("aire_test_type") as string;
     const observations = formData.get("observations") as string;
+    const is_domicilio = formData.get("is_domicilio") === "true";
     const files = formData.getAll("document") as File[];
 
     // Turn limit for 'Test de aire' (Max 4 per day)
@@ -92,8 +93,8 @@ export async function createAppointment(formData: FormData) {
 
     // Insert Appointment
     const aptRes = await client.query(
-      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, aire_test_type, observations) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      [patientId, appointment_date, analysis_type, aire_test_type, observations]
+      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, aire_test_type, observations, is_domicilio) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      [patientId, appointment_date, analysis_type, aire_test_type, observations, is_domicilio]
     );
     const appointmentId = aptRes.rows[0].id;
 
@@ -167,6 +168,7 @@ export async function updateAppointment(formData: FormData) {
     const aire_test_type = formData.get("aire_test_type") as string;
     const health_insurance = formData.get("health_insurance") as string;
     const observations = formData.get("observations") as string;
+    const is_domicilio = formData.get("is_domicilio") === "true";
     const files = formData.getAll("document") as File[];
 
     // Check limit if changing type to Test de aire or changing date for an Test de aire appointment
@@ -183,10 +185,10 @@ export async function updateAppointment(formData: FormData) {
 
     await client.query(
       `UPDATE appointments a
-       SET appointment_date = $1, analysis_type = $2, aire_test_type = $3, observations = $4
+       SET appointment_date = $1, analysis_type = $2, aire_test_type = $3, observations = $4, is_domicilio = $5
        FROM patients p
-       WHERE a.patient_id = p.id AND a.id = $5`,
-      [appointment_date, analysis_type, aire_test_type, observations, id]
+       WHERE a.patient_id = p.id AND a.id = $6`,
+      [appointment_date, analysis_type, aire_test_type, observations, is_domicilio, id]
     );
 
     await client.query(
@@ -220,6 +222,8 @@ export async function updateAppointment(formData: FormData) {
 
     revalidatePath("/");
     revalidatePath("/calendario");
+    revalidatePath("/calendario-aire");
+    revalidatePath("/calendario-domicilio");
     revalidatePath("/pacientes", "layout");
 
     return { success: true };
@@ -346,6 +350,7 @@ export async function toggleIndicationsStatus(id: string, status: boolean) {
 
     revalidatePath("/");
     revalidatePath("/calendario-aire");
+    revalidatePath("/calendario-domicilio");
     revalidatePath("/listados/indicaciones");
     
     return { success: true };

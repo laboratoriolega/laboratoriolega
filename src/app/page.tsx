@@ -1,7 +1,7 @@
 import { getAppointments } from "@/actions/appointments";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Clock, Activity, FileText, X } from "lucide-react";
+import { Calendar, Clock, Activity, FileText, X, Car } from "lucide-react";
 import NewAppointmentModal from "@/components/NewAppointmentModal";
 import Link from "next/link";
 import DashboardFilters from "@/components/DashboardFilters";
@@ -67,7 +67,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </header>
 
       {/* Stats Cards */}
-      <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
+      <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem' }}>
         <Link href="/" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: !filters.status ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}>
           <div style={{ background: 'rgba(14, 165, 233, 0.1)', padding: '1rem', borderRadius: '12px' }}>
             <Calendar color="var(--primary)" size={28} />
@@ -118,6 +118,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 }}>Cancelados</p>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'CANCELADO')?.length ?? 0}</h3>
+          </div>
+        </Link>
+        <Link href="/calendario-domicilio" className="glass-panel" style={{ padding: '1.25rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', border: '1px solid var(--glass-border)' }}>
+          <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '0.75rem', borderRadius: '10px' }}>
+            <Car color="#f59e0b" size={24} />
+          </div>
+          <div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 }}>Domicilio</p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.is_domicilio)?.length ?? 0}</h3>
           </div>
         </Link>
       </div>
