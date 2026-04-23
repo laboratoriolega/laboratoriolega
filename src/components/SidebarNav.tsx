@@ -14,11 +14,11 @@ export default function SidebarNav({ userRole, isCollapsed }: { userRole?: strin
     { name: "Turnos Aire", path: "/calendario-aire", icon: <Wind size={20} /> },
     { name: "Domicilio", path: "/calendario-domicilio", icon: <Car size={20} /> },
     { name: "Listados", path: "/listados", icon: <ListTodo size={20} /> },
-    { name: "Prestaciones", path: "/prestaciones", icon: <ShieldCheck size={20} /> },
+    { name: "Prestaciones", path: "/prestaciones", icon: <ListTodo size={20} /> },
   ];
 
   if (userRole === 'admin') {
-    navItems.push({ name: "Usuarios", path: "/usuarios", icon: <ShieldCheck size={20} /> });
+    navItems.push({ name: "Usuarios", path: "/usuarios", icon: <Users size={20} /> });
   }
 
   navItems.push({ name: "Mi Perfil", path: "/perfil", icon: <UserCircle size={20} /> });
