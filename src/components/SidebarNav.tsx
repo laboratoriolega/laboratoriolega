@@ -26,7 +26,9 @@ export default function SidebarNav({ userRole, isCollapsed }: { userRole?: strin
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       {navItems.map((item) => {
-        const isActive = item.path === "/" ? pathname === "/" : pathname.startsWith(item.path);
+        const isActive = item.path === "/" 
+          ? pathname === "/" 
+          : (pathname === item.path || pathname.startsWith(item.path + "/"));
         return (
           <Link 
             key={item.path}
