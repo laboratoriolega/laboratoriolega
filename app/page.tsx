@@ -16,8 +16,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const today = format(new Date(), "yyyy-MM-dd");
   const selectedDate = filters.date || today;
 
-  // Filter logic
-  let appointments = (allAppointments || []).filter(Boolean);
+  // Filter logic: Exclude Domicilio from the main Laboratory table
+  let appointments = (allAppointments || []).filter(a => a && !a.is_domicilio);
   
   if (filters.status) {
     if (filters.status === 'INDICACIONES') {

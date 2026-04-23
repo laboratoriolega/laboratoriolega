@@ -22,8 +22,13 @@ export default function MonthClientView({ appointments }: { appointments: any[] 
 
   if (!appointments) return null;
 
-  // EXCLUDE Breath Tests from Internal Calendar
-  const filteredAppointments = (appointments || []).filter(a => a && a.analysis_type !== 'Test de aire' && a.analysis_type !== 'Aires');
+  // EXCLUDE Breath Tests and Domicilios from Internal Calendar
+  const filteredAppointments = (appointments || []).filter(a => 
+    a && 
+    a.analysis_type !== 'Test de aire' && 
+    a.analysis_type !== 'Aires' &&
+    !a.is_domicilio
+  );
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);

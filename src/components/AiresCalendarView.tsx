@@ -36,8 +36,8 @@ export default function AiresCalendarView({ appointments }: { appointments: any[
     day = addDays(day, 1);
   }
 
-  // Filter ONLY Test de aire appointments
-  const airesAppts = (appointments || []).filter(a => a && a.analysis_type === 'Test de aire');
+  // Filter ONLY Test de aire appointments AND EXCLUDE Domicilio
+  const airesAppts = (appointments || []).filter(a => a && a.analysis_type === 'Test de aire' && !a.is_domicilio);
   
   // Stats for the current month view
   const currentMonthAppts = airesAppts.filter(a => a && a.appointment_date && isSameMonth(new Date(a.appointment_date), monthStart));
