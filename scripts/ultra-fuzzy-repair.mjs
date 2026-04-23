@@ -19,15 +19,23 @@ async function ultraRepair() {
       const fuzzyName = `%${filename.replace(/ /g, '%')}%`;
       const encodedFuzzyName = `%${filename.replace(/ /g, '%20')}%`;
 
-      const q = `
+      const q1 = `
         UPDATE appointment_documents 
         SET document_url = $1 
         WHERE (document_url ILIKE $2 OR document_url ILIKE $3 OR replace(document_url, '%20', ' ') ILIKE $2)
         AND document_url NOT LIKE '%lrunrunv4trazfok%'
       `;
-      
-      const res = await client.query(q, [blob.url, fuzzyName, encodedFuzzyName]);
-      if (res.rowCount > 0) console.log(`Updated ${res.rowCount} for ${filename}`);
+      const res1 = await client.query(q1, [blob.url, fuzzyName, encodedFuzzyName]);
+      if (res1.rowCount > 0) console.log(`Updated ${res1.rowCount} in appointment_documents for ${filename}`);
+
+      const q2 = `
+        UPDATE appointments 
+        SET document_url = $1 
+        WHERE (document_url ILIKE $2 OR document_url ILIKE $3 OR replace(document_url, '%20', ' ') ILIKE $2)
+        AND document_url NOT LIKE '%lrunrunv4trazfok%'
+      `;
+      const res2 = await client.query(q2, [blob.url, fuzzyName, encodedFuzzyName]);
+      if (res2.rowCount > 0) console.log(`Updated ${res2.rowCount} in appointments for ${filename}`);
     }
   } catch (e) {
     console.error(e);

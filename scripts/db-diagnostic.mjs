@@ -8,12 +8,12 @@ async function diagnostic() {
   try {
     await client.connect();
     const res = await client.query("SELECT id, document_url FROM appointment_documents WHERE document_url LIKE '%8msikhgphbcx6ijs%'");
-    console.log(`Found ${res.rows.length} records with old URLs:`);
-    console.log(JSON.stringify(res.rows, null, 2));
+    console.log(`Found ${res.rows.length} records with old URLs in appointment_documents.`);
+    if (res.rows.length > 0) console.log(JSON.stringify(res.rows, null, 2));
 
     const res2 = await client.query("SELECT id, document_url FROM appointments WHERE document_url LIKE '%8msikhgphbcx6ijs%'");
-    console.log(`\nFound ${res2.rows.length} records in appointments with old URLs:`);
-    console.log(JSON.stringify(res2.rows, null, 2));
+    console.log(`Found ${res2.rows.length} records with old URLs in appointments.`);
+    if (res2.rows.length > 0) console.log(JSON.stringify(res2.rows, null, 2));
 
   } catch (e) {
     console.error(e);
