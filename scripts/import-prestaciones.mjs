@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 
 const { Client } = pg;
-const DB_URL = "postgresql://neondb_owner:npg_xmwSld39Oiac@ep-orange-sound-a421m5w3-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require";
+const DB_URL = "postgresql://neondb_owner:npg_L5PDKCSB4lhf@ep-gentle-star-an2yqhb2-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require";
 const filePath = path.join(process.cwd(), 'public', 'Listado de Prestaciones OK.xlsx');
 
 async function importExcel() {

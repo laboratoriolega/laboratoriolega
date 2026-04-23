@@ -15,7 +15,7 @@ export default function IndicacionesTable({ data }: { data: any[] }) {
 
   // Filter logic
   const filteredData = useMemo(() => {
-    let result = [...data];
+    let result = data.filter(a => !a.is_domicilio);
 
     // Status Filter
     if (filterStatus === "sent") {
@@ -39,8 +39,9 @@ export default function IndicacionesTable({ data }: { data: any[] }) {
   }, [data, filterStatus, searchQuery]);
 
   // Original data stats
-  const total = data.length;
-  const sent = data.filter(a => a.indications_sent).length;
+  const activeData = data.filter(a => !a.is_domicilio);
+  const total = activeData.length;
+  const sent = activeData.filter(a => a.indications_sent).length;
   const pending = total - sent;
 
   return (
