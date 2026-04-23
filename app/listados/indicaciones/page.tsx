@@ -6,14 +6,14 @@ export default async function IndicacionesPage() {
   
   if (error) return <div className="glass-panel" style={{ padding: "2rem", color: "var(--danger)" }}>Error: {error}</div>;
 
-  // Filter Test de aire AND Domicilio appointments
-  const filteredData = (data || []).filter((apt: any) => apt.analysis_type === 'Test de aire' || apt.is_domicilio);
+  // Filter ONLY Test de aire appointments (Laboratory) and EXCLUDE Domicilio
+  const filteredData = (data || []).filter((apt: any) => apt.analysis_type === 'Test de aire' && !apt.is_domicilio);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <header>
         <h2 style={{ fontSize: "1.5rem", fontWeight: 600, margin: 0 }}>Control de Indicaciones (WS)</h2>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Seguimiento de envío de preparaciones para turnos de aire y domicilios.</p>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Seguimiento de envío de preparaciones exclusivo para turnos de Aire (Laboratorio).</p>
       </header>
       
       <IndicacionesTable data={filteredData} />

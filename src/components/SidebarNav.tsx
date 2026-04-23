@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users, UserCircle, ShieldCheck, Calendar, Wind, ListTodo, Car } from "lucide-react";
+import { CalendarDays, Users, UserCircle, ShieldCheck, Calendar, Wind, ListTodo, Car, ContactRound } from "lucide-react";
 
 export default function SidebarNav({ userRole, isCollapsed }: { userRole?: string, isCollapsed?: boolean }) {
   const pathname = usePathname();
@@ -18,7 +18,7 @@ export default function SidebarNav({ userRole, isCollapsed }: { userRole?: strin
   ];
 
   if (userRole === 'admin') {
-    navItems.push({ name: "Usuarios", path: "/usuarios", icon: <Users size={20} /> });
+    navItems.push({ name: "Usuarios", path: "/usuarios", icon: <ContactRound size={20} /> });
   }
 
   navItems.push({ name: "Mi Perfil", path: "/perfil", icon: <UserCircle size={20} /> });
