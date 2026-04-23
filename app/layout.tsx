@@ -10,7 +10,7 @@ import { getProfileData } from "@/actions/users";
 
 export const metadata: Metadata = {
   title: "LEGA Laboratorio | Sistema de Gestión",
-  description: "Sistema profesional de gestión de turnos para laboratorios.",
+  description: "Sistema profesional de gestión de turnos para laboratorios.", // v1.1.7 build
   icons: {
     icon: "/logofavicon.png",
     apple: "/logofavicon.png",

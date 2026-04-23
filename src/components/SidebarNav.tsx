@@ -18,7 +18,7 @@ export default function SidebarNav({ userRole, isCollapsed }: { userRole?: strin
   ];
 
   if (userRole === 'admin') {
-    navItems.push({ name: "Usuarios", path: "/usuarios", icon: <ContactRound size={20} /> });
+    navItems.push({ name: "Usuarios", path: "/usuarios", icon: <Users size={20} /> });
   }
 
   navItems.push({ name: "Mi Perfil", path: "/perfil", icon: <UserCircle size={20} /> });
@@ -26,7 +26,7 @@ export default function SidebarNav({ userRole, isCollapsed }: { userRole?: strin
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       {navItems.map((item) => {
-        const isActive = pathname === item.path;
+        const isActive = item.path === "/" ? pathname === "/" : pathname.startsWith(item.path);
         return (
           <Link 
             key={item.path}
