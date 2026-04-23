@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         results.push({
           id: doc.id,
           url: doc.document_url,
-          error: err.message
+          error: (err as Error).message
         });
       }
     }
@@ -40,6 +40,6 @@ export async function GET(request: NextRequest) {
       results
     });
   } catch (err) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: (err as Error).message }, { status: 500 });
   }
 }
