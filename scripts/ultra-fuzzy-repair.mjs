@@ -3,7 +3,7 @@ import pg from 'pg';
 const { Client } = pg;
 
 const TARGET_BLOB_TOKEN = "vercel_blob_rw_LrunrUnV4TRAzFoK_dgzXiJaXD56myVT06tNZiSFN2RIXsU";
-const TARGET_DB_URL = "postgresql://neondb_owner:npg_L5PDKCSB4lhf@ep-gentle-star-an2yqhb2-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require";
+const TARGET_DB_URL = "postgresql://neondb_owner:npg_xmwSld39Oiac@ep-orange-sound-a421m5w3-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require";
 
 async function ultraRepair() {
   const client = new Client({ connectionString: TARGET_DB_URL });

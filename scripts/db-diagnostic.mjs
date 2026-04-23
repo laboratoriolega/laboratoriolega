@@ -1,7 +1,7 @@
 import pg from 'pg';
 const { Client } = pg;
 
-const DB_URL = "postgresql://neondb_owner:npg_L5PDKCSB4lhf@ep-gentle-star-an2yqhb2-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require";
+const DB_URL = "postgresql://neondb_owner:npg_xmwSld39Oiac@ep-orange-sound-a421m5w3-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require";
 
 async function diagnostic() {
   const client = new Client({ connectionString: DB_URL });
