@@ -1,5 +1,5 @@
-import { getPrestacionesSheets } from "@/actions/prestaciones";
-import PrestacionesDashboard from "@/components/PrestacionesDashboard";
+import { getPrestacionesSheets } from "../../src/actions/prestaciones";
+import PrestacionesDashboard from "../../src/components/PrestacionesDashboard";
 
 export const revalidate = 0;
 
