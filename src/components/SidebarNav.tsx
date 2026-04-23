@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users, UserCircle, ShieldCheck, Calendar, Wind, ListTodo, Car, ContactRound } from "lucide-react";
+import { CalendarDays, Users, UserCircle, Calendar, Wind, ListTodo, Car } from "lucide-react";
 
 export default function SidebarNav({ userRole, isCollapsed }: { userRole?: string, isCollapsed?: boolean }) {
   const pathname = usePathname();
