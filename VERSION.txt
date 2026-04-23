@@ -1,3 +1,4 @@
-v1.1.8 - Fix Sidebar and Domicilio Group
-Sync Time: 2026-04-23 12:35 ARG
-Author: Antigravity
+v1.2.0 - Final Navigation & Icon Refinement
+Sync Time: 2026-04-23 13:23 ARG
+Status: Multi-Calendar Highlight Fixed
+Author: Antigravity AI
