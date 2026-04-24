@@ -17,8 +17,11 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
 
+  
+  const isExcelSheet = isExcelSheet || activeSheet === "O. Sociales";
+
   const isStructuredSheet = useMemo(() => {
-    if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva" || activeSheet === "Lab Clínico Noelia Dutto" || activeSheet === "Panel BioM. Int.Panel") return true;
+    if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva" || activeSheet === "Lab Clínico Noelia Dutto" || isExcelSheet) return true;
     return data.some(r => {
       try {
         const rd = typeof r.row_data === 'string' ? JSON.parse(r.row_data) : r.row_data;
@@ -176,6 +179,25 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
+  
+  const handleHeaderColorChange = async (headerId: number, colKey: string, color: string) => {
+    const headerRow = data.find(r => r.id === headerId);
+    if (!headerRow) return;
+    const newRowData = { ...headerRow.row_data };
+    if (color === "#ffffff") {
+      delete newRowData[`__cell_color_${colKey}`];
+    } else {
+      newRowData[`__cell_color_${colKey}`] = color;
+    }
+    
+    const newData = [...data];
+    const idx = newData.findIndex(r => r.id === headerId);
+    newData[idx] = { ...newData[idx], row_data: newRowData };
+    setData(newData);
+    
+    await updatePrestacion(headerId, newRowData);
+  };
+
   const handleTableStructureSubmit = async (title: string, subtitle: string, note: string, columnsWithTypes: Array<{ name: string, type: string }>) => {
     setIsSaving(true);
     try {
@@ -205,7 +227,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
         columnsWithTypes.forEach((col, i) => {
           const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-          if (activeSheet !== "Panel BioM. Int.Panel") {
+          if (!isExcelSheet) {
             metaRow[ek] = col.type;
           }
           headerLabels[ek] = col.name;
@@ -359,8 +381,13 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         } else if (isForcedMetadata || mainVal === "__METADATA__") {
           currentSection.structuralIds.metadata = row.id;
           Object.keys(rd).forEach(k => { if (!internalKeys.includes(k)) currentSection.types[k] = rd[k]; });
-          if (activeSheet === "Panel BioM. Int.Panel") {
-             const priceCols = ["__EMPTY_1", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9", "__EMPTY_10"];
+          if (isExcelSheet) {
+             let priceCols: string[] = [];
+             if (activeSheet === "Panel BioM. Int.Panel") {
+               priceCols = ["__EMPTY_1", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9", "__EMPTY_10"];
+             } else if (activeSheet === "O. Sociales") {
+               priceCols = ["__EMPTY_2", "__EMPTY_4", "__EMPTY_6", "__EMPTY_7"];
+             }
              priceCols.forEach(c => currentSection.types[c] = "price");
              currentSection.rows.push(row);
           }
@@ -421,12 +448,25 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead>
                   <tr style={{ background: '#244c7d' }}>
-                    {activeSheet === "Panel BioM. Int.Panel" && <th style={{width: '40px', background: '#1e3a8a', border: '1px solid #0f172a'}}></th>}
+                    {isExcelSheet && <th style={{width: '40px', background: '#1e3a8a', border: '1px solid #0f172a'}}></th>}
                     {(section.headers.length > 0 ? section.headers : columns).map((h: any, colIdx: number) => {
                       const isDesc = h === section.headers[0] || h === columns[0] || h === "__EMPTY";
                       return (
-                        <th key={h} style={{ padding: '1rem', textAlign: isDesc ? 'left' : 'right', color: 'white', fontWeight: 700, border: '1px solid #1e3a8a', fontSize: '0.85rem' }}>
-                          {activeSheet === "Panel BioM. Int.Panel" && <div style={{fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 800}}>{indexToCol(colIdx)}</div>}
+                        <th key={h} style={{ position: 'relative', padding: '1rem', textAlign: isDesc ? 'left' : 'right', color: 'white', fontWeight: 700, border: '1px solid #1e3a8a', fontSize: '0.85rem', backgroundColor: (data.find(r => r.id === section.structuralIds.header)?.row_data[`__cell_color_${h}`]) || '#244c7d' }}>
+                          {isExcelSheet && (
+                            <>
+                              <div style={{fontSize: '0.7rem', color: '#cbd5e1', marginBottom: '4px', fontWeight: 800}}>{indexToCol(colIdx)}</div>
+                              <input 
+                                type="color" 
+                                title="Color de cabecera"
+                                value={(data.find(r => r.id === section.structuralIds.header)?.row_data[`__cell_color_${h}`]) || "#ffffff"}
+                                onChange={(e) => section.structuralIds.header && handleHeaderColorChange(section.structuralIds.header, h, e.target.value)}
+                                style={{ position: 'absolute', top: '4px', right: '4px', width: '12px', height: '12px', padding: 0, border: 'none', borderRadius: '50%', cursor: 'pointer', opacity: 0.3 }}
+                                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.3'}
+                              />
+                            </>
+                          )}
                           {section.labels[h] || h}
                         </th>
                       );
@@ -441,16 +481,16 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                     <tr 
                       key={row.id} 
                       className="table-row-hover"
-                      draggable={activeSheet === "Panel BioM. Int.Panel"}
-                      onDragStart={(e) => activeSheet === "Panel BioM. Int.Panel" && handleDragStart(e, row.id)}
-                      onDragOver={(e) => activeSheet === "Panel BioM. Int.Panel" && handleDragOver(e, row.id)}
-                      onDrop={(e) => activeSheet === "Panel BioM. Int.Panel" && handleDrop(e, row.id)}
+                      draggable={isExcelSheet}
+                      onDragStart={(e) => isExcelSheet && handleDragStart(e, row.id)}
+                      onDragOver={(e) => isExcelSheet && handleDragOver(e, row.id)}
+                      onDrop={(e) => isExcelSheet && handleDrop(e, row.id)}
                       style={{
                         opacity: draggedRowId === row.id ? 0.5 : 1,
                         borderTop: dragOverRowId === row.id ? '2px solid #3b82f6' : undefined,
                       }}
                     >
-                      {activeSheet === "Panel BioM. Int.Panel" && <td style={{background: row.row_data.__row_color || '#f8fafc', color: '#64748b', fontSize: '0.75rem', textAlign: 'center', borderRight: '1px solid #cbd5e1', fontWeight: 800, cursor: 'grab'}} title="Mantén presionado para reordenar la fila">{rowExcelIndex}</td>}
+                      {isExcelSheet && <td style={{background: row.row_data.__row_color || '#f8fafc', color: '#64748b', fontSize: '0.75rem', textAlign: 'center', borderRight: '1px solid #cbd5e1', fontWeight: 800, cursor: 'grab'}} title="Mantén presionado para reordenar la fila">{rowExcelIndex}</td>}
                       {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
                         const type = section.types[h] || "text";
                         const isDescriptionCol = h === section.headers[0] || h === columns[0] || h === "__EMPTY";
@@ -532,7 +572,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                       })}
                       <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #f1f5f9', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                          {editingRow === row.id && activeSheet === "Panel BioM. Int.Panel" && (
+                          {editingRow === row.id && isExcelSheet && (
                             <input 
                               type="color" 
                               title="Color de fila" 
