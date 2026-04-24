@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { getPrestacionesBySheet, updatePrestacion, addPrestacion, deletePrestacion } from "@/actions/prestaciones";
-import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet } from "lucide-react";
+import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet, Settings } from "lucide-react";
 import CreateSectionModal from "./CreateSectionModal";
 
 export default function PrestacionesDashboard({ initialSheets }: { initialSheets: string[] }) {
@@ -14,6 +14,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [editData, setEditData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // States for Table Editing
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [editingSectionData, setEditingSectionData] = useState<any>(null);
 
   useEffect(() => {
     if (activeSheet) {
@@ -109,42 +113,69 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
-  const handleCreateSection = async (title: string, subtitle: string, note: string, columnsWithTypes: Array<{ name: string, type: string }>) => {
+  const handleTableStructureSubmit = async (title: string, subtitle: string, note: string, columnsWithTypes: Array<{ name: string, type: string }>) => {
     setIsSaving(true);
     try {
       const mainKey = "__EMPTY";
-      // 1. Title Marker
-      await addPrestacion(activeSheet, { [mainKey]: title, "meta_part": "TITLE" });
 
-      // 2. Subtitle Marker
-      if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
+      if (modalMode === "edit" && editingSectionData) {
+        // UPDATE EXISTING SECTION
+        const { structuralIds } = editingSectionData;
 
-      // 3. Metadata Marker (TYPES)
-      const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
-      columnsWithTypes.forEach((col, i) => {
-        const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-        metaRow[ek] = col.type;
-      });
-      await addPrestacion(activeSheet, metaRow);
+        // 1. Update Title
+        if (structuralIds.title) await updatePrestacion(structuralIds.title, { [mainKey]: title, "meta_part": "TITLE" });
 
-      // 4. Header Labels Marker
-      const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
-      columnsWithTypes.forEach((col, i) => {
-        const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-        headerLabels[ek] = col.name;
-      });
-      await addPrestacion(activeSheet, headerLabels);
+        // 2. Update/Create Subtitle
+        if (structuralIds.subtitle) {
+          await updatePrestacion(structuralIds.subtitle, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
+        } else if (subtitle) {
+          await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
+        }
 
-      // 5. Note Marker
-      if (note) await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" });
+        // 3. Update Metadata (TYPES)
+        const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
+        columnsWithTypes.forEach((col, i) => {
+          const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
+          metaRow[ek] = col.type;
+        });
+        if (structuralIds.metadata) await updatePrestacion(structuralIds.metadata, metaRow);
 
-      // 6. Initial data row
-      await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación...", "meta_part": "DATA" });
+        // 4. Update Header Labels
+        const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
+        columnsWithTypes.forEach((col, i) => {
+          const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
+          headerLabels[ek] = col.name;
+        });
+        if (structuralIds.header) await updatePrestacion(structuralIds.header, headerLabels);
+
+        // 5. Update/Create Note
+        if (structuralIds.note) {
+          await updatePrestacion(structuralIds.note, { [mainKey]: note, "meta_part": "NOTE" });
+        } else if (note) {
+          await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" });
+        }
+
+      } else {
+        // CREATE NEW SECTION
+        await addPrestacion(activeSheet, { [mainKey]: title, "meta_part": "TITLE" });
+        if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
+        const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
+        columnsWithTypes.forEach((col, i) => { const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`; metaRow[ek] = col.type; });
+        await addPrestacion(activeSheet, metaRow);
+        const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
+        columnsWithTypes.forEach((col, i) => { const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`; headerLabels[ek] = col.name; });
+        await addPrestacion(activeSheet, headerLabels);
+        if (note) await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" });
+        await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación...", "meta_part": "DATA" });
+      }
 
       loadSheetData(activeSheet);
     } catch (e) {
       console.error(e);
+      alert("Error al guardar cambios estructurales");
     }
+    setModalMode("create");
+    setEditingSectionData(null);
     setIsSaving(false);
   };
 
@@ -166,6 +197,24 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
+  const openEditModal = (section: any) => {
+    // Transform headers and types back to the format CreateSectionModal expects
+    const columnsForModal = section.headers.map((h: string) => ({
+      name: section.labels[h] || h,
+      type: section.types[h] || "text"
+    }));
+
+    setEditingSectionData({
+      title: section.title,
+      subtitle: section.subtitle,
+      note: section.note,
+      columns: columnsForModal,
+      structuralIds: section.structuralIds
+    });
+    setModalMode("edit");
+    setIsModalOpen(true);
+  };
+
   const formatWithTypes = (val: any, type: string) => {
     if (type === 'price' && (typeof val === 'number' || !isNaN(parseFloat(val)))) {
       return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(val));
@@ -179,14 +228,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
     data.forEach((row) => {
       const rd = row.row_data;
-      const part = rd["meta_part"] || rd["__SECTION_PART__"]; // Support both for transition
+      const part = rd["meta_part"] || rd["__SECTION_PART__"];
       const entries = Object.entries(rd);
-
-      // Filter out internal keys, but NOT Excel keys starting with __EMPTY
       const internalKeys = ['id', 'sheet_name', 'meta_part', '__SECTION_PART__'];
-      const textValues = entries.filter(([k, v]) =>
-        v !== null && String(v).trim() !== '' && !internalKeys.includes(k)
-      ).map(([_, v]) => v);
+      const textValues = entries.filter(([k, v]) => v !== null && String(v).trim() !== '' && !internalKeys.includes(k)).map(([_, v]) => v);
 
       const mainKey = Object.keys(rd).find(k => k === "__EMPTY" || k.toLowerCase().includes("laboratorio")) || Object.keys(rd)[0];
       const mainVal = mainKey ? rd[mainKey] : null;
@@ -198,26 +243,39 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const isForcedNote = part === "NOTE";
       const isForcedData = part === "DATA";
 
-      // Improved Heuristic (only if not already in a forced section structure)
       const isHeuristicTitle = !part && mainVal && textValues.length === 1 &&
         !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados") &&
         !String(mainVal).includes("Prestación") && mainVal !== "__METADATA__";
 
       if (isForcedTitle || isHeuristicTitle) {
-        currentSection = { title: mainVal, subtitle: "", headers: [], labels: {}, types: {}, rows: [], note: "", allIds: [row.id] };
+        currentSection = {
+          title: mainVal,
+          subtitle: "",
+          headers: [],
+          labels: {},
+          types: {},
+          rows: [],
+          note: "",
+          allIds: [row.id],
+          structuralIds: { title: row.id, subtitle: null, metadata: null, header: null, note: null }
+        };
         rawSections.push(currentSection);
       } else if (currentSection) {
         currentSection.allIds.push(row.id);
 
         if (isForcedSubtitle || (!part && (String(mainVal).includes("Valores") || String(mainVal).includes("actualizados")))) {
           currentSection.subtitle = mainVal;
+          currentSection.structuralIds.subtitle = row.id;
         } else if (isForcedMetadata || mainVal === "__METADATA__") {
+          currentSection.structuralIds.metadata = row.id;
           Object.keys(rd).forEach(k => { if (!internalKeys.includes(k)) currentSection.types[k] = rd[k]; });
         } else if (isForcedHeader || (!part && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre")))) {
+          currentSection.structuralIds.header = row.id;
           currentSection.headers = Object.keys(rd).filter(k => !internalKeys.includes(k) && (rd[k] || k === mainKey));
           currentSection.headers.forEach((h: string) => currentSection.labels[h] = rd[h]);
         } else if (isForcedNote || (!part && String(mainVal).includes("NOTA:"))) {
           currentSection.note = mainVal;
+          currentSection.structuralIds.note = row.id;
         } else if (isForcedData || (!part && textValues.length > 0)) {
           currentSection.rows.push(row);
         }
@@ -228,9 +286,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     const filteredSections = rawSections.filter(section => {
       if (!search) return true;
       const titleMatch = String(section.title).toLowerCase().includes(lowerSearch);
-      const rowsMatch = section.rows.some((row: any) =>
-        Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch))
-      );
+      const rowsMatch = section.rows.some((row: any) => Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch)));
       return titleMatch || rowsMatch;
     }).map(section => {
       if (!search) return section;
@@ -250,6 +306,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 {section.subtitle && <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> Editar Tabla</button>
                 <button onClick={() => handleAdd(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
                 <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger"><Trash2 size={14} /> Eliminar Tabla</button>
               </div>
@@ -275,14 +332,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                         return (
                           <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #f1f5f9' }}>
                             {editingRow === row.id ? (
-                              <input
-                                type={type === 'number' || type === 'price' ? 'number' : 'text'}
-                                step={type === 'price' ? "0.01" : "1"}
-                                className="input-inline"
-                                value={editData[h] || ""}
-                                onChange={(e) => handleValueChange(h, e.target.value)}
-                                autoFocus={h === section.headers[0]}
-                              />
+                              <input type={type === 'number' || type === 'price' ? 'number' : 'text'} step={type === 'price' ? "0.01" : "1"} className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={h === section.headers[0]} />
                             ) : (
                               <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>{formatWithTypes(row.row_data[h], type)}</span>
                             )}
@@ -291,11 +341,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                       })}
                       <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #f1f5f9', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          {editingRow === row.id ? (
-                            <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button>
-                          ) : (
-                            <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={16} /></button>
-                          )}
+                          {editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={16} /></button>}
                           <button onClick={() => handleDelete(row.id)} className="btn-action delete"><Trash2 size={16} /></button>
                         </div>
                       </td>
@@ -330,7 +376,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="modern-input" style={{ width: '100%', paddingLeft: '2.5rem' }} />
           </div>
           {activeSheet === "Convenios Particulares" && (
-            <button className="btn-primary" onClick={() => setIsModalOpen(true)} disabled={isSaving}><Plus size={18} /> Nuevo Convenio</button>
+            <button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}><Plus size={18} /> Nuevo Convenio</button>
           )}
         </div>
       </div>
@@ -354,13 +400,22 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           </table>
         </div>
       ))}</div>
-      <CreateSectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleCreateSection} />
+
+      <CreateSectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleTableStructureSubmit}
+        mode={modalMode}
+        initialData={editingSectionData}
+      />
+
       <style jsx>{`
         .modern-input { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.6rem 1rem; }
         .tab-active { padding: 0.6rem 1.2rem; background: var(--primary); color: white; border: none; border-radius: 12px 12px 0 0; font-weight: 700; cursor: pointer; }
         .tab-inactive { padding: 0.6rem 1.2rem; background: rgba(0,0,0,0.05); color: var(--text-muted); border: none; border-radius: 12px 12px 0 0; cursor: pointer; }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
         .btn-small-primary { background: var(--primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
+        .btn-small-secondary { background: #f1f5f9; color: #475569; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
         .btn-small-danger { background: #fee2e2; color: #ef4444; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
         .input-inline { width: 100%; border: 1px solid var(--primary); border-radius: 4px; padding: 0.3rem }
         .btn-action { background: none; border: none; cursor: pointer; }
