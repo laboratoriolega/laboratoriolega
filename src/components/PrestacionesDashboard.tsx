@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { getPrestacionesBySheet, updatePrestacion, addPrestacion, deletePrestacion } from "@/actions/prestaciones";
-import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet, AlertTriangle } from "lucide-react";
+import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet } from "lucide-react";
 import CreateSectionModal from "./CreateSectionModal";
 
 export default function PrestacionesDashboard({ initialSheets }: { initialSheets: string[] }) {
@@ -40,16 +40,6 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     });
     return Array.from(keys);
   }, [data]);
-
-  const filteredData = useMemo(() => {
-    if (!search) return data;
-    const lowerSearch = search.toLowerCase();
-    return data.filter(row => {
-      return Object.values(row.row_data).some(val =>
-        String(val).toLowerCase().includes(lowerSearch)
-      );
-    });
-  }, [data, search]);
 
   const recalculateRow = (rowData: any, sheet: string) => {
     const updated = { ...rowData };
@@ -101,7 +91,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(true);
     const res = await addPrestacion(sheet, rowToSave);
     if (res.success) {
-      if (!customRow) loadSheetData(sheet);
+      loadSheetData(sheet);
       return res;
     } else {
       alert("Error al agregar fila");
@@ -112,27 +102,19 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const handleCreateSection = async (title: string, subtitle: string, headers: string[]) => {
     setIsSaving(true);
     try {
-      const mainKey = columns.find(k => k.toLowerCase().includes("laboratorio") || k === "Laboratorio JUJUY") || columns[0] || "Laboratorio";
-
-      // 1. Create Title Row
+      const mainKey = "__EMPTY"; // Usually safe key for title
       await addPrestacion(activeSheet, { [mainKey]: title });
-      // 2. Subtitle Row
       if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle });
-
-      // 3. Header Row (Source of labels)
       const headerRow: any = { [mainKey]: "Prestaciones" };
-      // Map other headers to __EMPTY keys
       headers.forEach((h, i) => {
         if (h.toLowerCase() !== "prestaciones") {
           const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
+          if (i === 0) headerRow["__EMPTY"] = "Prestaciones"; // Specific mapping
           headerRow[ek] = h;
         }
       });
       await addPrestacion(activeSheet, headerRow);
-
-      // 4. Initial entry
-      await addPrestacion(activeSheet, { [mainKey]: "Ejemplo de Prestación..." });
-
+      await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación..." });
       loadSheetData(activeSheet);
     } catch (e) {
       console.error(e);
@@ -149,7 +131,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   };
 
   const handleDeleteSection = async (ids: number[]) => {
-    if (!confirm(`¿Estás seguro de eliminar toda esta tabla/laboratorio (${ids.length} filas)?`)) return;
+    if (!confirm(`¿Estás seguro de eliminar toda esta tabla (${ids.length} filas)?`)) return;
     setIsSaving(true);
     for (const id of ids) {
       await deletePrestacion(id);
@@ -166,93 +148,81 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   };
 
   const renderSectionedView = () => {
-    const sections: any[] = [];
+    const rawSections: any[] = [];
     let currentSection: any = null;
 
-    filteredData.forEach((row) => {
+    // First, group everything WITHOUT filtering
+    data.forEach((row) => {
       const rd = row.row_data;
       const values = Object.values(rd);
       const textValues = values.filter(v => v !== null && String(v).trim() !== '');
-
-      const mainKey = Object.keys(rd).find(k => k.toLowerCase().includes("laboratorio") || k === "Laboratorio JUJUY") || Object.keys(rd)[0];
+      const mainKey = Object.keys(rd).find(k => k === "__EMPTY" || k.toLowerCase().includes("laboratorio")) || Object.keys(rd)[0];
       const mainVal = mainKey ? rd[mainKey] : null;
 
-      // Better heuristic for section start: Only title row (1 value, no weird keywords)
       const isNewSection = mainVal && textValues.length === 1 &&
-        !mainVal.includes("NOTA:") &&
-        !mainVal.includes("Valores") &&
-        !mainVal.includes("actualizados") &&
-        !mainVal.includes("Prestación");
-
+        !mainVal.includes("NOTA:") && !mainVal.includes("Valores") && !mainVal.includes("actualizados") && !mainVal.includes("Prestación");
       const isSubHeader = mainVal && (mainVal.includes("Valores") || mainVal.includes("actualizados"));
       const isRowHeader = mainVal && (mainVal.includes("Prestaciones") || mainVal.includes("Nombre"));
       const isNote = mainVal && mainVal.includes("NOTA:");
 
       if (isNewSection) {
-        currentSection = {
-          title: mainVal,
-          subtitle: "",
-          headers: [],
-          labels: {},
-          rows: [],
-          note: "",
-          allIds: [row.id]
-        };
-        sections.push(currentSection);
+        currentSection = { title: mainVal, subtitle: "", headers: [], labels: {}, rows: [], note: "", allIds: [row.id] };
+        rawSections.push(currentSection);
       } else if (currentSection) {
         currentSection.allIds.push(row.id);
-        if (isSubHeader) {
-          currentSection.subtitle = mainVal;
-        } else if (isRowHeader) {
-          currentSection.headers = Object.keys(rd).filter(k => rd[k] && k !== 'id' && k !== 'sheet_name');
-          // Capture labels from this row
-          const labelsMap: any = {};
-          currentSection.headers.forEach((h: string) => {
-            labelsMap[h] = rd[h];
-          });
-          currentSection.labels = labelsMap;
-        } else if (isNote) {
-          currentSection.note = mainVal;
-        } else if (textValues.length > 0) {
-          currentSection.rows.push(row);
-        }
+        if (isSubHeader) currentSection.subtitle = mainVal;
+        else if (isRowHeader) {
+          currentSection.headers = Object.keys(rd).filter(k => k !== 'id' && (rd[k] || k === mainKey));
+          currentSection.headers.forEach((h: string) => currentSection.labels[h] = rd[h]);
+        } else if (isNote) currentSection.note = mainVal;
+        else if (textValues.length > 0) currentSection.rows.push(row);
       } else if (textValues.length > 0) {
-        // Fallback for data before any section header
-        currentSection = {
-          title: "General",
-          subtitle: "",
-          headers: Object.keys(rd).filter(k => k !== 'id' && k !== 'sheet_name'),
-          labels: {},
-          rows: [row],
-          note: "",
-          allIds: [row.id]
-        };
-        sections.push(currentSection);
+        currentSection = { title: "General", subtitle: "", headers: Object.keys(rd).filter(k => k !== 'id' && k !== 'sheet_name'), labels: {}, rows: [row], note: "", allIds: [row.id] };
+        rawSections.push(currentSection);
       }
     });
 
-    if (sections.length === 0) return (
+    // Now apply Search filter
+    const lowerSearch = search.toLowerCase();
+    const filteredSections = rawSections.filter(section => {
+      if (!search) return true;
+      const titleMatch = section.title.toLowerCase().includes(lowerSearch);
+      const rowsMatch = section.rows.some((row: any) =>
+        Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch))
+      );
+      return titleMatch || rowsMatch;
+    }).map(section => {
+      if (!search) return section;
+      const titleMatch = section.title.toLowerCase().includes(lowerSearch);
+      // If title matches, show all rows. If not, only matching rows.
+      if (titleMatch) return section;
+      return {
+        ...section,
+        rows: section.rows.filter((row: any) =>
+          Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch))
+        )
+      };
+    });
+
+    if (filteredSections.length === 0) return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-        No se encontraron secciones. Carga un nuevo convenio para comenzar.
+        No se encontraron resultados.
       </div>
     );
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-        {sections.map((section, idx) => (
-          <div key={idx} className="section-block" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', padding: '1.5rem 0', position: 'relative' }}>
-
+        {filteredSections.map((section, idx) => (
+          <div key={idx} className="section-block" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', padding: '1.5rem 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 1.5rem', marginBottom: '1.5rem' }}>
               <div>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', margin: 0 }}>{section.title}</h3>
                 {section.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{section.subtitle}</p>}
               </div>
-              <button
-                onClick={() => handleDeleteSection(section.allIds)}
-                style={{ background: '#fff1f2', color: '#e11d48', border: 'none', padding: '0.6rem 1rem', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                <Trash2 size={16} /> Eliminar Tabla
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => handleAdd(activeSheet, { "__EMPTY": "Nueva Prestación..." })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
+                <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger"><Trash2 size={14} /> Eliminar Tabla</button>
+              </div>
             </div>
 
             <div style={{ overflowX: 'auto', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
@@ -268,48 +238,32 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                   </tr>
                 </thead>
                 <tbody>
-                  {section.rows.map((row: any) => {
-                    const isDataRow = !Object.values(row.row_data).some(v => String(v).includes("Prestaciones"));
-                    if (!isDataRow) return null;
-                    return (
-                      <tr key={row.id} style={{ transition: 'background 0.2s' }} className="table-row-hover">
-                        {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
-                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #e2e8f0' }}>
-                            {editingRow === row.id ? (
-                              <input
-                                className="input-inline"
-                                value={editData[h] || ""}
-                                onChange={(e) => handleValueChange(h, e.target.value)}
-                                autoFocus={h === section.headers[0]}
-                              />
-                            ) : (
-                              <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>
-                                {formatValue(row.row_data[h])}
-                              </span>
-                            )}
-                          </td>
-                        ))}
-                        <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #e2e8f0', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
-                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                            {editingRow === row.id ? (
-                              <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button>
-                            ) : (
-                              <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={16} /></button>
-                            )}
-                            <button onClick={() => handleDelete(row.id)} className="btn-action delete"><Trash2 size={16} /></button>
-                          </div>
+                  {section.rows.map((row: any) => (
+                    <tr key={row.id} className="table-row-hover">
+                      {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
+                        <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #e2e8f0' }}>
+                          {editingRow === row.id ? (
+                            <input className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={h === section.headers[0]} />
+                          ) : (
+                            <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>{formatValue(row.row_data[h])}</span>
+                          )}
                         </td>
-                      </tr>
-                    );
-                  })}
+                      ))}
+                      <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #e2e8f0', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                          {editingRow === row.id ? (
+                            <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button>
+                          ) : (
+                            <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={16} /></button>
+                          )}
+                          <button onClick={() => handleDelete(row.id)} className="btn-action delete"><Trash2 size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-            {section.note && (
-              <div style={{ margin: '1rem 1.5rem 0', padding: '1rem', background: '#f8fafc', borderLeft: '4px solid #94a3b8', borderRadius: '0 8px 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
-                {section.note}
-              </div>
-            )}
           </div>
         ))}
       </div>
@@ -318,221 +272,77 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100vh', padding: '1rem' }}>
-
-      {/* Header & Search */}
       <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
             <FileSpreadsheet size={32} color="var(--primary)" /> Módulo de Prestaciones
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Gestión dinámica de tarifarios y convenios</p>
         </div>
-
         <div style={{ display: 'flex', gap: '1rem', flex: 1, maxWidth: '500px' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-            <input
-              type="text"
-              placeholder="Buscar en esta hoja..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="modern-input"
-              style={{ width: '100%', paddingLeft: '2.5rem' }}
-            />
+            <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="modern-input" style={{ width: '100%', paddingLeft: '2.5rem' }} />
           </div>
-          {activeSheet === "Convenios Particulares" ? (
-            <button className="btn-primary" onClick={() => setIsModalOpen(true)} disabled={isSaving}>
-              <Plus size={18} /> Nuevo Convenio
-            </button>
-          ) : (
-            <button className="btn-primary" onClick={() => handleAdd()} disabled={isSaving}>
-              <Plus size={18} /> Nueva Fila
-            </button>
+          {activeSheet === "Convenios Particulares" && (
+            <button className="btn-primary" onClick={() => setIsModalOpen(true)} disabled={isSaving}><Plus size={18} /> Nuevo Convenio</button>
           )}
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>
         {initialSheets.map(sheet => (
-          <button
-            key={sheet}
-            onClick={() => setActiveSheet(sheet)}
-            style={{
-              padding: '0.6rem 1.2rem',
-              borderRadius: '12px 12px 0 0',
-              background: activeSheet === sheet ? 'var(--primary)' : 'rgba(0,0,0,0.05)',
-              color: activeSheet === sheet ? 'white' : 'var(--text-muted)',
-              border: 'none',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-              fontSize: '0.85rem'
-            }}
-          >
-            {sheet}
-          </button>
+          <button key={sheet} onClick={() => setActiveSheet(sheet)} className={activeSheet === sheet ? "tab-active" : "tab-inactive"}>{sheet}</button>
         ))}
       </div>
 
-      {/* Table Area */}
-      <div className={activeSheet === "Convenios Particulares" ? "" : "glass-panel"} style={{ flex: 1, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1 }}>
         {loading ? (
-          <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <Loader2 size={48} className="animate-spin" style={{ margin: '0 auto 1rem' }} />
-            <p>Cargando datos de la hoja...</p>
-          </div>
+          <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={48} className="animate-spin" /><p>Cargando...</p></div>
         ) : (
           activeSheet === "Convenios Particulares" ? renderSectionedView() : (
-            <div style={{ overflowX: 'auto', flex: 1 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                <thead style={{ background: 'var(--glass-bg)', position: 'sticky', top: 0, zIndex: 10 }}>
-                  <tr>
-                    {columns.map(col => (
-                      <th key={col} style={{ padding: '1rem', textAlign: 'left', borderBottom: '2px solid var(--glass-border)', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>
-                        {col}
-                      </th>
-                    ))}
-                    <th style={{ padding: '1rem', width: '100px', borderBottom: '2px solid var(--glass-border)' }}></th>
+            <div className="glass-panel" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--glass-bg)' }}>
+                    {columns.map(col => <th key={col} style={{ padding: '1rem', textAlign: 'left', fontWeight: 700 }}>{col}</th>)}
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((row) => (
-                    <tr key={row.id} style={{ borderBottom: '1px solid var(--glass-border)', background: editingRow === row.id ? 'rgba(14, 165, 233, 0.05)' : 'transparent' }}>
+                  {filteredData.map(row => (
+                    <tr key={row.id}>
                       {columns.map(col => (
                         <td key={col} style={{ padding: '0.75rem 1rem' }}>
-                          {editingRow === row.id ? (
-                            <input
-                              type="text"
-                              value={editData[col] || ""}
-                              onChange={(e) => handleValueChange(col, e.target.value)}
-                              style={{
-                                width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--primary)',
-                                fontSize: '0.85rem', background: 'white'
-                              }}
-                            />
-                          ) : (
-                            <span style={{
-                              fontWeight: col.includes("Importe") || col.includes("Costo") ? 700 : 400,
-                              color: col.includes("Importe") || col.includes("Costo") ? 'var(--primary)' : 'inherit'
-                            }}>
-                              {formatValue(row.row_data[col])}
-                            </span>
-                          )}
+                          {editingRow === row.id ? <input className="input-inline" value={editData[col] || ""} onChange={e => handleValueChange(col, e.target.value)} /> : formatValue(row.row_data[col])}
                         </td>
                       ))}
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          {editingRow === row.id ? (
-                            <button onClick={() => handleSave(row.id)} disabled={isSaving} style={{ background: 'var(--success)', color: 'white', border: 'none', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer' }}>
-                              <Save size={14} />
-                            </button>
-                          ) : (
-                            <button onClick={() => handleEdit(row)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                              <Edit2 size={14} />
-                            </button>
-                          )}
-                          <button onClick={() => handleDelete(row.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', opacity: 0.6 }}>
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                      <td style={{ textAlign: 'right' }}>
+                        {editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={14} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={14} /></button>}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filteredData.length === 0 && (
-                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <p>No se encontraron resultados en esta hoja.</p>
-                </div>
-              )}
             </div>
           )
         )}
       </div>
 
-      <CreateSectionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateSection}
-      />
-
-      {isSaving && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: 'white', padding: '1rem 2rem', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '1rem', zIndex: 1000, border: '1px solid var(--glass-border)' }}>
-          <Loader2 className="animate-spin" size={24} color="var(--primary)" />
-          <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Guardando cambios...</span>
-        </div>
-      )}
+      <CreateSectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleCreateSection} />
 
       <style jsx>{`
-        .modern-input {
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          padding: 0.6rem 1rem;
-          font-size: 0.9rem;
-          color: var(--text-main);
-          transition: all 0.2s;
-        }
-        .modern-input:focus {
-          border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
-          background: white;
-        }
-        .glass-panel {
-          background: var(--glass-bg);
-          backdrop-filter: blur(10px);
-          border: 1px solid var(--glass-border);
-          border-radius: 16px;
-          box-shadow: var(--glass-shadow);
-        }
-        .btn-primary {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: var(--primary);
-          color: white;
-          border: none;
-          padding: 0.6rem 1.2rem;
-          border-radius: 12px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3);
-        }
-        .input-inline {
-          width: 100%;
-          padding: 0.5rem;
-          border: 1px solid var(--primary);
-          border-radius: 8px;
-          font-size: 0.85rem;
-          background: white;
-          box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .btn-action {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 8px;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-action.edit { background: #f1f5f9; color: #475569; }
-        .btn-action.edit:hover { background: #e2e8f0; color: var(--primary); }
-        .btn-action.save { background: var(--success); color: white; }
-        .btn-action.delete { background: #fff1f2; color: #e11d48; }
-        .btn-action.delete:hover { background: #ffe4e6; }
-        
-        .table-row-hover:hover {
-          background: rgba(14, 165, 233, 0.02);
-        }
+        .modern-input { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.6rem 1rem; }
+        .tab-active { padding: 0.6rem 1.2rem; background: var(--primary); color: white; border: none; border-radius: 12px 12px 0 0; font-weight: 700; cursor: pointer; }
+        .tab-inactive { padding: 0.6rem 1.2rem; background: rgba(0,0,0,0.05); color: var(--text-muted); border: none; border-radius: 12px 12px 0 0; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+        .btn-small-primary { background: var(--primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
+        .btn-small-danger { background: #fee2e2; color: #ef4444; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
+        .input-inline { width: 100%; border: 1px solid var(--primary); border-radius: 4px; padding: 0.3rem }
+        .btn-action { background: none; border: none; cursor: pointer; }
+        .btn-action.save { color: var(--success); }
+        .btn-action.edit { color: var(--text-muted); }
+        .btn-action.delete { color: var(--danger); }
+        .glass-panel { background: white; border-radius: 16px; border: 1px solid var(--glass-border); }
       `}</style>
     </div>
   );
