@@ -35,7 +35,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     const keys = new Set<string>();
     data.forEach(row => {
       Object.keys(row.row_data).forEach(k => {
-        if (k !== 'id' && k !== 'sheet_name') keys.add(k);
+        if (k !== 'id' && k !== 'sheet_name' && k !== 'meta_part') keys.add(k);
       });
     });
     return Array.from(keys);
@@ -114,13 +114,13 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     try {
       const mainKey = "__EMPTY";
       // 1. Title Marker
-      await addPrestacion(activeSheet, { [mainKey]: title, "__SECTION_PART__": "TITLE" });
+      await addPrestacion(activeSheet, { [mainKey]: title, "meta_part": "TITLE" });
 
       // 2. Subtitle Marker
-      if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "__SECTION_PART__": "SUBTITLE" });
+      if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
 
       // 3. Metadata Marker (TYPES)
-      const metaRow: any = { [mainKey]: "__METADATA__", "__SECTION_PART__": "METADATA" };
+      const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
       columnsWithTypes.forEach((col, i) => {
         const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
         metaRow[ek] = col.type;
@@ -128,18 +128,18 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       await addPrestacion(activeSheet, metaRow);
 
       // 4. Header Labels Marker
-      const headerRow: any = { [mainKey]: "Prestaciones", "__SECTION_PART__": "HEADER" };
+      const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
       columnsWithTypes.forEach((col, i) => {
         const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-        headerRow[ek] = col.name;
+        headerLabels[ek] = col.name;
       });
-      await addPrestacion(activeSheet, headerRow);
+      await addPrestacion(activeSheet, headerLabels);
 
       // 5. Note Marker
-      if (note) await addPrestacion(activeSheet, { [mainKey]: note, "__SECTION_PART__": "NOTE" });
+      if (note) await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" });
 
       // 6. Initial data row
-      await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación...", "__SECTION_PART__": "DATA" });
+      await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación...", "meta_part": "DATA" });
 
       loadSheetData(activeSheet);
     } catch (e) {
@@ -179,12 +179,15 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
     data.forEach((row) => {
       const rd = row.row_data;
-      const part = rd["__SECTION_PART__"]; // NEW ROBUST MARKER
-
+      const part = rd["meta_part"] || rd["__SECTION_PART__"]; // Support both for transition
       const entries = Object.entries(rd);
-      const textValues = entries.filter(([k, v]) => v !== null && String(v).trim() !== '' && !k.startsWith("__")).map(([_, v]) => v);
 
-      // Fallback identification for old data
+      // Filter out internal keys, but NOT Excel keys starting with __EMPTY
+      const internalKeys = ['id', 'sheet_name', 'meta_part', '__SECTION_PART__'];
+      const textValues = entries.filter(([k, v]) =>
+        v !== null && String(v).trim() !== '' && !internalKeys.includes(k)
+      ).map(([_, v]) => v);
+
       const mainKey = Object.keys(rd).find(k => k === "__EMPTY" || k.toLowerCase().includes("laboratorio")) || Object.keys(rd)[0];
       const mainVal = mainKey ? rd[mainKey] : null;
 
@@ -195,9 +198,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const isForcedNote = part === "NOTE";
       const isForcedData = part === "DATA";
 
-      // Heuristic for old sections
+      // Improved Heuristic (only if not already in a forced section structure)
       const isHeuristicTitle = !part && mainVal && textValues.length === 1 &&
-        !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados");
+        !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados") &&
+        !String(mainVal).includes("Prestación") && mainVal !== "__METADATA__";
 
       if (isForcedTitle || isHeuristicTitle) {
         currentSection = { title: mainVal, subtitle: "", headers: [], labels: {}, types: {}, rows: [], note: "", allIds: [row.id] };
@@ -207,10 +211,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
         if (isForcedSubtitle || (!part && (String(mainVal).includes("Valores") || String(mainVal).includes("actualizados")))) {
           currentSection.subtitle = mainVal;
-        } else if (isForcedMetadata) {
-          Object.keys(rd).forEach(k => { if (!k.startsWith("__") && k !== 'id') currentSection.types[k] = rd[k]; });
+        } else if (isForcedMetadata || mainVal === "__METADATA__") {
+          Object.keys(rd).forEach(k => { if (!internalKeys.includes(k)) currentSection.types[k] = rd[k]; });
         } else if (isForcedHeader || (!part && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre")))) {
-          currentSection.headers = Object.keys(rd).filter(k => k !== 'id' && !k.startsWith("__") && (rd[k] || k === mainKey));
+          currentSection.headers = Object.keys(rd).filter(k => !internalKeys.includes(k) && (rd[k] || k === mainKey));
           currentSection.headers.forEach((h: string) => currentSection.labels[h] = rd[h]);
         } else if (isForcedNote || (!part && String(mainVal).includes("NOTA:"))) {
           currentSection.note = mainVal;
@@ -246,7 +250,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 {section.subtitle && <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => handleAdd(activeSheet, { "__EMPTY": "Nueva Prestación...", "__SECTION_PART__": "DATA" })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
+                <button onClick={() => handleAdd(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
                 <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger"><Trash2 size={14} /> Eliminar Tabla</button>
               </div>
             </div>
