@@ -435,12 +435,15 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         <div className="glass-panel" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr style={{ background: 'var(--glass-bg)' }}>{columns.map(col => <th key={col} style={{ padding: '1rem', textAlign: 'left', fontWeight: 700 }}>{col}</th>)}<th></th></tr></thead>
-            <tbody>{filteredData.map(row => (
-              <tr key={row.id}>
-                {columns.map(col => (<td key={col} style={{ padding: '0.75rem 1rem' }}>{editingRow === row.id ? <input className="input-inline" value={editData[col] || ""} onChange={e => handleValueChange(col, e.target.value)} /> : formatWithTypes(row.row_data[col], 'text')}</td>))}
-                <td style={{ textAlign: 'right' }}>{editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={14} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={14} /></button>}</td>
-              </tr>
-            ))}</tbody>
+            <tbody>
+              {filteredData.map(row => (
+                <tr key={row.id}>
+                  <td style={{ fontSize: '0.6rem', color: '#ccc' }}>ID:{row.id} | SH:{row.sheet_name}</td>
+                  {columns.map(col => (<td key={col} style={{ padding: '0.75rem 1rem' }}>{editingRow === row.id ? <input className="input-inline" value={editData[col] || ""} onChange={e => handleValueChange(col, e.target.value)} /> : formatWithTypes(row.row_data[col], 'text')}</td>))}
+                  <td style={{ textAlign: 'right' }}>{editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={14} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={14} /></button>}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       ))}</div>
