@@ -21,6 +21,7 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
     const [subtitle, setSubtitle] = useState("");
     const [note, setNote] = useState("");
     const [columns, setColumns] = useState<Array<{ name: string, type: string }>>([]);
+    const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -68,6 +69,20 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
         }
         setColumns(newCols);
     };
+
+    // Native Drag and Drop
+    const onDragStart = (idx: number) => setDraggedIdx(idx);
+    const onDragOver = (e: React.DragEvent, idx: number) => {
+        e.preventDefault();
+        if (draggedIdx === null || draggedIdx === idx) return;
+        const newCols = [...columns];
+        const item = newCols[draggedIdx];
+        newCols.splice(draggedIdx, 1);
+        newCols.splice(idx, 0, item);
+        setDraggedIdx(idx);
+        setColumns(newCols);
+    };
+    const onDragEnd = () => setDraggedIdx(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -123,7 +138,14 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
                             </label>
                             <div className="columns-grid">
                                 {columns.map((col, idx) => (
-                                    <div key={idx} className="column-row">
+                                    <div
+                                        key={idx}
+                                        className={`column-row ${draggedIdx === idx ? 'dragging' : ''}`}
+                                        draggable
+                                        onDragStart={() => onDragStart(idx)}
+                                        onDragOver={(e) => onDragOver(e, idx)}
+                                        onDragEnd={onDragEnd}
+                                    >
                                         <div className="drag-handle-container">
                                             <div className="grip-icon"><GripVertical size={16} color="#94a3b8" /></div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -218,10 +240,12 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
                     display: flex; flex-direction: column; gap: 0.75rem;
                     margin-bottom: 0.5rem;
                 }
-                .column-row { display: flex; gap: 0.75rem; align-items: center; }
+                .column-row { display: flex; gap: 0.75rem; align-items: center; padding: 4px; border-radius: 12px; transition: background 0.2s; }
+                .column-row.dragging { opacity: 0.5; background: #f1f5f9; border: 2px dashed var(--primary); }
                 .col-name { flex: 1; }
                 
-                .drag-handle-container { display: flex; align-items: center; gap: 4px; padding: 4px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+                .drag-handle-container { cursor: grab; display: flex; align-items: center; gap: 4px; padding: 4px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+                .drag-handle-container:active { cursor: grabbing; }
                 .move-btn { background: none; border: none; padding: 0; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
                 .move-btn:disabled { opacity: 0.3; cursor: not-allowed; }
                 .move-btn:hover:not(:disabled) { color: var(--primary); }

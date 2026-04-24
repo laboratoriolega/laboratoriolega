@@ -123,23 +123,21 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const mainKey = "__EMPTY";
 
       if (modalMode === "edit" && editingSectionData) {
-        const { structuralIds, originalOrder, rows: sectionRows } = editingSectionData;
+        const { structuralIds, rows: sectionRows } = editingSectionData;
 
         // 1. Update Title
         if (structuralIds.title) await updatePrestacion(structuralIds.title, { [mainKey]: title, "meta_part": "TITLE" });
 
-        // 2. Subtitle (Update or Create relative to title)
+        // 2. Subtitle
         if (structuralIds.subtitle) {
           await updatePrestacion(structuralIds.subtitle, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
         } else if (subtitle) {
           await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" }, structuralIds.title);
         }
 
-        // 3. Metadata and Headers (Migration logic for reordering)
+        // 3. Metadata and Headers (Migration logic)
         const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
         const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
-
-        const keyMapping: { [oldKey: string]: string } = {}; // we will use the same keys but mapping labels
 
         columnsWithTypes.forEach((col, i) => {
           const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
@@ -147,40 +145,45 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           headerLabels[ek] = col.name;
         });
 
-        if (structuralIds.metadata) await updatePrestacion(structuralIds.metadata, metaRow);
-        if (structuralIds.header) await updatePrestacion(structuralIds.header, headerLabels);
+        // FORCE internal metadata IDs if they were missing or heuristic
+        if (structuralIds.metadata) {
+          await updatePrestacion(structuralIds.metadata, metaRow);
+        } else {
+          const m = await addPrestacion(activeSheet, metaRow, structuralIds.subtitle || structuralIds.title);
+          structuralIds.metadata = m.data.id;
+        }
 
-        // 4. Note (Update or Create relative to header)
+        if (structuralIds.header) {
+          await updatePrestacion(structuralIds.header, headerLabels);
+        } else {
+          await addPrestacion(activeSheet, headerLabels, structuralIds.metadata);
+        }
+
+        // 4. Note
         if (structuralIds.note) {
           await updatePrestacion(structuralIds.note, { [mainKey]: note, "meta_part": "NOTE" });
         } else if (note) {
           await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" }, structuralIds.header || structuralIds.title);
         }
 
-        // 5. Data rows migration (if columns were reordered)
-        // If the order changed, we need to map old data to new keys.
-        // For now, if the user reordered columns, the data might shift if we don't handle it.
-        // But since we are using FIXED KEYS (__EMPTY, __EMPTY_1...), reordering columns in the UI
-        // means we changed WHICH KEY represents WHICH COLUMN.
-        // So we MUST move the data between keys for all rows.
+        // 5. Data Migration (Reordering)
+        const oldLabelsMap = editingSectionData.labels;
+        const newCols = columnsWithTypes;
 
-        // Simple heuristic: compare labels to find mapping
-        const oldLabelsMap = editingSectionData.labels; // { "__EMPTY": "Nombre", "__EMPTY_1": "Costo" }
-        const newCols = columnsWithTypes; // [{ name: "Costo", type: "price" }, { name: "Nombre", type: "text" }]
-
-        for (const dr of sectionRows) {
-          const newRowData = { ...dr.row_data };
-          newCols.forEach((col, newIdx) => {
-            const newKey = newIdx === 0 ? "__EMPTY" : `__EMPTY_${newIdx}`;
-            // Find where the data for "col.name" was previously
-            const oldKey = Object.keys(oldLabelsMap).find(k => oldLabelsMap[k] === col.name);
-            if (oldKey && oldKey !== newKey) {
-              newRowData[newKey] = dr.row_data[oldKey];
-            }
-          });
-          await updatePrestacion(dr.id, newRowData);
+        // Only migrate if we have rows
+        if (sectionRows.length > 0) {
+          for (const dr of sectionRows) {
+            const newRowData = { ...dr.row_data };
+            newCols.forEach((col, newIdx) => {
+              const newKey = newIdx === 0 ? "__EMPTY" : `__EMPTY_${newIdx}`;
+              const oldKey = Object.keys(oldLabelsMap).find(k => oldLabelsMap[k] === col.name);
+              if (oldKey && oldKey !== newKey) {
+                newRowData[newKey] = dr.row_data[oldKey];
+              }
+            });
+            await updatePrestacion(dr.id, newRowData);
+          }
         }
-
       } else {
         const titleRow = await addPrestacion(activeSheet, { [mainKey]: title, "meta_part": "TITLE" });
         if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" }, titleRow.data.id);
