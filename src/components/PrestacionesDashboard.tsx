@@ -358,13 +358,13 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             <div style={{ overflowX: 'auto', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead>
-                  <tr style={{ background: '#1e3a8a' }}>
+                  <tr style={{ background: '#244c7d' }}>
                     {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
-                      <th key={h} style={{ padding: '1.25rem 1rem', textAlign: 'left', color: 'white', fontWeight: 700, border: '1px solid #334155', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                      <th key={h} style={{ padding: '1rem', textAlign: h === '__EMPTY_1' ? 'right' : 'left', color: 'white', fontWeight: 700, border: '1px solid #1e3a8a', fontSize: '0.85rem' }}>
                         {section.labels[h] || h}
                       </th>
                     ))}
-                    <th style={{ width: '100px', background: '#1e3a8a', border: '1px solid #334155' }}></th>
+                    <th style={{ width: '80px', background: '#244c7d', border: '1px solid #1e3a8a' }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -373,8 +373,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                       {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
                         const type = section.types[h] || "text";
                         const isDescriptionCol = h === section.headers[0] || String(h).includes("EMPTY");
+                        const isPrice = type === 'price' || h === '__EMPTY_1';
                         return (
-                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #f1f5f9', minWidth: isDescriptionCol ? '300px' : 'auto' }}>
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? '300px' : 'auto', textAlign: isPrice ? 'right' : 'left' }}>
                             {editingRow === row.id ? (
                               isDescriptionCol && type === 'text' ? (
                                 <textarea
@@ -384,10 +385,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                                   autoFocus
                                 />
                               ) : (
-                                <input type={type === 'number' || type === 'price' ? 'number' : 'text'} step={type === 'price' ? "0.01" : "1"} className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
+                                <input type={isPrice ? 'number' : 'text'} step="0.01" className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
                               )
                             ) : (
-                              <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>{formatWithTypes(row.row_data[h], type)}</span>
+                              <span style={{ fontWeight: isDescriptionCol ? 600 : 400, fontFamily: isPrice ? 'Courier New, monospace' : 'inherit' }}>{formatWithTypes(row.row_data[h], type)}</span>
                             )}
                           </td>
                         );
@@ -421,7 +422,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         <div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
             <FileSpreadsheet size={32} color="var(--primary)" /> Módulo de Prestaciones
-            <span style={{ fontSize: '0.7rem', opacity: 0.3, fontWeight: 400 }}>v1.6.9</span>
+            <span style={{ fontSize: '0.7rem', opacity: 0.3, fontWeight: 400 }}>v1.7.0</span>
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '1rem', flex: 1, maxWidth: '500px' }}>
