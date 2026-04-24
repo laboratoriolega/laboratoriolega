@@ -13,6 +13,15 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const isStructuredSheet = useMemo(() => {
+    return data.some(r => {
+      try {
+        const rd = typeof r.row_data === 'string' ? JSON.parse(r.row_data) : r.row_data;
+        return rd && (rd["meta_part"] || rd["__SECTION_PART__"]);
+      } catch { return false; }
+    });
+  }, [data]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -430,7 +439,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
       <div style={{ flex: 1 }}>{loading ? (
         <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={48} className="animate-spin" /><p>Cargando...</p></div>
-      ) : (data.some(r => r.row_data["meta_part"]) ? renderSectionedView() : (
+      ) : (isStructuredSheet ? renderSectionedView() : (
         <div className="glass-panel" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr style={{ background: 'var(--glass-bg)' }}>{columns.map(col => <th key={col} style={{ padding: '1rem', textAlign: 'left', fontWeight: 700 }}>{col}</th>)}<th></th></tr></thead>
