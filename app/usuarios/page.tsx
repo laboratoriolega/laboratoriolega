@@ -8,10 +8,16 @@ import { getSession } from "@/lib/auth";
 
 export const revalidate = 0;
 
+import { redirect } from "next/navigation";
+
 export default async function UsuariosPage() {
+  const session = await getSession() as any;
+  if (!session || session.role !== 'admin') {
+    redirect("/");
+  }
+
   const { data: users, error: userError } = await getUsers();
   const { data: auditLogs, error: auditError } = await getAuditLogs();
-  const session = await getSession() as any;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -24,7 +30,7 @@ export default async function UsuariosPage() {
       </header>
 
       <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
-        
+
         {/* User Management List */}
         <section className="glass-panel" style={{ padding: '2rem' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '1.25rem' }}>

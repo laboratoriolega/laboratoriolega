@@ -3,12 +3,20 @@ import PrestacionesDashboard from "../../src/components/PrestacionesDashboard";
 
 export const revalidate = 0;
 
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
 export default async function PrestacionesPage() {
+  const session = await getSession() as any;
+  if (!session || session.role !== 'admin') {
+    redirect("/");
+  }
+
   const { data: sheets } = await getPrestacionesSheets();
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-       <PrestacionesDashboard initialSheets={sheets || []} />
+      <PrestacionesDashboard initialSheets={sheets || []} />
     </div>
   );
 }

@@ -27,10 +27,10 @@ export default function UserManagementClient({ initialUsers, currentUserId }: { 
                 <td style={{ padding: '1rem', fontWeight: 600 }}>@{u.username}</td>
                 <td style={{ padding: '1rem' }}>{u.full_name || '-'}</td>
                 <td style={{ padding: '1rem' }}>
-                  <span style={{ 
-                    textTransform: 'capitalize', 
-                    padding: '0.25rem 0.6rem', 
-                    borderRadius: '6px', 
+                  <span style={{
+                    textTransform: 'capitalize',
+                    padding: '0.25rem 0.6rem',
+                    borderRadius: '6px',
                     fontSize: '0.75rem',
                     fontWeight: 700,
                     background: u.role === 'admin' ? '#fee2e2' : '#f1f5f9',
@@ -40,20 +40,29 @@ export default function UserManagementClient({ initialUsers, currentUserId }: { 
                     gap: '0.25rem'
                   }}>
                     {u.role === 'admin' && <ShieldCheck size={12} />}
-                    {u.role}
+                    {(() => {
+                      switch (u.role) {
+                        case 'admin': return 'Administrador';
+                        case 'administracion': return 'Administración';
+                        case 'bioquimico': return 'Bioquímico';
+                        case 'gerente': return 'Gerente';
+                        case 'tecnico': return 'Técnico';
+                        default: return u.role || 'Usuario';
+                      }
+                    })()}
                   </span>
                 </td>
                 <td style={{ padding: '1rem', textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button 
+                    <button
                       onClick={() => { setSelectedUser(u); setIsEditOpen(true); }}
                       style={{ color: 'var(--primary)', border: 'none', background: 'rgba(14, 165, 233, 0.1)', cursor: 'pointer', padding: '0.5rem', borderRadius: '6px' }}
                     >
                       <Edit size={16} />
                     </button>
-                    
+
                     {u.id !== currentUserId && (
-                      <button 
+                      <button
                         onClick={async () => {
                           if (confirm(`¿Estás seguro de eliminar al usuario @${u.username}?`)) {
                             const res = await deleteUser(u.id);
@@ -75,10 +84,10 @@ export default function UserManagementClient({ initialUsers, currentUserId }: { 
         </table>
       </div>
 
-      <EditUserModal 
-        isOpen={isEditOpen} 
-        onClose={() => setIsEditOpen(false)} 
-        user={selectedUser} 
+      <EditUserModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        user={selectedUser}
       />
     </>
   );
