@@ -309,7 +309,11 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         } else if (isForcedMetadata || mainVal === "__METADATA__") {
           currentSection.structuralIds.metadata = row.id;
           Object.keys(rd).forEach(k => { if (!internalKeys.includes(k)) currentSection.types[k] = rd[k]; });
-          if (activeSheet === "Panel BioM. Int.Panel") currentSection.rows.push(row);
+          if (activeSheet === "Panel BioM. Int.Panel") {
+             const priceCols = ["__EMPTY_1", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9", "__EMPTY_10"];
+             priceCols.forEach(c => currentSection.types[c] = "price");
+             currentSection.rows.push(row);
+          }
         } else if (isForcedHeader || (!part && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre")))) {
           currentSection.structuralIds.header = row.id;
           currentSection.headers = Object.keys(rd).filter(k => !internalKeys.includes(k) && (rd[k] || k === mainKey));
@@ -347,7 +351,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 {section.subtitle && <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> Editar Tabla</button>
+                {activeSheet !== "Panel BioM. Int.Panel" && <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> Editar Tabla</button>}
                 <button
                   onClick={() => {
                     const lastId = section.rows.length > 0
