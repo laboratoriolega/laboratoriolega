@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, Hash, Type, DollarSign, StickyNote } from "lucide-react";
+import { X, Plus, Trash2, Hash, Type, DollarSign, StickyNote, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
 
 interface CreateSectionModalProps {
     isOpen: boolean;
@@ -56,6 +56,16 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
     const handleColumnChange = (idx: number, field: "name" | "type", val: string) => {
         const newCols = [...columns];
         newCols[idx] = { ...newCols[idx], [field]: val };
+        setColumns(newCols);
+    };
+
+    const moveColumn = (idx: number, direction: 'up' | 'down') => {
+        const newCols = [...columns];
+        if (direction === 'up' && idx > 0) {
+            [newCols[idx], newCols[idx - 1]] = [newCols[idx - 1], newCols[idx]];
+        } else if (direction === 'down' && idx < columns.length - 1) {
+            [newCols[idx], newCols[idx + 1]] = [newCols[idx + 1], newCols[idx]];
+        }
         setColumns(newCols);
     };
 
@@ -114,6 +124,13 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
                             <div className="columns-grid">
                                 {columns.map((col, idx) => (
                                     <div key={idx} className="column-row">
+                                        <div className="drag-handle-container">
+                                            <div className="grip-icon"><GripVertical size={16} color="#94a3b8" /></div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                <button type="button" onClick={() => moveColumn(idx, 'up')} disabled={idx === 0} className="move-btn"><ChevronUp size={12} /></button>
+                                                <button type="button" onClick={() => moveColumn(idx, 'down')} disabled={idx === columns.length - 1} className="move-btn"><ChevronDown size={12} /></button>
+                                            </div>
+                                        </div>
                                         <input
                                             type="text"
                                             className="modern-input col-name"
@@ -203,6 +220,11 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
                 }
                 .column-row { display: flex; gap: 0.75rem; align-items: center; }
                 .col-name { flex: 1; }
+                
+                .drag-handle-container { display: flex; align-items: center; gap: 4px; padding: 4px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+                .move-btn { background: none; border: none; padding: 0; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
+                .move-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+                .move-btn:hover:not(:disabled) { color: var(--primary); }
                 
                 .type-selector { position: relative; width: 140px; flex-shrink: 0; }
                 .modern-select {

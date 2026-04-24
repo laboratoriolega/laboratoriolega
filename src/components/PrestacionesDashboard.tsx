@@ -104,11 +104,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(true);
     const res = await addPrestacion(sheet, rowToSave, afterId);
     if (res.success) {
-      // Silent reload to ensure correct structural order
       const freshRes = await getPrestacionesBySheet(sheet);
       if (freshRes.success) {
         setData(freshRes.data || []);
-        // Find the new row to set editing mode
         const newId = res.data.id;
         setEditingRow(newId);
         setEditData({ ...res.data.row_data });
@@ -125,35 +123,75 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const mainKey = "__EMPTY";
 
       if (modalMode === "edit" && editingSectionData) {
-        const { structuralIds } = editingSectionData;
+        const { structuralIds, originalOrder, rows: sectionRows } = editingSectionData;
+
+        // 1. Update Title
         if (structuralIds.title) await updatePrestacion(structuralIds.title, { [mainKey]: title, "meta_part": "TITLE" });
+
+        // 2. Subtitle (Update or Create relative to title)
         if (structuralIds.subtitle) {
           await updatePrestacion(structuralIds.subtitle, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
         } else if (subtitle) {
-          await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
+          await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" }, structuralIds.title);
         }
+
+        // 3. Metadata and Headers (Migration logic for reordering)
         const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
-        columnsWithTypes.forEach((col, i) => { const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`; metaRow[ek] = col.type; });
-        if (structuralIds.metadata) await updatePrestacion(structuralIds.metadata, metaRow);
         const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
-        columnsWithTypes.forEach((col, i) => { const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`; headerLabels[ek] = col.name; });
+
+        const keyMapping: { [oldKey: string]: string } = {}; // we will use the same keys but mapping labels
+
+        columnsWithTypes.forEach((col, i) => {
+          const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
+          metaRow[ek] = col.type;
+          headerLabels[ek] = col.name;
+        });
+
+        if (structuralIds.metadata) await updatePrestacion(structuralIds.metadata, metaRow);
         if (structuralIds.header) await updatePrestacion(structuralIds.header, headerLabels);
+
+        // 4. Note (Update or Create relative to header)
         if (structuralIds.note) {
           await updatePrestacion(structuralIds.note, { [mainKey]: note, "meta_part": "NOTE" });
         } else if (note) {
-          await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" });
+          await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" }, structuralIds.header || structuralIds.title);
         }
+
+        // 5. Data rows migration (if columns were reordered)
+        // If the order changed, we need to map old data to new keys.
+        // For now, if the user reordered columns, the data might shift if we don't handle it.
+        // But since we are using FIXED KEYS (__EMPTY, __EMPTY_1...), reordering columns in the UI
+        // means we changed WHICH KEY represents WHICH COLUMN.
+        // So we MUST move the data between keys for all rows.
+
+        // Simple heuristic: compare labels to find mapping
+        const oldLabelsMap = editingSectionData.labels; // { "__EMPTY": "Nombre", "__EMPTY_1": "Costo" }
+        const newCols = columnsWithTypes; // [{ name: "Costo", type: "price" }, { name: "Nombre", type: "text" }]
+
+        for (const dr of sectionRows) {
+          const newRowData = { ...dr.row_data };
+          newCols.forEach((col, newIdx) => {
+            const newKey = newIdx === 0 ? "__EMPTY" : `__EMPTY_${newIdx}`;
+            // Find where the data for "col.name" was previously
+            const oldKey = Object.keys(oldLabelsMap).find(k => oldLabelsMap[k] === col.name);
+            if (oldKey && oldKey !== newKey) {
+              newRowData[newKey] = dr.row_data[oldKey];
+            }
+          });
+          await updatePrestacion(dr.id, newRowData);
+        }
+
       } else {
-        await addPrestacion(activeSheet, { [mainKey]: title, "meta_part": "TITLE" });
-        if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
+        const titleRow = await addPrestacion(activeSheet, { [mainKey]: title, "meta_part": "TITLE" });
+        if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" }, titleRow.data.id);
         const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
         columnsWithTypes.forEach((col, i) => { const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`; metaRow[ek] = col.type; });
-        await addPrestacion(activeSheet, metaRow);
+        const mres = await addPrestacion(activeSheet, metaRow, titleRow.data.id);
         const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
         columnsWithTypes.forEach((col, i) => { const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`; headerLabels[ek] = col.name; });
-        await addPrestacion(activeSheet, headerLabels);
-        if (note) await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" });
-        await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación...", "meta_part": "DATA" });
+        const hres = await addPrestacion(activeSheet, headerLabels, mres.data.id);
+        if (note) await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" }, hres.data.id);
+        await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación...", "meta_part": "DATA" }, hres.data.id);
       }
       loadSheetData(activeSheet);
     } catch (e) {
@@ -193,7 +231,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       subtitle: section.subtitle,
       note: section.note,
       columns: columnsForModal,
-      structuralIds: section.structuralIds
+      structuralIds: section.structuralIds,
+      labels: section.labels,
+      rows: section.rows
     });
     setModalMode("edit");
     setIsModalOpen(true);
@@ -291,7 +331,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                   onClick={() => {
                     const lastId = section.rows.length > 0
                       ? section.rows[section.rows.length - 1].id
-                      : (section.structuralIds.note || section.structuralIds.header || section.structuralIds.title);
+                      : (section.structuralIds.note || section.structuralIds.header || section.structuralIds.subtitle || section.structuralIds.title);
                     handleAddRow(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" }, lastId);
                   }}
                   className="btn-small-primary"
