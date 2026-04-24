@@ -380,11 +380,11 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 <thead>
                   <tr style={{ background: '#244c7d' }}>
                     {activeSheet === "Panel BioM. Int.Panel" && <th style={{width: '40px', background: '#1e3a8a', border: '1px solid #0f172a'}}></th>}
-                    {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
+                    {(section.headers.length > 0 ? section.headers : columns).map((h: any, colIdx: number) => {
                       const isDesc = h === section.headers[0] || h === columns[0] || h === "__EMPTY";
                       return (
                         <th key={h} style={{ padding: '1rem', textAlign: isDesc ? 'left' : 'right', color: 'white', fontWeight: 700, border: '1px solid #1e3a8a', fontSize: '0.85rem' }}>
-                          {activeSheet === "Panel BioM. Int.Panel" && <div style={{fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 800}}>{indexToCol(columns.indexOf(h))}</div>}
+                          {activeSheet === "Panel BioM. Int.Panel" && <div style={{fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 800}}>{indexToCol(colIdx)}</div>}
                           {section.labels[h] || h}
                         </th>
                       );
