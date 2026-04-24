@@ -51,11 +51,11 @@ export async function addPrestacion(sheetName: string, rowData: any) {
     );
     const nextIndex = (maxIndexRes.rows[0].max_idx ?? -1) + 1;
 
-    await query(
-      "INSERT INTO prestaciones_data (sheet_name, row_data, row_index) VALUES ($1, $2, $3)",
+    const insertRes = await query(
+      "INSERT INTO prestaciones_data (sheet_name, row_data, row_index) VALUES ($1, $2, $3) RETURNING *",
       [sheetName, JSON.stringify(rowData), nextIndex]
     );
-    return { success: true };
+    return { success: true, data: insertRes.rows[0] };
   } catch (error: any) {
     console.error("Error adding prestacion:", error);
     return { success: false, error: error.message };
