@@ -15,13 +15,14 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [isSaving, setIsSaving] = useState(false);
 
   const isStructuredSheet = useMemo(() => {
+    if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva") return true;
     return data.some(r => {
       try {
         const rd = typeof r.row_data === 'string' ? JSON.parse(r.row_data) : r.row_data;
         return rd && (rd["meta_part"] || rd["__SECTION_PART__"]);
       } catch { return false; }
     });
-  }, [data]);
+  }, [data, activeSheet]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -33,14 +34,17 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     }
   }, [activeSheet]);
 
-  async function loadSheetData(sheetName: string) {
+  const loadSheetData = async (sheetName: string) => {
     setLoading(true);
+    console.log("Loading sheet:", sheetName);
     const res = await getPrestacionesBySheet(sheetName);
     if (res.success) {
+      console.log(`Received ${res.data.length} rows for ${sheetName}`);
+      if (res.data.length > 0) console.log("Sample row_data:", res.data[0].row_data);
       setData(res.data || []);
     }
     setLoading(false);
-  }
+  };
 
   const columns = useMemo(() => {
     if (data.length === 0) return [];
