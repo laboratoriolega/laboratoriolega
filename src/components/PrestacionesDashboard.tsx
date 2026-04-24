@@ -15,7 +15,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [isSaving, setIsSaving] = useState(false);
 
   const isStructuredSheet = useMemo(() => {
-    if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva") return true;
+    if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva" || activeSheet === "Lab Clínico Noelia Dutto") return true;
     return data.some(r => {
       try {
         const rd = typeof r.row_data === 'string' ? JSON.parse(r.row_data) : r.row_data;
