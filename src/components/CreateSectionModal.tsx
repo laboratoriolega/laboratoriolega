@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, Trash2, Hash, Type, DollarSign } from "lucide-react";
+import { X, Plus, Trash2, Hash, Type, DollarSign, StickyNote } from "lucide-react";
 
 interface CreateSectionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (title: string, subtitle: string, columns: Array<{ name: string, type: string }>) => void;
+    onSubmit: (title: string, subtitle: string, note: string, columns: Array<{ name: string, type: string }>) => void;
 }
 
 export default function CreateSectionModal({ isOpen, onClose, onSubmit }: CreateSectionModalProps) {
     const [title, setTitle] = useState("");
     const [subtitle, setSubtitle] = useState("");
+    const [note, setNote] = useState("");
     const [columns, setColumns] = useState([
         { name: "Prestaciones", type: "text" },
         { name: "Costo Interno", type: "price" },
@@ -35,15 +36,16 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit }: Create
         if (!title) return alert("El título es obligatorio");
         const validCols = columns.filter(c => c.name.trim() !== "");
         if (validCols.length === 0) return alert("Debe haber al menos una columna");
-        onSubmit(title, subtitle, validCols);
+        onSubmit(title, subtitle, note, validCols);
         setTitle("");
         setSubtitle("");
+        setNote("");
         onClose();
     };
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content glass-panel" style={{ maxWidth: '700px', width: '95%' }}>
+            <div className="modal-content glass-panel" style={{ maxWidth: '750px', width: '95%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: 'var(--primary)' }}>Cargar nuevo Convenio Particular</h2>
                     <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}><X /></button>
@@ -117,6 +119,19 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit }: Create
                         </div>
                     </div>
 
+                    <div className="form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <StickyNote size={16} color="var(--primary)" /> Notas Adicionales (Opciónal)
+                        </label>
+                        <textarea
+                            className="modern-input"
+                            style={{ minHeight: '80px', resize: 'vertical' }}
+                            placeholder="Ej: NOTA: Valores actualizados al 30 de abril de 2026..."
+                            value={note}
+                            onChange={e => setNote(e.target.value)}
+                        />
+                    </div>
+
                     <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
                         <button type="submit" className="btn-primary" style={{ flex: 1, padding: '1rem', fontSize: '1rem' }}>
                             Crear Tabla Configurada
@@ -147,7 +162,7 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit }: Create
                 
                 .columns-grid {
                     display: flex; flex-direction: column; gap: 0.75rem;
-                    max-height: 350px; overflow-y: auto; padding-right: 0.5rem;
+                    max-height: 250px; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 0.5rem;
                 }
                 .column-row { display: flex; gap: 0.75rem; align-items: center; }
                 .col-name { flex: 1; }

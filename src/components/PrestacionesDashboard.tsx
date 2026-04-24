@@ -109,33 +109,37 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
-  const handleCreateSection = async (title: string, subtitle: string, columnsWithTypes: Array<{ name: string, type: string }>) => {
+  const handleCreateSection = async (title: string, subtitle: string, note: string, columnsWithTypes: Array<{ name: string, type: string }>) => {
     setIsSaving(true);
     try {
       const mainKey = "__EMPTY";
-      // 1. Title
-      await addPrestacion(activeSheet, { [mainKey]: title });
-      // 2. Subtitle
-      if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle });
+      // 1. Title Marker
+      await addPrestacion(activeSheet, { [mainKey]: title, "__SECTION_PART__": "TITLE" });
 
-      // 3. Metadata row (HIDDEN TYPES)
-      const metaRow: any = { [mainKey]: "__METADATA__" };
+      // 2. Subtitle Marker
+      if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "__SECTION_PART__": "SUBTITLE" });
+
+      // 3. Metadata Marker (TYPES)
+      const metaRow: any = { [mainKey]: "__METADATA__", "__SECTION_PART__": "METADATA" };
       columnsWithTypes.forEach((col, i) => {
         const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
         metaRow[ek] = col.type;
       });
       await addPrestacion(activeSheet, metaRow);
 
-      // 4. Header Labels row
-      const headerRow: any = { [mainKey]: "Prestaciones" };
+      // 4. Header Labels Marker
+      const headerRow: any = { [mainKey]: "Prestaciones", "__SECTION_PART__": "HEADER" };
       columnsWithTypes.forEach((col, i) => {
         const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
         headerRow[ek] = col.name;
       });
       await addPrestacion(activeSheet, headerRow);
 
-      // 5. Placeholder data row
-      await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación..." });
+      // 5. Note Marker
+      if (note) await addPrestacion(activeSheet, { [mainKey]: note, "__SECTION_PART__": "NOTE" });
+
+      // 6. Initial data row
+      await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación...", "__SECTION_PART__": "DATA" });
 
       loadSheetData(activeSheet);
     } catch (e) {
@@ -175,42 +179,44 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
     data.forEach((row) => {
       const rd = row.row_data;
+      const part = rd["__SECTION_PART__"]; // NEW ROBUST MARKER
+
       const values = Object.values(rd);
-      const textValues = values.filter(v => v !== null && String(v).trim() !== '');
+      const textValues = values.filter(v => v !== null && String(v).trim() !== '' && !k.startsWith("__"));
+
+      // Fallback identification for old data
       const mainKey = Object.keys(rd).find(k => k === "__EMPTY" || k.toLowerCase().includes("laboratorio")) || Object.keys(rd)[0];
       const mainVal = mainKey ? rd[mainKey] : null;
 
-      const isNewSection = mainVal && textValues.length === 1 &&
-        !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados") &&
-        !String(mainVal).includes("Prestación") && !String(mainVal).includes("__METADATA__");
+      const isForcedTitle = part === "TITLE";
+      const isForcedSubtitle = part === "SUBTITLE";
+      const isForcedMetadata = part === "METADATA";
+      const isForcedHeader = part === "HEADER";
+      const isForcedNote = part === "NOTE";
+      const isForcedData = part === "DATA";
 
-      const isMetadata = mainVal === "__METADATA__";
-      const isSubHeader = mainVal && (String(mainVal).includes("Valores") || String(mainVal).includes("actualizados"));
-      const isRowHeader = mainVal && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre"));
-      const isNote = mainVal && String(mainVal).includes("NOTA:");
+      // Heuristic for old sections
+      const isHeuristicTitle = !part && mainVal && textValues.length === 1 &&
+        !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados");
 
-      if (isNewSection) {
+      if (isForcedTitle || isHeuristicTitle) {
         currentSection = { title: mainVal, subtitle: "", headers: [], labels: {}, types: {}, rows: [], note: "", allIds: [row.id] };
         rawSections.push(currentSection);
       } else if (currentSection) {
         currentSection.allIds.push(row.id);
-        if (isMetadata) {
-          Object.keys(rd).forEach(k => {
-            if (k !== 'id') currentSection.types[k] = rd[k];
-          });
-        } else if (isSubHeader) {
+
+        if (isForcedSubtitle || (!part && (String(mainVal).includes("Valores") || String(mainVal).includes("actualizados")))) {
           currentSection.subtitle = mainVal;
-        } else if (isRowHeader) {
-          currentSection.headers = Object.keys(rd).filter(k => k !== 'id' && (rd[k] || k === mainKey));
+        } else if (isForcedMetadata) {
+          Object.keys(rd).forEach(k => { if (!k.startsWith("__") && k !== 'id') currentSection.types[k] = rd[k]; });
+        } else if (isForcedHeader || (!part && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre")))) {
+          currentSection.headers = Object.keys(rd).filter(k => k !== 'id' && !k.startsWith("__") && (rd[k] || k === mainKey));
           currentSection.headers.forEach((h: string) => currentSection.labels[h] = rd[h]);
-        } else if (isNote) {
+        } else if (isForcedNote || (!part && String(mainVal).includes("NOTA:"))) {
           currentSection.note = mainVal;
-        } else if (textValues.length > 0) {
+        } else if (isForcedData || (!part && textValues.length > 0)) {
           currentSection.rows.push(row);
         }
-      } else if (textValues.length > 0) {
-        currentSection = { title: "General", subtitle: "", headers: Object.keys(rd).filter(k => k !== 'id' && k !== 'sheet_name'), labels: {}, types: {}, rows: [row], note: "", allIds: [row.id] };
-        rawSections.push(currentSection);
       }
     });
 
@@ -224,14 +230,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       return titleMatch || rowsMatch;
     }).map(section => {
       if (!search) return section;
-      const titleMatch = String(section.title).toLowerCase().includes(lowerSearch);
-      if (titleMatch) return section;
-      return {
-        ...section,
-        rows: section.rows.filter((row: any) =>
-          Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch))
-        )
-      };
+      if (String(section.title).toLowerCase().includes(lowerSearch)) return section;
+      return { ...section, rows: section.rows.filter((row: any) => Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch))) };
     });
 
     if (filteredSections.length === 0) return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No se encontraron resultados.</div>;
@@ -239,24 +239,24 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
         {filteredSections.map((section, idx) => (
-          <div key={idx} className="section-block" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', padding: '1.5rem 0' }}>
+          <div key={idx} className="section-block" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '1.5rem 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 1.5rem', marginBottom: '1.5rem' }}>
               <div>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', margin: 0 }}>{section.title}</h3>
-                {section.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{section.subtitle}</p>}
+                {section.subtitle && <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => handleAdd(activeSheet, { "__EMPTY": "Nueva Prestación..." })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
+                <button onClick={() => handleAdd(activeSheet, { "__EMPTY": "Nueva Prestación...", "__SECTION_PART__": "DATA" })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
                 <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger"><Trash2 size={14} /> Eliminar Tabla</button>
               </div>
             </div>
 
-            <div style={{ overflowX: 'auto', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ overflowX: 'auto', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead>
                   <tr style={{ background: '#1e3a8a' }}>
                     {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
-                      <th key={h} style={{ padding: '1rem', textAlign: 'left', color: 'white', fontWeight: 600, border: '1px solid #334155', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                      <th key={h} style={{ padding: '1.25rem 1rem', textAlign: 'left', color: 'white', fontWeight: 700, border: '1px solid #334155', fontSize: '0.75rem', textTransform: 'uppercase' }}>
                         {section.labels[h] || h}
                       </th>
                     ))}
@@ -269,7 +269,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                       {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
                         const type = section.types[h] || "text";
                         return (
-                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #e2e8f0' }}>
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #f1f5f9' }}>
                             {editingRow === row.id ? (
                               <input
                                 type={type === 'number' || type === 'price' ? 'number' : 'text'}
@@ -280,14 +280,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                                 autoFocus={h === section.headers[0]}
                               />
                             ) : (
-                              <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>
-                                {formatWithTypes(row.row_data[h], type)}
-                              </span>
+                              <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>{formatWithTypes(row.row_data[h], type)}</span>
                             )}
                           </td>
                         );
                       })}
-                      <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #e2e8f0', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
+                      <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #f1f5f9', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                           {editingRow === row.id ? (
                             <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button>
@@ -302,7 +300,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 </tbody>
               </table>
             </div>
-            {section.note && <div style={{ padding: '1rem', margin: '1rem', background: '#f8fafc', borderRadius: '8px', fontSize: '0.8rem', borderLeft: '4px solid #cbd5e1' }}>{section.note}</div>}
+            {section.note && (
+              <div style={{ padding: '1.25rem', margin: '1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1.5px solid #e2e8f0', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <div style={{ background: '#e2e8f0', color: '#475569', padding: '4px', borderRadius: '6px' }}><Plus size={14} style={{ transform: 'rotate(45deg)' }} /></div>
+                <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600, lineHeight: 1.5 }}>{section.note}</div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -328,47 +331,26 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>
-        {initialSheets.map(sheet => (
-          <button key={sheet} onClick={() => setActiveSheet(sheet)} className={activeSheet === sheet ? "tab-active" : "tab-inactive"}>{sheet}</button>
-        ))}
-      </div>
+      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>{initialSheets.map(sheet => (
+        <button key={sheet} onClick={() => setActiveSheet(sheet)} className={activeSheet === sheet ? "tab-active" : "tab-inactive"}>{sheet}</button>
+      ))}</div>
 
-      <div style={{ flex: 1 }}>
-        {loading ? (
-          <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={48} className="animate-spin" /><p>Cargando...</p></div>
-        ) : (
-          activeSheet === "Convenios Particulares" ? renderSectionedView() : (
-            <div className="glass-panel" style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: 'var(--glass-bg)' }}>
-                    {columns.map(col => <th key={col} style={{ padding: '1rem', textAlign: 'left', fontWeight: 700 }}>{col}</th>)}
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData.map(row => (
-                    <tr key={row.id}>
-                      {columns.map(col => (
-                        <td key={col} style={{ padding: '0.75rem 1rem' }}>
-                          {editingRow === row.id ? <input className="input-inline" value={editData[col] || ""} onChange={e => handleValueChange(col, e.target.value)} /> : formatWithTypes(row.row_data[col], 'text')}
-                        </td>
-                      ))}
-                      <td style={{ textAlign: 'right' }}>
-                        {editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={14} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={14} /></button>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
-      </div>
-
+      <div style={{ flex: 1 }}>{loading ? (
+        <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={48} className="animate-spin" /><p>Cargando...</p></div>
+      ) : (activeSheet === "Convenios Particulares" ? renderSectionedView() : (
+        <div className="glass-panel" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr style={{ background: 'var(--glass-bg)' }}>{columns.map(col => <th key={col} style={{ padding: '1rem', textAlign: 'left', fontWeight: 700 }}>{col}</th>)}<th></th></tr></thead>
+            <tbody>{filteredData.map(row => (
+              <tr key={row.id}>
+                {columns.map(col => (<td key={col} style={{ padding: '0.75rem 1rem' }}>{editingRow === row.id ? <input className="input-inline" value={editData[col] || ""} onChange={e => handleValueChange(col, e.target.value)} /> : formatWithTypes(row.row_data[col], 'text')}</td>))}
+                <td style={{ textAlign: 'right' }}>{editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={14} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={14} /></button>}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      ))}</div>
       <CreateSectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleCreateSection} />
-
       <style jsx>{`
         .modern-input { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.6rem 1rem; }
         .tab-active { padding: 0.6rem 1.2rem; background: var(--primary); color: white; border: none; border-radius: 12px 12px 0 0; font-weight: 700; cursor: pointer; }
@@ -382,6 +364,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         .btn-action.edit { color: var(--text-muted); }
         .btn-action.delete { color: var(--danger); }
         .glass-panel { background: white; border-radius: 16px; border: 1px solid var(--glass-border); }
+        .table-row-hover:hover { background: #f8fafc; }
       `}</style>
     </div>
   );
