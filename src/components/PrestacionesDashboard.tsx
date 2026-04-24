@@ -457,18 +457,59 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                         const isPrice = type === 'price' || h === '__EMPTY_1';
                         const align = isDescriptionCol ? 'left' : 'right';
                         return (
-                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? (activeSheet === 'Panel BioM. Int.Panel' ? '200px' : '300px') : 'auto', textAlign: align, backgroundColor: row.row_data.__row_color || (editingRow === row.id ? '#f8fafc' : 'transparent') }}>
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? (activeSheet === 'Panel BioM. Int.Panel' ? '200px' : '300px') : 'auto', textAlign: align, backgroundColor: row.row_data[`__cell_color_${h}`] || row.row_data.__row_color || (editingRow === row.id ? '#f8fafc' : 'transparent') }}>
                             {editingRow === row.id ? (
                               isDescriptionCol && type === 'text' ? (
-                                <textarea
-                                  className="input-inline-area"
-                                  value={editData[h] || ""}
-                                  onChange={(e) => handleValueChange(h, e.target.value)}
-                                  autoFocus
-                                />
+                                <div style={{display: 'flex', alignItems: 'flex-start', gap: '0.5rem'}}>
+                                  <textarea
+                                    className="input-inline-area"
+                                    value={editData[h] || ""}
+                                    onChange={(e) => handleValueChange(h, e.target.value)}
+                                    autoFocus
+                                    style={{ flex: 1 }}
+                                  />
+                                  {activeSheet === 'Panel BioM. Int.Panel' && (
+                                    <div style={{display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center', paddingTop: '4px'}}>
+                                      <input 
+                                        type="color" 
+                                        title="Color de esta celda"
+                                        value={editData[`__cell_color_${h}`] || "#ffffff"} 
+                                        onChange={(e) => setEditData({ ...editData, [`__cell_color_${h}`]: e.target.value })}
+                                        style={{ width: '20px', height: '20px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                      />
+                                      {editData[`__cell_color_${h}`] && (
+                                        <button 
+                                          onClick={() => { const newEdit = {...editData}; delete newEdit[`__cell_color_${h}`]; setEditData(newEdit); }}
+                                          style={{ fontSize: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 0 }}
+                                          title="Borrar color de celda"
+                                        >✖</button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               ) : (
                                 <div style={{display: 'flex', flexDirection: 'column'}}>
-                                  <input type={activeSheet === 'Panel BioM. Int.Panel' || (!isPrice || (editData[h] && String(editData[h]).startsWith('='))) ? 'text' : 'number'} step="0.01" className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
+                                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                                    <input type={activeSheet === 'Panel BioM. Int.Panel' || (!isPrice || (editData[h] && String(editData[h]).startsWith('='))) ? 'text' : 'number'} step="0.01" className="input-inline" style={{ flex: 1 }} value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
+                                    {activeSheet === 'Panel BioM. Int.Panel' && (
+                                      <div style={{display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center'}}>
+                                        <input 
+                                          type="color" 
+                                          title="Color de esta celda"
+                                          value={editData[`__cell_color_${h}`] || "#ffffff"} 
+                                          onChange={(e) => setEditData({ ...editData, [`__cell_color_${h}`]: e.target.value })}
+                                          style={{ width: '20px', height: '20px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                        />
+                                        {editData[`__cell_color_${h}`] && (
+                                          <button 
+                                            onClick={() => { const newEdit = {...editData}; delete newEdit[`__cell_color_${h}`]; setEditData(newEdit); }}
+                                            style={{ fontSize: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 0, marginTop: '-2px' }}
+                                            title="Borrar color de celda"
+                                          >✖</button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                   {activeSheet === 'Panel BioM. Int.Panel' && (
                                     <span style={{fontSize: '0.75rem', color: '#10b981', marginTop: '4px', fontWeight: 600, textAlign: 'right'}}>
                                       Calculado: {formatWithTypes(evaluateFormula(String(editData[h] || "0"), (cIdx, rIdx) => {
