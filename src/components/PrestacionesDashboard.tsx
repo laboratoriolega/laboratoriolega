@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { getPrestacionesBySheet, updatePrestacion, addPrestacion, deletePrestacion } from "@/actions/prestaciones";
-import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet } from "lucide-react";
+import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet, AlertTriangle } from "lucide-react";
 import CreateSectionModal from "./CreateSectionModal";
 
 export default function PrestacionesDashboard({ initialSheets }: { initialSheets: string[] }) {
@@ -112,25 +112,26 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const handleCreateSection = async (title: string, subtitle: string, headers: string[]) => {
     setIsSaving(true);
     try {
-      // 1. Create Title Row
       const mainKey = columns.find(k => k.toLowerCase().includes("laboratorio") || k === "Laboratorio JUJUY") || columns[0] || "Laboratorio";
 
+      // 1. Create Title Row
       await addPrestacion(activeSheet, { [mainKey]: title });
+      // 2. Subtitle Row
       if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle });
 
-      // 2. Create Header Row
+      // 3. Header Row (Source of labels)
       const headerRow: any = { [mainKey]: "Prestaciones" };
+      // Map other headers to __EMPTY keys
       headers.forEach((h, i) => {
         if (h.toLowerCase() !== "prestaciones") {
-          // Try to map to existing __EMPTY keys or create new ones
-          const key = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-          headerRow[key] = h;
+          const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
+          headerRow[ek] = h;
         }
       });
       await addPrestacion(activeSheet, headerRow);
 
-      // 3. One empty row
-      await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación..." });
+      // 4. Initial entry
+      await addPrestacion(activeSheet, { [mainKey]: "Ejemplo de Prestación..." });
 
       loadSheetData(activeSheet);
     } catch (e) {
@@ -147,6 +148,16 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     }
   };
 
+  const handleDeleteSection = async (ids: number[]) => {
+    if (!confirm(`¿Estás seguro de eliminar toda esta tabla/laboratorio (${ids.length} filas)?`)) return;
+    setIsSaving(true);
+    for (const id of ids) {
+      await deletePrestacion(id);
+    }
+    loadSheetData(activeSheet);
+    setIsSaving(false);
+  };
+
   const formatValue = (val: any) => {
     if (typeof val === 'number') {
       return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
@@ -154,24 +165,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     return val || "-";
   };
 
-  const rdValue = (rowData: any, key: string) => {
-    if (!rowData) return key;
-    return rowData[key];
-  };
-
   const renderSectionedView = () => {
     const sections: any[] = [];
     let currentSection: any = null;
-
-    // Detection improvement: If first rows have data but no section, start a generic one
-    if (filteredData.length > 0) {
-      const firstRow = filteredData[0].row_data;
-      const firstText = Object.values(firstRow).find(v => v && String(v).trim() !== "");
-      if (firstText && !String(firstText).includes("Laboratorio")) {
-        currentSection = { title: "Convenio General", subtitle: "", headers: [], rows: [], note: "" };
-        sections.push(currentSection);
-      }
-    }
 
     filteredData.forEach((row) => {
       const rd = row.row_data;
@@ -181,20 +177,40 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const mainKey = Object.keys(rd).find(k => k.toLowerCase().includes("laboratorio") || k === "Laboratorio JUJUY") || Object.keys(rd)[0];
       const mainVal = mainKey ? rd[mainKey] : null;
 
-      // Better heuristic for section start
-      const isNewSection = mainVal && textValues.length === 1 && !mainVal.includes("NOTA:") && !mainVal.includes("Valores") && !mainVal.includes("actualizados");
+      // Better heuristic for section start: Only title row (1 value, no weird keywords)
+      const isNewSection = mainVal && textValues.length === 1 &&
+        !mainVal.includes("NOTA:") &&
+        !mainVal.includes("Valores") &&
+        !mainVal.includes("actualizados") &&
+        !mainVal.includes("Prestación");
+
       const isSubHeader = mainVal && (mainVal.includes("Valores") || mainVal.includes("actualizados"));
       const isRowHeader = mainVal && (mainVal.includes("Prestaciones") || mainVal.includes("Nombre"));
       const isNote = mainVal && mainVal.includes("NOTA:");
 
       if (isNewSection) {
-        currentSection = { title: mainVal, subtitle: "", headers: [], rows: [], note: "" };
+        currentSection = {
+          title: mainVal,
+          subtitle: "",
+          headers: [],
+          labels: {},
+          rows: [],
+          note: "",
+          allIds: [row.id]
+        };
         sections.push(currentSection);
       } else if (currentSection) {
+        currentSection.allIds.push(row.id);
         if (isSubHeader) {
           currentSection.subtitle = mainVal;
         } else if (isRowHeader) {
           currentSection.headers = Object.keys(rd).filter(k => rd[k] && k !== 'id' && k !== 'sheet_name');
+          // Capture labels from this row
+          const labelsMap: any = {};
+          currentSection.headers.forEach((h: string) => {
+            labelsMap[h] = rd[h];
+          });
+          currentSection.labels = labelsMap;
         } else if (isNote) {
           currentSection.note = mainVal;
         } else if (textValues.length > 0) {
@@ -202,23 +218,42 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         }
       } else if (textValues.length > 0) {
         // Fallback for data before any section header
-        currentSection = { title: "General", subtitle: "", headers: Object.keys(rd).filter(k => k !== 'id' && k !== 'sheet_name'), rows: [row], note: "" };
+        currentSection = {
+          title: "General",
+          subtitle: "",
+          headers: Object.keys(rd).filter(k => k !== 'id' && k !== 'sheet_name'),
+          labels: {},
+          rows: [row],
+          note: "",
+          allIds: [row.id]
+        };
         sections.push(currentSection);
       }
     });
 
     if (sections.length === 0) return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-        Cargando secciones...
+        No se encontraron secciones. Carga un nuevo convenio para comenzar.
       </div>
     );
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
         {sections.map((section, idx) => (
-          <div key={idx} className="section-block" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', padding: '1.5rem 0' }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.25rem', padding: '0 1.5rem' }}>{section.title}</h3>
-            {section.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem', padding: '0 1.5rem' }}>{section.subtitle}</p>}
+          <div key={idx} className="section-block" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', padding: '1.5rem 0', position: 'relative' }}>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 1.5rem', marginBottom: '1.5rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', margin: 0 }}>{section.title}</h3>
+                {section.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{section.subtitle}</p>}
+              </div>
+              <button
+                onClick={() => handleDeleteSection(section.allIds)}
+                style={{ background: '#fff1f2', color: '#e11d48', border: 'none', padding: '0.6rem 1rem', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <Trash2 size={16} /> Eliminar Tabla
+              </button>
+            </div>
 
             <div style={{ overflowX: 'auto', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
@@ -226,7 +261,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                   <tr style={{ background: '#1e3a8a' }}>
                     {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
                       <th key={h} style={{ padding: '1rem', textAlign: 'left', color: 'white', fontWeight: 600, border: '1px solid #334155', fontSize: '0.8rem', textTransform: 'uppercase' }}>
-                        {section.rows[0]?.row_data[h] || h}
+                        {section.labels[h] || h}
                       </th>
                     ))}
                     <th style={{ width: '100px', background: '#1e3a8a', border: '1px solid #334155' }}></th>
@@ -422,6 +457,13 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateSection}
       />
+
+      {isSaving && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: 'white', padding: '1rem 2rem', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '1rem', zIndex: 1000, border: '1px solid var(--glass-border)' }}>
+          <Loader2 className="animate-spin" size={24} color="var(--primary)" />
+          <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Guardando cambios...</span>
+        </div>
+      )}
 
       <style jsx>{`
         .modern-input {
