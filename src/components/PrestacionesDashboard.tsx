@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { getPrestacionesBySheet, updatePrestacion, addPrestacion, deletePrestacion } from "@/actions/prestaciones";
 import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet } from "lucide-react";
+import CreateSectionModal from "./CreateSectionModal";
 
 export default function PrestacionesDashboard({ initialSheets }: { initialSheets: string[] }) {
   const [activeSheet, setActiveSheet] = useState(initialSheets[0] || "");
@@ -12,6 +13,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (activeSheet) {
@@ -91,15 +93,48 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
-  const handleAdd = async () => {
-    if (!activeSheet) return;
-    const newRow = columns.reduce((acc: any, col) => ({ ...acc, [col]: "" }), {});
+  const handleAdd = async (customSheet?: string, customRow?: any) => {
+    const sheet = customSheet || activeSheet;
+    if (!sheet) return;
+    const rowToSave = customRow || columns.reduce((acc: any, col) => ({ ...acc, [col]: "" }), {});
+
     setIsSaving(true);
-    const res = await addPrestacion(activeSheet, newRow);
+    const res = await addPrestacion(sheet, rowToSave);
     if (res.success) {
-      loadSheetData(activeSheet);
+      if (!customRow) loadSheetData(sheet);
+      return res;
     } else {
       alert("Error al agregar fila");
+    }
+    setIsSaving(false);
+  };
+
+  const handleCreateSection = async (title: string, subtitle: string, headers: string[]) => {
+    setIsSaving(true);
+    try {
+      // 1. Create Title Row
+      const mainKey = columns.find(k => k.toLowerCase().includes("laboratorio") || k === "Laboratorio JUJUY") || columns[0] || "Laboratorio";
+
+      await addPrestacion(activeSheet, { [mainKey]: title });
+      if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle });
+
+      // 2. Create Header Row
+      const headerRow: any = { [mainKey]: "Prestaciones" };
+      headers.forEach((h, i) => {
+        if (h.toLowerCase() !== "prestaciones") {
+          // Try to map to existing __EMPTY keys or create new ones
+          const key = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
+          headerRow[key] = h;
+        }
+      });
+      await addPrestacion(activeSheet, headerRow);
+
+      // 3. One empty row
+      await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación..." });
+
+      loadSheetData(activeSheet);
+    } catch (e) {
+      console.error(e);
     }
     setIsSaving(false);
   };
@@ -128,15 +163,26 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     const sections: any[] = [];
     let currentSection: any = null;
 
+    // Detection improvement: If first rows have data but no section, start a generic one
+    if (filteredData.length > 0) {
+      const firstRow = filteredData[0].row_data;
+      const firstText = Object.values(firstRow).find(v => v && String(v).trim() !== "");
+      if (firstText && !String(firstText).includes("Laboratorio")) {
+        currentSection = { title: "Convenio General", subtitle: "", headers: [], rows: [], note: "" };
+        sections.push(currentSection);
+      }
+    }
+
     filteredData.forEach((row) => {
       const rd = row.row_data;
       const values = Object.values(rd);
       const textValues = values.filter(v => v !== null && String(v).trim() !== '');
 
-      const mainKey = Object.keys(rd).find(k => k.toLowerCase().includes("laboratorio") || k === "Laboratorio JUJUY");
+      const mainKey = Object.keys(rd).find(k => k.toLowerCase().includes("laboratorio") || k === "Laboratorio JUJUY") || Object.keys(rd)[0];
       const mainVal = mainKey ? rd[mainKey] : null;
 
-      const isNewSection = mainVal && textValues.length === 1 && !mainVal.includes("NOTA:") && !mainVal.includes("Valores");
+      // Better heuristic for section start
+      const isNewSection = mainVal && textValues.length === 1 && !mainVal.includes("NOTA:") && !mainVal.includes("Valores") && !mainVal.includes("actualizados");
       const isSubHeader = mainVal && (mainVal.includes("Valores") || mainVal.includes("actualizados"));
       const isRowHeader = mainVal && (mainVal.includes("Prestaciones") || mainVal.includes("Nombre"));
       const isNote = mainVal && mainVal.includes("NOTA:");
@@ -154,32 +200,36 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         } else if (textValues.length > 0) {
           currentSection.rows.push(row);
         }
+      } else if (textValues.length > 0) {
+        // Fallback for data before any section header
+        currentSection = { title: "General", subtitle: "", headers: Object.keys(rd).filter(k => k !== 'id' && k !== 'sheet_name'), rows: [row], note: "" };
+        sections.push(currentSection);
       }
     });
 
     if (sections.length === 0) return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-        No se detectaron secciones en esta hoja. Mostrando vista detallada...
+        Cargando secciones...
       </div>
     );
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
         {sections.map((section, idx) => (
-          <div key={idx} className="section-block">
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.25rem', padding: '0 1rem' }}>{section.title}</h3>
-            {section.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem', padding: '0 1rem' }}>{section.subtitle}</p>}
+          <div key={idx} className="section-block" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', padding: '1.5rem 0' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.25rem', padding: '0 1.5rem' }}>{section.title}</h3>
+            {section.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem', padding: '0 1.5rem' }}>{section.subtitle}</p>}
 
-            <div className="table-responsive" style={{ border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ overflowX: 'auto', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead>
                   <tr style={{ background: '#1e3a8a' }}>
-                    {section.headers.map((h: any) => (
-                      <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'white', fontWeight: 600, border: '1px solid #334155', fontSize: '0.85rem' }}>
-                        {rdValue(section.rows[0]?.row_data, h) === h ? h : section.rows[0]?.row_data[h] || h}
+                    {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
+                      <th key={h} style={{ padding: '1rem', textAlign: 'left', color: 'white', fontWeight: 600, border: '1px solid #334155', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                        {section.rows[0]?.row_data[h] || h}
                       </th>
                     ))}
-                    <th style={{ width: '80px', background: '#1e3a8a', border: '1px solid #334155' }}></th>
+                    <th style={{ width: '100px', background: '#1e3a8a', border: '1px solid #334155' }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -187,26 +237,31 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                     const isDataRow = !Object.values(row.row_data).some(v => String(v).includes("Prestaciones"));
                     if (!isDataRow) return null;
                     return (
-                      <tr key={row.id}>
-                        {section.headers.map((h: any) => (
-                          <td key={h} style={{ padding: '0.6rem 1rem', border: '1px solid #e2e8f0' }}>
+                      <tr key={row.id} style={{ transition: 'background 0.2s' }} className="table-row-hover">
+                        {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #e2e8f0' }}>
                             {editingRow === row.id ? (
                               <input
                                 className="input-inline"
                                 value={editData[h] || ""}
                                 onChange={(e) => handleValueChange(h, e.target.value)}
+                                autoFocus={h === section.headers[0]}
                               />
-                            ) : formatValue(row.row_data[h])}
+                            ) : (
+                              <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>
+                                {formatValue(row.row_data[h])}
+                              </span>
+                            )}
                           </td>
                         ))}
-                        <td style={{ textAlign: 'right', padding: '0.5rem', border: '1px solid #e2e8f0' }}>
-                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                        <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #e2e8f0', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
                             {editingRow === row.id ? (
-                              <button onClick={() => handleSave(row.id)} className="btn-icon-save"><Save size={14} /></button>
+                              <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button>
                             ) : (
-                              <button onClick={() => handleEdit(row)} className="btn-icon-edit"><Edit2 size={14} /></button>
+                              <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={16} /></button>
                             )}
-                            <button onClick={() => handleDelete(row.id)} className="btn-icon-delete"><Trash2 size={14} /></button>
+                            <button onClick={() => handleDelete(row.id)} className="btn-action delete"><Trash2 size={16} /></button>
                           </div>
                         </td>
                       </tr>
@@ -216,7 +271,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               </table>
             </div>
             {section.note && (
-              <div style={{ marginTop: '0.5rem', padding: '0.75rem 1rem', background: '#f1f5f9', borderLeft: '4px solid #94a3b8', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
+              <div style={{ margin: '1rem 1.5rem 0', padding: '1rem', background: '#f8fafc', borderLeft: '4px solid #94a3b8', borderRadius: '0 8px 8px 0', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
                 {section.note}
               </div>
             )}
@@ -250,9 +305,15 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               style={{ width: '100%', paddingLeft: '2.5rem' }}
             />
           </div>
-          <button className="btn-primary" onClick={handleAdd} disabled={isSaving}>
-            <Plus size={18} /> Nueva Fila
-          </button>
+          {activeSheet === "Convenios Particulares" ? (
+            <button className="btn-primary" onClick={() => setIsModalOpen(true)} disabled={isSaving}>
+              <Plus size={18} /> Nuevo Convenio
+            </button>
+          ) : (
+            <button className="btn-primary" onClick={() => handleAdd()} disabled={isSaving}>
+              <Plus size={18} /> Nueva Fila
+            </button>
+          )}
         </div>
       </div>
 
@@ -356,6 +417,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         )}
       </div>
 
+      <CreateSectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateSection}
+      />
+
       <style jsx>{`
         .modern-input {
           background: var(--glass-bg);
@@ -397,14 +464,33 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         }
         .input-inline {
           width: 100%;
-          padding: 0.3rem;
+          padding: 0.5rem;
           border: 1px solid var(--primary);
-          border-radius: 4px;
-          font-size: 0.8rem;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          background: white;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
         }
-        .btn-icon-save { background: none; border: none; color: var(--success); cursor: pointer; }
-        .btn-icon-edit { background: none; border: none; color: var(--text-muted); cursor: pointer; }
-        .btn-icon-delete { background: none; border: none; color: var(--danger); cursor: pointer; opacity: 0.6; }
+        .btn-action {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-action.edit { background: #f1f5f9; color: #475569; }
+        .btn-action.edit:hover { background: #e2e8f0; color: var(--primary); }
+        .btn-action.save { background: var(--success); color: white; }
+        .btn-action.delete { background: #fff1f2; color: #e11d48; }
+        .btn-action.delete:hover { background: #ffe4e6; }
+        
+        .table-row-hover:hover {
+          background: rgba(14, 165, 233, 0.02);
+        }
       `}</style>
     </div>
   );
