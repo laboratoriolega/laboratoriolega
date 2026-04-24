@@ -281,3 +281,25 @@ export async function deleteCobranza(id: number) {
     return { error: error.message };
   }
 }
+
+export async function ensureCobranzasTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cobranzas (
+        id SERIAL PRIMARY KEY,
+        fecha DATE NOT NULL,
+        paciente TEXT NOT NULL,
+        dni TEXT,
+        factura TEXT,
+        observacion TEXT,
+        seguimiento TEXT NOT NULL DEFAULT 'Pendiente',
+        month_group TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Migration auto-run failed:", error);
+    return { error: error.message };
+  }
+}
