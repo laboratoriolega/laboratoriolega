@@ -153,12 +153,19 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         }
 
         // 3. Metadata and Headers (Migration logic)
-        const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
+        let metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
+        if (structuralIds.metadata) {
+          const existingMetaRow = data.find(r => r.id === structuralIds.metadata);
+          if (existingMetaRow) metaRow = { ...existingMetaRow.row_data };
+        }
+        
         const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
 
         columnsWithTypes.forEach((col, i) => {
           const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-          metaRow[ek] = col.type;
+          if (activeSheet !== "Panel BioM. Int.Panel") {
+            metaRow[ek] = col.type;
+          }
           headerLabels[ek] = col.name;
         });
 
@@ -190,12 +197,13 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         // Only migrate if we have rows
         if (sectionRows.length > 0) {
           for (const dr of sectionRows) {
-            const newRowData = { ...dr.row_data };
+            const rawDbRow = dr._raw_formulas || dr.row_data;
+            const newRowData = { ...rawDbRow };
             newCols.forEach((col, newIdx) => {
               const newKey = newIdx === 0 ? "__EMPTY" : `__EMPTY_${newIdx}`;
               const oldKey = Object.keys(oldLabelsMap).find(k => oldLabelsMap[k] === col.name);
               if (oldKey && oldKey !== newKey) {
-                newRowData[newKey] = dr.row_data[oldKey];
+                newRowData[newKey] = rawDbRow[oldKey];
               }
             });
             await updatePrestacion(dr.id, newRowData);
@@ -351,7 +359,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 {section.subtitle && <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {activeSheet !== "Panel BioM. Int.Panel" && <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> Editar Tabla</button>}
+                <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> Editar Tabla</button>
                 <button
                   onClick={() => {
                     const lastId = section.rows.length > 0
