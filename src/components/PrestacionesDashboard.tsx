@@ -216,8 +216,17 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   };
 
   const formatWithTypes = (val: any, type: string) => {
-    if (type === 'price' && (typeof val === 'number' || !isNaN(parseFloat(val)))) {
-      return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(val));
+    if (type === 'price' && val !== null && val !== undefined && val !== '') {
+      const cleanVal = String(val).replace(',', '.');
+      const num = parseFloat(cleanVal);
+      if (!isNaN(num)) {
+        return new Intl.NumberFormat('es-AR', {
+          style: 'currency',
+          currency: 'ARS',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(num);
+      }
     }
     return val || "-";
   };
@@ -352,7 +361,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             </div>
             {section.note && (
               <div style={{ padding: '1.25rem', margin: '1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1.5px solid #e2e8f0', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                <div style={{ background: '#e2e8f0', color: '#475569', padding: '4px', borderRadius: '6px' }}><Plus size={14} style={{ transform: 'rotate(45deg)' }} /></div>
+                <div style={{ color: '#0f172a', fontSize: '0.85rem', fontWeight: 800, whiteSpace: 'nowrap', marginTop: '2px' }}>[NOTA:]</div>
                 <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600, lineHeight: 1.5 }}>{section.note}</div>
               </div>
             )}
