@@ -30,7 +30,7 @@ export async function createPendiente(formData: FormData) {
     const detalle = formData.get("detalle") as string;
     const seguimiento = formData.get("seguimiento") as string;
     const observaciones = formData.get("observaciones") as string;
-    
+
     const month_group = fecha.substring(0, 7); // 'YYYY-MM'
 
     await pool.query(
@@ -53,7 +53,7 @@ export async function updatePendiente(id: number, data: any) {
 
     const fields = Object.keys(data).map((k, i) => `${k} = $${i + 1}`).join(", ");
     const values = Object.values(data);
-    
+
     await pool.query(`UPDATE pendientes SET ${fields} WHERE id = $${values.length + 1}`, [...values, id]);
 
     revalidatePath("/listados/pendientes");
@@ -97,7 +97,7 @@ export async function updateSystemCode(id: number, data: any) {
 
     const fields = Object.keys(data).map((k, i) => `${k} = $${i + 1}`).join(", ");
     const values = Object.values(data);
-    
+
     await pool.query(`UPDATE system_codes SET ${fields} WHERE id = $${values.length + 1}`, [...values, id]);
 
     revalidatePath("/listados/codigos");
@@ -164,7 +164,7 @@ export async function updateBillingPrice(id: number, data: any) {
 
     const fields = Object.keys(data).map((k, i) => `${k} = $${i + 1}`).join(", ");
     const values = Object.values(data);
-    
+
     await pool.query(`UPDATE billing_prices SET ${fields} WHERE id = $${values.length + 1}`, [...values, id]);
 
     revalidatePath("/listados/precios");
@@ -205,6 +205,77 @@ export async function deleteBillingPrice(id: number) {
 
     await pool.query("DELETE FROM billing_prices WHERE id = $1", [id]);
     revalidatePath("/listados/precios");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+// --- COBRANZAS ---
+
+export async function getCobranzas() {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    const res = await pool.query("SELECT * FROM cobranzas ORDER BY month_group DESC, fecha DESC");
+    return { data: res.rows, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
+}
+
+export async function createCobranza(formData: FormData) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    const fecha = formData.get("fecha") as string;
+    const paciente = formData.get("paciente") as string;
+    const dni = formData.get("dni") as string;
+    const factura = formData.get("factura") as string;
+    const observacion = formData.get("observacion") as string;
+    const seguimiento = formData.get("seguimiento") as string;
+
+    const month_group = fecha.substring(0, 7); // 'YYYY-MM'
+
+    await pool.query(
+      "INSERT INTO cobranzas (fecha, paciente, dni, factura, observacion, seguimiento, month_group) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+      [fecha, paciente, dni, factura, observacion, seguimiento, month_group]
+    );
+
+    await logAction("CREATE_COBRANZA", { paciente, factura });
+    revalidatePath("/listados/cobranzas");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function updateCobranza(id: number, data: any) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    const fields = Object.keys(data).map((k, i) => `${k} = $${i + 1}`).join(", ");
+    const values = Object.values(data);
+
+    await pool.query(`UPDATE cobranzas SET ${fields} WHERE id = $${values.length + 1}`, [...values, id]);
+
+    revalidatePath("/listados/cobranzas");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function deleteCobranza(id: number) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    await pool.query("DELETE FROM cobranzas WHERE id = $1", [id]);
+    revalidatePath("/listados/cobranzas");
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
