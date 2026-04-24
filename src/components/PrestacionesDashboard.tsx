@@ -54,7 +54,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     const keys = new Set<string>();
     data.forEach(row => {
       Object.keys(row.row_data).forEach(k => {
-        if (k !== 'id' && k !== 'sheet_name' && k !== 'meta_part') keys.add(k);
+        if (k !== 'id' && k !== 'sheet_name' && k !== 'meta_part' && k !== '__row_color' && k !== '__SECTION_PART__' && !k.startsWith('__cell_color_')) {
+          keys.add(k);
+        }
       });
     });
     return Array.from(keys).sort((a, b) => {
