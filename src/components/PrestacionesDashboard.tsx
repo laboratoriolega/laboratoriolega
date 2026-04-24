@@ -41,6 +41,16 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     return Array.from(keys);
   }, [data]);
 
+  const filteredData = useMemo(() => {
+    if (!search) return data;
+    const lowerSearch = search.toLowerCase();
+    return data.filter(row => {
+      return Object.values(row.row_data).some(val =>
+        String(val).toLowerCase().includes(lowerSearch)
+      );
+    });
+  }, [data, search]);
+
   const recalculateRow = (rowData: any, sheet: string) => {
     const updated = { ...rowData };
     if (sheet === 'O. SOCIALES ' && updated['NBU'] && updated['COSTO DERIVACION']) {
