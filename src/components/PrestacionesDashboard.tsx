@@ -38,10 +38,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setLoading(true);
     console.log("Loading sheet:", sheetName);
     const res = await getPrestacionesBySheet(sheetName);
-    if (res.success) {
+    if (res.success && res.data) {
       console.log(`Received ${res.data.length} rows for ${sheetName}`);
       if (res.data.length > 0) console.log("Sample row_data:", res.data[0].row_data);
-      setData(res.data || []);
+      setData(res.data);
     }
     setLoading(false);
   };
