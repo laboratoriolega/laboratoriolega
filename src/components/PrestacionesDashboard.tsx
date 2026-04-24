@@ -52,7 +52,13 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         if (k !== 'id' && k !== 'sheet_name' && k !== 'meta_part') keys.add(k);
       });
     });
-    return Array.from(keys);
+    return Array.from(keys).sort((a, b) => {
+      if (a === "__EMPTY") return -1;
+      if (b === "__EMPTY") return 1;
+      const numA = parseInt(a.replace("__EMPTY_", "")) || 0;
+      const numB = parseInt(b.replace("__EMPTY_", "")) || 0;
+      return numA - numB;
+    });
   }, [data]);
 
   const evaluatedData = useMemo(() => {
