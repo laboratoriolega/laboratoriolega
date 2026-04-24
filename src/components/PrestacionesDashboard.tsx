@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { getPrestacionesBySheet, updatePrestacion, addPrestacion, deletePrestacion } from "@/actions/prestaciones";
+import { getPrestacionesBySheet, updatePrestacion, addPrestacion, deletePrestacion, reorderPrestaciones } from "@/actions/prestaciones";
 import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet, Settings } from "lucide-react";
 import CreateSectionModal from "./CreateSectionModal";
 import { evaluateGrid, evaluateFormula, parseNumberValue, indexToCol } from "@/lib/formulas";
@@ -14,6 +14,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
+  const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
 
   const isStructuredSheet = useMemo(() => {
     if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva" || activeSheet === "Lab Clínico Noelia Dutto" || activeSheet === "Panel BioM. Int.Panel") return true;
@@ -94,6 +96,40 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       updated['Costo Total'] = ci + d + e;
     }
     return updated;
+  };
+
+  
+  const handleDragStart = (e: any, id: number) => {
+    e.dataTransfer.setData("text/plain", id.toString());
+    e.dataTransfer.effectAllowed = "move";
+    setDraggedRowId(id);
+  };
+
+  const handleDragOver = (e: any, id: number) => {
+    e.preventDefault();
+    if (draggedRowId !== id) setDragOverRowId(id);
+  };
+
+  const handleDrop = async (e: any, targetId: number) => {
+    e.preventDefault();
+    setDragOverRowId(null);
+    setDraggedRowId(null);
+    
+    const sourceId = Number(e.dataTransfer.getData("text/plain"));
+    if (!sourceId || sourceId === targetId) return;
+
+    const newData = [...data];
+    const sourceIndex = newData.findIndex(r => r.id === sourceId);
+    const targetIndex = newData.findIndex(r => r.id === targetId);
+    
+    if (sourceIndex === -1 || targetIndex === -1) return;
+    
+    const [draggedRow] = newData.splice(sourceIndex, 1);
+    newData.splice(targetIndex, 0, draggedRow);
+    
+    const updates = newData.map((r, i) => ({ id: r.id, row_index: i }));
+    setData(newData);
+    await reorderPrestaciones(updates);
   };
 
   const handleEdit = (row: any) => {
@@ -402,15 +438,26 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                   {section.rows.map((row: any) => {
                     const rowExcelIndex = evaluatedData.findIndex(r => r.id === row.id) + 1;
                     return (
-                    <tr key={row.id} className="table-row-hover">
-                      {activeSheet === "Panel BioM. Int.Panel" && <td style={{background: '#f8fafc', color: '#64748b', fontSize: '0.75rem', textAlign: 'center', borderRight: '1px solid #cbd5e1', fontWeight: 800}}>{rowExcelIndex}</td>}
+                    <tr 
+                      key={row.id} 
+                      className="table-row-hover"
+                      draggable={activeSheet === "Panel BioM. Int.Panel"}
+                      onDragStart={(e) => activeSheet === "Panel BioM. Int.Panel" && handleDragStart(e, row.id)}
+                      onDragOver={(e) => activeSheet === "Panel BioM. Int.Panel" && handleDragOver(e, row.id)}
+                      onDrop={(e) => activeSheet === "Panel BioM. Int.Panel" && handleDrop(e, row.id)}
+                      style={{
+                        opacity: draggedRowId === row.id ? 0.5 : 1,
+                        borderTop: dragOverRowId === row.id ? '2px solid #3b82f6' : undefined,
+                      }}
+                    >
+                      {activeSheet === "Panel BioM. Int.Panel" && <td style={{background: row.row_data.__row_color || '#f8fafc', color: '#64748b', fontSize: '0.75rem', textAlign: 'center', borderRight: '1px solid #cbd5e1', fontWeight: 800, cursor: 'grab'}} title="Mantén presionado para reordenar la fila">{rowExcelIndex}</td>}
                       {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
                         const type = section.types[h] || "text";
                         const isDescriptionCol = h === section.headers[0] || h === columns[0] || h === "__EMPTY";
                         const isPrice = type === 'price' || h === '__EMPTY_1';
                         const align = isDescriptionCol ? 'left' : 'right';
                         return (
-                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? (activeSheet === 'Panel BioM. Int.Panel' ? '200px' : '300px') : 'auto', textAlign: align }}>
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? (activeSheet === 'Panel BioM. Int.Panel' ? '200px' : '300px') : 'auto', textAlign: align, backgroundColor: row.row_data.__row_color || (editingRow === row.id ? '#f8fafc' : 'transparent') }}>
                             {editingRow === row.id ? (
                               isDescriptionCol && type === 'text' ? (
                                 <textarea
@@ -443,7 +490,16 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                         );
                       })}
                       <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #f1f5f9', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                          {editingRow === row.id && activeSheet === "Panel BioM. Int.Panel" && (
+                            <input 
+                              type="color" 
+                              title="Color de fila" 
+                              value={editData?.__row_color || "#ffffff"} 
+                              onChange={(e) => setEditData({ ...editData, __row_color: e.target.value })} 
+                              style={{ width: '24px', height: '24px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer' }} 
+                            />
+                          )}
                           {editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={16} /></button>}
                           <button onClick={() => handleDelete(row.id)} className="btn-action delete"><Trash2 size={16} /></button>
                         </div>

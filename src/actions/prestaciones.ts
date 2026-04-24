@@ -85,3 +85,18 @@ export async function deletePrestacion(id: number) {
     return { success: false, error: error.message };
   }
 }
+
+export async function reorderPrestaciones(updates: { id: number, row_index: number }[]) {
+  try {
+    for (const update of updates) {
+      await query(
+        "UPDATE prestaciones_data SET row_index = $1, updated_at = NOW() WHERE id = $2",
+        [update.row_index, update.id]
+      );
+    }
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error reordering prestaciones:", error);
+    return { success: false, error: error.message };
+  }
+}
