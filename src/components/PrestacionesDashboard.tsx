@@ -15,7 +15,6 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // States for Table Editing
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingSectionData, setEditingSectionData] = useState<any>(null);
 
@@ -97,7 +96,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
-  const handleAdd = async (customSheet?: string, customRow?: any) => {
+  const handleAddRow = async (customSheet?: string, customRow?: any) => {
     const sheet = customSheet || activeSheet;
     if (!sheet) return;
     const rowToSave = customRow || columns.reduce((acc: any, col) => ({ ...acc, [col]: "" }), {});
@@ -105,8 +104,14 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(true);
     const res = await addPrestacion(sheet, rowToSave);
     if (res.success) {
-      loadSheetData(sheet);
-      return res;
+      const newRow = res.data;
+      // Optimized update: add to state instead of reloading everything
+      setData(prev => [...prev, newRow]);
+      // Entering edit mode for the new row immediately
+      setEditingRow(newRow.id);
+      setEditData({ ...newRow.row_data });
+
+      // We don't call loadSheetData() here to avoid scroll jump
     } else {
       alert("Error al agregar fila");
     }
@@ -119,44 +124,25 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const mainKey = "__EMPTY";
 
       if (modalMode === "edit" && editingSectionData) {
-        // UPDATE EXISTING SECTION
         const { structuralIds } = editingSectionData;
-
-        // 1. Update Title
         if (structuralIds.title) await updatePrestacion(structuralIds.title, { [mainKey]: title, "meta_part": "TITLE" });
-
-        // 2. Update/Create Subtitle
         if (structuralIds.subtitle) {
           await updatePrestacion(structuralIds.subtitle, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
         } else if (subtitle) {
           await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
         }
-
-        // 3. Update Metadata (TYPES)
         const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
-        columnsWithTypes.forEach((col, i) => {
-          const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-          metaRow[ek] = col.type;
-        });
+        columnsWithTypes.forEach((col, i) => { const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`; metaRow[ek] = col.type; });
         if (structuralIds.metadata) await updatePrestacion(structuralIds.metadata, metaRow);
-
-        // 4. Update Header Labels
         const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
-        columnsWithTypes.forEach((col, i) => {
-          const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-          headerLabels[ek] = col.name;
-        });
+        columnsWithTypes.forEach((col, i) => { const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`; headerLabels[ek] = col.name; });
         if (structuralIds.header) await updatePrestacion(structuralIds.header, headerLabels);
-
-        // 5. Update/Create Note
         if (structuralIds.note) {
           await updatePrestacion(structuralIds.note, { [mainKey]: note, "meta_part": "NOTE" });
         } else if (note) {
           await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" });
         }
-
       } else {
-        // CREATE NEW SECTION
         await addPrestacion(activeSheet, { [mainKey]: title, "meta_part": "TITLE" });
         if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
         const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
@@ -168,7 +154,6 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         if (note) await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" });
         await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación...", "meta_part": "DATA" });
       }
-
       loadSheetData(activeSheet);
     } catch (e) {
       console.error(e);
@@ -198,12 +183,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   };
 
   const openEditModal = (section: any) => {
-    // Transform headers and types back to the format CreateSectionModal expects
     const columnsForModal = section.headers.map((h: string) => ({
       name: section.labels[h] || h,
       type: section.types[h] || "text"
     }));
-
     setEditingSectionData({
       title: section.title,
       subtitle: section.subtitle,
@@ -220,12 +203,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const cleanVal = String(val).replace(',', '.');
       const num = parseFloat(cleanVal);
       if (!isNaN(num)) {
-        return new Intl.NumberFormat('es-AR', {
-          style: 'currency',
-          currency: 'ARS',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }).format(num);
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
       }
     }
     return val || "-";
@@ -258,20 +236,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
       if (isForcedTitle || isHeuristicTitle) {
         currentSection = {
-          title: mainVal,
-          subtitle: "",
-          headers: [],
-          labels: {},
-          types: {},
-          rows: [],
-          note: "",
-          allIds: [row.id],
+          title: mainVal, subtitle: "", headers: [], labels: {}, types: {}, rows: [], note: "", allIds: [row.id],
           structuralIds: { title: row.id, subtitle: null, metadata: null, header: null, note: null }
         };
         rawSections.push(currentSection);
       } else if (currentSection) {
         currentSection.allIds.push(row.id);
-
         if (isForcedSubtitle || (!part && (String(mainVal).includes("Valores") || String(mainVal).includes("actualizados")))) {
           currentSection.subtitle = mainVal;
           currentSection.structuralIds.subtitle = row.id;
@@ -316,7 +286,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> Editar Tabla</button>
-                <button onClick={() => handleAdd(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
+                <button onClick={() => handleAddRow(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
                 <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger"><Trash2 size={14} /> Eliminar Tabla</button>
               </div>
             </div>
@@ -409,15 +379,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           </table>
         </div>
       ))}</div>
-
-      <CreateSectionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleTableStructureSubmit}
-        mode={modalMode}
-        initialData={editingSectionData}
-      />
-
+      <CreateSectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleTableStructureSubmit} mode={modalMode} initialData={editingSectionData} />
       <style jsx>{`
         .modern-input { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.6rem 1rem; }
         .tab-active { padding: 0.6rem 1.2rem; background: var(--primary); color: white; border: none; border-radius: 12px 12px 0 0; font-weight: 700; cursor: pointer; }

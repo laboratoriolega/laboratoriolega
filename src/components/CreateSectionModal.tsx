@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, Hash, Type, DollarSign, StickyNote, RotateCcw } from "lucide-react";
+import { X, Plus, Trash2, Hash, Type, DollarSign, StickyNote } from "lucide-react";
 
 interface CreateSectionModalProps {
     isOpen: boolean;
@@ -70,96 +70,98 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content glass-panel" style={{ maxWidth: '750px', width: '95%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div className="modal-content glass-panel">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexShrink: 0 }}>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: 'var(--primary)' }}>
                         {mode === "edit" ? "Editar Estructura de Tabla" : "Cargar nuevo Convenio Particular"}
                     </h2>
                     <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}><X /></button>
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div className="form-group">
-                            <label>Nombre del Laboratorio / Convenio</label>
-                            <input
-                                type="text"
-                                className="modern-input"
-                                placeholder="Ej: Laboratorio JUJUY"
-                                value={title}
-                                onChange={e => setTitle(e.target.value)}
-                                required
-                            />
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', overflow: 'hidden' }}>
+                    <div className="scrollable-form-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1rem' }}>
+                            <div className="form-group">
+                                <label>Nombre del Laboratorio / Convenio</label>
+                                <input
+                                    type="text"
+                                    className="modern-input"
+                                    placeholder="Ej: Laboratorio JUJUY"
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Subtítulo / Período (Opcional)</label>
+                                <input
+                                    type="text"
+                                    className="modern-input"
+                                    placeholder="Ej: Valores Mayo 2026"
+                                    value={subtitle}
+                                    onChange={e => setSubtitle(e.target.value)}
+                                />
+                            </div>
                         </div>
-                        <div className="form-group">
-                            <label>Subtítulo / Período (Opcional)</label>
-                            <input
-                                type="text"
-                                className="modern-input"
-                                placeholder="Ej: Valores Mayo 2026"
-                                value={subtitle}
-                                onChange={e => setSubtitle(e.target.value)}
-                            />
-                        </div>
-                    </div>
 
-                    <div className="form-group">
-                        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            Definición de Columnas y Tipos
-                            <button type="button" onClick={handleAddColumn} className="btn-small">
-                                <Plus size={14} /> Nueva Columna
-                            </button>
-                        </label>
-                        <div className="columns-grid">
-                            {columns.map((col, idx) => (
-                                <div key={idx} className="column-row">
-                                    <input
-                                        type="text"
-                                        className="modern-input col-name"
-                                        value={col.name}
-                                        onChange={e => handleColumnChange(idx, "name", e.target.value)}
-                                        placeholder="Nombre de columna"
-                                    />
-                                    <div className="type-selector">
-                                        <select
-                                            value={col.type}
-                                            onChange={e => handleColumnChange(idx, "type", e.target.value)}
-                                            className="modern-select"
-                                        >
-                                            <option value="text">Texto</option>
-                                            <option value="number">Numérico</option>
-                                            <option value="price">Precio ($)</option>
-                                        </select>
-                                        <div className="type-icon">
-                                            {col.type === "text" && <Type size={14} />}
-                                            {col.type === "number" && <Hash size={14} />}
-                                            {col.type === "price" && <DollarSign size={14} />}
+                        <div className="form-group">
+                            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                Definición de Columnas y Tipos
+                                <button type="button" onClick={handleAddColumn} className="btn-small">
+                                    <Plus size={14} /> Nueva Columna
+                                </button>
+                            </label>
+                            <div className="columns-grid">
+                                {columns.map((col, idx) => (
+                                    <div key={idx} className="column-row">
+                                        <input
+                                            type="text"
+                                            className="modern-input col-name"
+                                            value={col.name}
+                                            onChange={e => handleColumnChange(idx, "name", e.target.value)}
+                                            placeholder="Nombre de columna"
+                                        />
+                                        <div className="type-selector">
+                                            <select
+                                                value={col.type}
+                                                onChange={e => handleColumnChange(idx, "type", e.target.value)}
+                                                className="modern-select"
+                                            >
+                                                <option value="text">Texto</option>
+                                                <option value="number">Numérico</option>
+                                                <option value="price">Precio ($)</option>
+                                            </select>
+                                            <div className="type-icon">
+                                                {col.type === "text" && <Type size={14} />}
+                                                {col.type === "number" && <Hash size={14} />}
+                                                {col.type === "price" && <DollarSign size={14} />}
+                                            </div>
                                         </div>
+                                        {columns.length > 1 && (
+                                            <button type="button" onClick={() => handleRemoveColumn(idx)} className="btn-delete">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                     </div>
-                                    {columns.length > 1 && (
-                                        <button type="button" onClick={() => handleRemoveColumn(idx)} className="btn-delete">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <StickyNote size={16} color="var(--primary)" /> Notas Adicionales (Opcional)
+                            </label>
+                            <textarea
+                                className="modern-input"
+                                style={{ minHeight: '80px', resize: 'vertical' }}
+                                placeholder="Ej: NOTA: Valores actualizados al 30 de abril de 2026..."
+                                value={note}
+                                onChange={e => setNote(e.target.value)}
+                            />
                         </div>
                     </div>
 
-                    <div className="form-group">
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <StickyNote size={16} color="var(--primary)" /> Notas Adicionales (Opcional)
-                        </label>
-                        <textarea
-                            className="modern-input"
-                            style={{ minHeight: '80px', resize: 'vertical' }}
-                            placeholder="Ej: NOTA: Valores actualizados al 30 de abril de 2026..."
-                            value={note}
-                            onChange={e => setNote(e.target.value)}
-                        />
-                    </div>
-
-                    <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem', flexShrink: 0 }}>
                         <button type="submit" className="btn-primary" style={{ flex: 1, padding: '1rem', fontSize: '1rem' }}>
                             {mode === "edit" ? "Guardar Cambios Estructurales" : "Crear Tabla Configurada"}
                         </button>
@@ -178,23 +180,31 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
                 .modal-content {
                     background: white; padding: 2rem; border-radius: 24px;
                     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                    max-width: 750px; width: 100%;
+                    max-height: 90vh;
+                    display: flex; flex-direction: column;
+                    overflow: hidden;
                 }
+                .scrollable-form-body::-webkit-scrollbar { width: 6px; }
+                .scrollable-form-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                
                 .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
                 .form-group label { font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.025em; }
                 .modern-input {
                     background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px;
                     padding: 0.75rem 1rem; font-size: 0.95rem; transition: all 0.2s;
+                    width: 100%;
                 }
                 .modern-input:focus { border-color: var(--primary); outline: none; background: white; box-shadow: 0 0 0 4px rgba(14,165,233,0.1); }
                 
                 .columns-grid {
                     display: flex; flex-direction: column; gap: 0.75rem;
-                    max-height: 250px; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 0.5rem;
+                    margin-bottom: 0.5rem;
                 }
                 .column-row { display: flex; gap: 0.75rem; align-items: center; }
                 .col-name { flex: 1; }
                 
-                .type-selector { position: relative; width: 140px; }
+                .type-selector { position: relative; width: 140px; flex-shrink: 0; }
                 .modern-select {
                     width: 100%; appearance: none; background: #f1f5f9; border: 1.5px solid #e2e8f0;
                     border-radius: 10px; padding: 0.5rem 0.75rem 0.5rem 2rem;
