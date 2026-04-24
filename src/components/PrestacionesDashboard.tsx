@@ -170,10 +170,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const mainVal = mainKey ? rd[mainKey] : null;
 
       const isNewSection = mainVal && textValues.length === 1 &&
-        !mainVal.includes("NOTA:") && !mainVal.includes("Valores") && !mainVal.includes("actualizados") && !mainVal.includes("Prestación");
-      const isSubHeader = mainVal && (mainVal.includes("Valores") || mainVal.includes("actualizados"));
-      const isRowHeader = mainVal && (mainVal.includes("Prestaciones") || mainVal.includes("Nombre"));
-      const isNote = mainVal && mainVal.includes("NOTA:");
+        !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados") && !String(mainVal).includes("Prestación");
+      const isSubHeader = mainVal && (String(mainVal).includes("Valores") || String(mainVal).includes("actualizados"));
+      const isRowHeader = mainVal && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre"));
+      const isNote = mainVal && String(mainVal).includes("NOTA:");
 
       if (isNewSection) {
         currentSection = { title: mainVal, subtitle: "", headers: [], labels: {}, rows: [], note: "", allIds: [row.id] };
@@ -196,14 +196,14 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     const lowerSearch = search.toLowerCase();
     const filteredSections = rawSections.filter(section => {
       if (!search) return true;
-      const titleMatch = section.title.toLowerCase().includes(lowerSearch);
+      const titleMatch = String(section.title).toLowerCase().includes(lowerSearch);
       const rowsMatch = section.rows.some((row: any) =>
         Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch))
       );
       return titleMatch || rowsMatch;
     }).map(section => {
       if (!search) return section;
-      const titleMatch = section.title.toLowerCase().includes(lowerSearch);
+      const titleMatch = String(section.title).toLowerCase().includes(lowerSearch);
       // If title matches, show all rows. If not, only matching rows.
       if (titleMatch) return section;
       return {
