@@ -359,11 +359,14 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead>
                   <tr style={{ background: '#244c7d' }}>
-                    {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
-                      <th key={h} style={{ padding: '1rem', textAlign: h === '__EMPTY_1' ? 'right' : 'left', color: 'white', fontWeight: 700, border: '1px solid #1e3a8a', fontSize: '0.85rem' }}>
-                        {section.labels[h] || h}
-                      </th>
-                    ))}
+                    {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
+                      const isDesc = h === section.headers[0] || h === columns[0] || h === "__EMPTY";
+                      return (
+                        <th key={h} style={{ padding: '1rem', textAlign: isDesc ? 'left' : 'right', color: 'white', fontWeight: 700, border: '1px solid #1e3a8a', fontSize: '0.85rem' }}>
+                          {section.labels[h] || h}
+                        </th>
+                      );
+                    })}
                     <th style={{ width: '80px', background: '#244c7d', border: '1px solid #1e3a8a' }}></th>
                   </tr>
                 </thead>
@@ -372,10 +375,11 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                     <tr key={row.id} className="table-row-hover">
                       {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
                         const type = section.types[h] || "text";
-                        const isDescriptionCol = h === section.headers[0] || String(h).includes("EMPTY");
+                        const isDescriptionCol = h === section.headers[0] || h === columns[0] || h === "__EMPTY";
                         const isPrice = type === 'price' || h === '__EMPTY_1';
+                        const align = isDescriptionCol ? 'left' : 'right';
                         return (
-                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? '300px' : 'auto', textAlign: isPrice ? 'right' : 'left' }}>
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? '300px' : 'auto', textAlign: align }}>
                             {editingRow === row.id ? (
                               isDescriptionCol && type === 'text' ? (
                                 <textarea
