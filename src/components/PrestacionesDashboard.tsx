@@ -36,11 +36,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
   const loadSheetData = async (sheetName: string) => {
     setLoading(true);
-    console.log("Loading sheet:", sheetName);
     const res = await getPrestacionesBySheet(sheetName);
     if (res.success && res.data) {
-      console.log(`Received ${res.data.length} rows for ${sheetName}`);
-      if (res.data.length > 0) console.log("Sample row_data:", res.data[0].row_data);
       setData(res.data);
     }
     setLoading(false);
@@ -424,6 +421,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         <div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
             <FileSpreadsheet size={32} color="var(--primary)" /> Módulo de Prestaciones
+            <span style={{ fontSize: '0.7rem', opacity: 0.3, fontWeight: 400 }}>v1.6.9</span>
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '1rem', flex: 1, maxWidth: '500px' }}>
