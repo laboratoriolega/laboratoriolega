@@ -309,6 +309,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         } else if (isForcedMetadata || mainVal === "__METADATA__") {
           currentSection.structuralIds.metadata = row.id;
           Object.keys(rd).forEach(k => { if (!internalKeys.includes(k)) currentSection.types[k] = rd[k]; });
+          if (activeSheet === "Panel BioM. Int.Panel") currentSection.rows.push(row);
         } else if (isForcedHeader || (!part && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre")))) {
           currentSection.structuralIds.header = row.id;
           currentSection.headers = Object.keys(rd).filter(k => !internalKeys.includes(k) && (rd[k] || k === mainKey));
