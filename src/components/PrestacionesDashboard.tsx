@@ -109,22 +109,34 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
-  const handleCreateSection = async (title: string, subtitle: string, headers: string[]) => {
+  const handleCreateSection = async (title: string, subtitle: string, columnsWithTypes: Array<{ name: string, type: string }>) => {
     setIsSaving(true);
     try {
-      const mainKey = "__EMPTY"; // Usually safe key for title
+      const mainKey = "__EMPTY";
+      // 1. Title
       await addPrestacion(activeSheet, { [mainKey]: title });
+      // 2. Subtitle
       if (subtitle) await addPrestacion(activeSheet, { [mainKey]: subtitle });
+
+      // 3. Metadata row (HIDDEN TYPES)
+      const metaRow: any = { [mainKey]: "__METADATA__" };
+      columnsWithTypes.forEach((col, i) => {
+        const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
+        metaRow[ek] = col.type;
+      });
+      await addPrestacion(activeSheet, metaRow);
+
+      // 4. Header Labels row
       const headerRow: any = { [mainKey]: "Prestaciones" };
-      headers.forEach((h, i) => {
-        if (h.toLowerCase() !== "prestaciones") {
-          const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
-          if (i === 0) headerRow["__EMPTY"] = "Prestaciones"; // Specific mapping
-          headerRow[ek] = h;
-        }
+      columnsWithTypes.forEach((col, i) => {
+        const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
+        headerRow[ek] = col.name;
       });
       await addPrestacion(activeSheet, headerRow);
+
+      // 5. Placeholder data row
       await addPrestacion(activeSheet, { [mainKey]: "Nueva Prestación..." });
+
       loadSheetData(activeSheet);
     } catch (e) {
       console.error(e);
@@ -150,9 +162,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
-  const formatValue = (val: any) => {
-    if (typeof val === 'number') {
-      return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+  const formatWithTypes = (val: any, type: string) => {
+    if (type === 'price' && (typeof val === 'number' || !isNaN(parseFloat(val)))) {
+      return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(val));
     }
     return val || "-";
   };
@@ -161,7 +173,6 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     const rawSections: any[] = [];
     let currentSection: any = null;
 
-    // First, group everything WITHOUT filtering
     data.forEach((row) => {
       const rd = row.row_data;
       const values = Object.values(rd);
@@ -170,29 +181,39 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const mainVal = mainKey ? rd[mainKey] : null;
 
       const isNewSection = mainVal && textValues.length === 1 &&
-        !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados") && !String(mainVal).includes("Prestación");
+        !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados") &&
+        !String(mainVal).includes("Prestación") && !String(mainVal).includes("__METADATA__");
+
+      const isMetadata = mainVal === "__METADATA__";
       const isSubHeader = mainVal && (String(mainVal).includes("Valores") || String(mainVal).includes("actualizados"));
       const isRowHeader = mainVal && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre"));
       const isNote = mainVal && String(mainVal).includes("NOTA:");
 
       if (isNewSection) {
-        currentSection = { title: mainVal, subtitle: "", headers: [], labels: {}, rows: [], note: "", allIds: [row.id] };
+        currentSection = { title: mainVal, subtitle: "", headers: [], labels: {}, types: {}, rows: [], note: "", allIds: [row.id] };
         rawSections.push(currentSection);
       } else if (currentSection) {
         currentSection.allIds.push(row.id);
-        if (isSubHeader) currentSection.subtitle = mainVal;
-        else if (isRowHeader) {
+        if (isMetadata) {
+          Object.keys(rd).forEach(k => {
+            if (k !== 'id') currentSection.types[k] = rd[k];
+          });
+        } else if (isSubHeader) {
+          currentSection.subtitle = mainVal;
+        } else if (isRowHeader) {
           currentSection.headers = Object.keys(rd).filter(k => k !== 'id' && (rd[k] || k === mainKey));
           currentSection.headers.forEach((h: string) => currentSection.labels[h] = rd[h]);
-        } else if (isNote) currentSection.note = mainVal;
-        else if (textValues.length > 0) currentSection.rows.push(row);
+        } else if (isNote) {
+          currentSection.note = mainVal;
+        } else if (textValues.length > 0) {
+          currentSection.rows.push(row);
+        }
       } else if (textValues.length > 0) {
-        currentSection = { title: "General", subtitle: "", headers: Object.keys(rd).filter(k => k !== 'id' && k !== 'sheet_name'), labels: {}, rows: [row], note: "", allIds: [row.id] };
+        currentSection = { title: "General", subtitle: "", headers: Object.keys(rd).filter(k => k !== 'id' && k !== 'sheet_name'), labels: {}, types: {}, rows: [row], note: "", allIds: [row.id] };
         rawSections.push(currentSection);
       }
     });
 
-    // Now apply Search filter
     const lowerSearch = search.toLowerCase();
     const filteredSections = rawSections.filter(section => {
       if (!search) return true;
@@ -204,7 +225,6 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     }).map(section => {
       if (!search) return section;
       const titleMatch = String(section.title).toLowerCase().includes(lowerSearch);
-      // If title matches, show all rows. If not, only matching rows.
       if (titleMatch) return section;
       return {
         ...section,
@@ -214,11 +234,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       };
     });
 
-    if (filteredSections.length === 0) return (
-      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-        No se encontraron resultados.
-      </div>
-    );
+    if (filteredSections.length === 0) return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No se encontraron resultados.</div>;
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
@@ -250,15 +266,27 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 <tbody>
                   {section.rows.map((row: any) => (
                     <tr key={row.id} className="table-row-hover">
-                      {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
-                        <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #e2e8f0' }}>
-                          {editingRow === row.id ? (
-                            <input className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={h === section.headers[0]} />
-                          ) : (
-                            <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>{formatValue(row.row_data[h])}</span>
-                          )}
-                        </td>
-                      ))}
+                      {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
+                        const type = section.types[h] || "text";
+                        return (
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #e2e8f0' }}>
+                            {editingRow === row.id ? (
+                              <input
+                                type={type === 'number' || type === 'price' ? 'number' : 'text'}
+                                step={type === 'price' ? "0.01" : "1"}
+                                className="input-inline"
+                                value={editData[h] || ""}
+                                onChange={(e) => handleValueChange(h, e.target.value)}
+                                autoFocus={h === section.headers[0]}
+                              />
+                            ) : (
+                              <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>
+                                {formatWithTypes(row.row_data[h], type)}
+                              </span>
+                            )}
+                          </td>
+                        );
+                      })}
                       <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #e2e8f0', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                           {editingRow === row.id ? (
@@ -274,6 +302,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 </tbody>
               </table>
             </div>
+            {section.note && <div style={{ padding: '1rem', margin: '1rem', background: '#f8fafc', borderRadius: '8px', fontSize: '0.8rem', borderLeft: '4px solid #cbd5e1' }}>{section.note}</div>}
           </div>
         ))}
       </div>
@@ -323,7 +352,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                     <tr key={row.id}>
                       {columns.map(col => (
                         <td key={col} style={{ padding: '0.75rem 1rem' }}>
-                          {editingRow === row.id ? <input className="input-inline" value={editData[col] || ""} onChange={e => handleValueChange(col, e.target.value)} /> : formatValue(row.row_data[col])}
+                          {editingRow === row.id ? <input className="input-inline" value={editData[col] || ""} onChange={e => handleValueChange(col, e.target.value)} /> : formatWithTypes(row.row_data[col], 'text')}
                         </td>
                       ))}
                       <td style={{ textAlign: 'right' }}>
