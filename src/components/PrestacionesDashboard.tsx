@@ -96,22 +96,23 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     setIsSaving(false);
   };
 
-  const handleAddRow = async (customSheet?: string, customRow?: any) => {
+  const handleAddRow = async (customSheet?: string, customRow?: any, afterId?: number) => {
     const sheet = customSheet || activeSheet;
     if (!sheet) return;
     const rowToSave = customRow || columns.reduce((acc: any, col) => ({ ...acc, [col]: "" }), {});
 
     setIsSaving(true);
-    const res = await addPrestacion(sheet, rowToSave);
+    const res = await addPrestacion(sheet, rowToSave, afterId);
     if (res.success) {
-      const newRow = res.data;
-      // Optimized update: add to state instead of reloading everything
-      setData(prev => [...prev, newRow]);
-      // Entering edit mode for the new row immediately
-      setEditingRow(newRow.id);
-      setEditData({ ...newRow.row_data });
-
-      // We don't call loadSheetData() here to avoid scroll jump
+      // Silent reload to ensure correct structural order
+      const freshRes = await getPrestacionesBySheet(sheet);
+      if (freshRes.success) {
+        setData(freshRes.data || []);
+        // Find the new row to set editing mode
+        const newId = res.data.id;
+        setEditingRow(newId);
+        setEditData({ ...res.data.row_data });
+      }
     } else {
       alert("Error al agregar fila");
     }
@@ -286,7 +287,17 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> Editar Tabla</button>
-                <button onClick={() => handleAddRow(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" })} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
+                <button
+                  onClick={() => {
+                    const lastId = section.rows.length > 0
+                      ? section.rows[section.rows.length - 1].id
+                      : (section.structuralIds.note || section.structuralIds.header || section.structuralIds.title);
+                    handleAddRow(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" }, lastId);
+                  }}
+                  className="btn-small-primary"
+                >
+                  <Plus size={14} /> Agregar Fila
+                </button>
                 <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger"><Trash2 size={14} /> Eliminar Tabla</button>
               </div>
             </div>
