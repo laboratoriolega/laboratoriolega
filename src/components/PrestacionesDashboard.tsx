@@ -391,7 +391,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                         const isPrice = type === 'price' || h === '__EMPTY_1';
                         const align = isDescriptionCol ? 'left' : 'right';
                         return (
-                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? '300px' : 'auto', textAlign: align }}>
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #cbd5e1', minWidth: isDescriptionCol ? (activeSheet === 'Panel BioM. Int.Panel' ? '200px' : '300px') : 'auto', textAlign: align }}>
                             {editingRow === row.id ? (
                               isDescriptionCol && type === 'text' ? (
                                 <textarea
@@ -402,10 +402,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                                 />
                               ) : (
                                 <div style={{display: 'flex', flexDirection: 'column'}}>
-                                  <input type={isPrice && !(editData[h] && String(editData[h]).startsWith('=')) ? 'number' : 'text'} step="0.01" className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
-                                  {editData[h] && String(editData[h]).startsWith('=') && (
+                                  <input type={activeSheet === 'Panel BioM. Int.Panel' || (!isPrice || (editData[h] && String(editData[h]).startsWith('='))) ? 'text' : 'number'} step="0.01" className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
+                                  {activeSheet === 'Panel BioM. Int.Panel' && (
                                     <span style={{fontSize: '0.75rem', color: '#10b981', marginTop: '4px', fontWeight: 600, textAlign: 'right'}}>
-                                      Calculado: {formatWithTypes(evaluateFormula(editData[h], (cIdx, rIdx) => {
+                                      Calculado: {formatWithTypes(evaluateFormula(String(editData[h] || "0"), (cIdx, rIdx) => {
                                          if (evaluatedData[rIdx]?.id === row.id) {
                                             const raw = editData[columns[cIdx]];
                                             if (typeof raw === 'string' && raw.startsWith('=')) return 0; 
