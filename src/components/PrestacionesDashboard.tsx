@@ -125,21 +125,27 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       if (modalMode === "edit" && editingSectionData) {
         const { structuralIds, rows: sectionRows } = editingSectionData;
 
+        // 1. Update Title
         if (structuralIds.title) await updatePrestacion(structuralIds.title, { [mainKey]: title, "meta_part": "TITLE" });
+
+        // 2. Subtitle
         if (structuralIds.subtitle) {
           await updatePrestacion(structuralIds.subtitle, { [mainKey]: subtitle, "meta_part": "SUBTITLE" });
         } else if (subtitle) {
           await addPrestacion(activeSheet, { [mainKey]: subtitle, "meta_part": "SUBTITLE" }, structuralIds.title);
         }
 
+        // 3. Metadata and Headers (Migration logic)
         const metaRow: any = { [mainKey]: "__METADATA__", "meta_part": "METADATA" };
         const headerLabels: any = { [mainKey]: "Prestaciones", "meta_part": "HEADER" };
+
         columnsWithTypes.forEach((col, i) => {
           const ek = i === 0 ? "__EMPTY" : `__EMPTY_${i}`;
           metaRow[ek] = col.type;
           headerLabels[ek] = col.name;
         });
 
+        // FORCE internal metadata IDs if they were missing or heuristic
         if (structuralIds.metadata) {
           await updatePrestacion(structuralIds.metadata, metaRow);
         } else {
@@ -153,17 +159,22 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           await addPrestacion(activeSheet, headerLabels, structuralIds.metadata);
         }
 
+        // 4. Note
         if (structuralIds.note) {
           await updatePrestacion(structuralIds.note, { [mainKey]: note, "meta_part": "NOTE" });
         } else if (note) {
           await addPrestacion(activeSheet, { [mainKey]: note, "meta_part": "NOTE" }, structuralIds.header || structuralIds.title);
         }
 
+        // 5. Data Migration (Reordering)
         const oldLabelsMap = editingSectionData.labels;
+        const newCols = columnsWithTypes;
+
+        // Only migrate if we have rows
         if (sectionRows.length > 0) {
           for (const dr of sectionRows) {
             const newRowData = { ...dr.row_data };
-            columnsWithTypes.forEach((col, newIdx) => {
+            newCols.forEach((col, newIdx) => {
               const newKey = newIdx === 0 ? "__EMPTY" : `__EMPTY_${newIdx}`;
               const oldKey = Object.keys(oldLabelsMap).find(k => oldLabelsMap[k] === col.name);
               if (oldKey && oldKey !== newKey) {
@@ -249,7 +260,11 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     data.forEach((row) => {
       const rd = row.row_data;
       const part = rd["meta_part"] || rd["__SECTION_PART__"];
-      const mainKey = Object.keys(rd).find(k => k === "__EMPTY") || Object.keys(rd)[0];
+      const entries = Object.entries(rd);
+      const internalKeys = ['id', 'sheet_name', 'meta_part', '__SECTION_PART__'];
+      const textValues = entries.filter(([k, v]) => v !== null && String(v).trim() !== '' && !internalKeys.includes(k)).map(([_, v]) => v);
+
+      const mainKey = Object.keys(rd).find(k => k === "__EMPTY" || k.toLowerCase().includes("laboratorio")) || Object.keys(rd)[0];
       const mainVal = mainKey ? rd[mainKey] : null;
 
       const isForcedTitle = part === "TITLE";
@@ -257,8 +272,13 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const isForcedMetadata = part === "METADATA";
       const isForcedHeader = part === "HEADER";
       const isForcedNote = part === "NOTE";
+      const isForcedData = part === "DATA";
 
-      if (isForcedTitle || (!part && mainVal && !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && mainVal !== "__METADATA__" && !String(mainVal).includes("Prestaciones"))) {
+      const isHeuristicTitle = !part && mainVal && textValues.length === 1 &&
+        !String(mainVal).includes("NOTA:") && !String(mainVal).includes("Valores") && !String(mainVal).includes("actualizados") &&
+        !String(mainVal).includes("Prestación") && mainVal !== "__METADATA__";
+
+      if (isForcedTitle || isHeuristicTitle) {
         currentSection = {
           title: mainVal, subtitle: "", headers: [], labels: {}, types: {}, rows: [], note: "", allIds: [row.id],
           structuralIds: { title: row.id, subtitle: null, metadata: null, header: null, note: null }
@@ -266,20 +286,20 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         rawSections.push(currentSection);
       } else if (currentSection) {
         currentSection.allIds.push(row.id);
-        if (isForcedSubtitle || (!part && String(mainVal).includes("Valores"))) {
+        if (isForcedSubtitle || (!part && (String(mainVal).includes("Valores") || String(mainVal).includes("actualizados")))) {
           currentSection.subtitle = mainVal;
           currentSection.structuralIds.subtitle = row.id;
         } else if (isForcedMetadata || mainVal === "__METADATA__") {
           currentSection.structuralIds.metadata = row.id;
-          Object.keys(rd).forEach(k => { if (!['id', 'sheet_name', 'meta_part'].includes(k)) currentSection.types[k] = rd[k]; });
-        } else if (isForcedHeader || (!part && String(mainVal).includes("Prestaciones"))) {
+          Object.keys(rd).forEach(k => { if (!internalKeys.includes(k)) currentSection.types[k] = rd[k]; });
+        } else if (isForcedHeader || (!part && (String(mainVal).includes("Prestaciones") || String(mainVal).includes("Nombre")))) {
           currentSection.structuralIds.header = row.id;
-          currentSection.headers = Object.keys(rd).filter(k => !['id', 'sheet_name', 'meta_part'].includes(k) && (rd[k] || k === mainKey));
+          currentSection.headers = Object.keys(rd).filter(k => !internalKeys.includes(k) && (rd[k] || k === mainKey));
           currentSection.headers.forEach((h: string) => currentSection.labels[h] = rd[h]);
         } else if (isForcedNote || (!part && String(mainVal).includes("NOTA:"))) {
           currentSection.note = mainVal;
           currentSection.structuralIds.note = row.id;
-        } else if (part === "DATA" || (!part && mainVal)) {
+        } else if (isForcedData || (!part && textValues.length > 0)) {
           currentSection.rows.push(row);
         }
       }
@@ -288,50 +308,89 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     const lowerSearch = search.toLowerCase();
     const filteredSections = rawSections.filter(section => {
       if (!search) return true;
-      return String(section.title).toLowerCase().includes(lowerSearch) || section.rows.some((row: any) => Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch)));
+      const titleMatch = String(section.title).toLowerCase().includes(lowerSearch);
+      const rowsMatch = section.rows.some((row: any) => Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch)));
+      return titleMatch || rowsMatch;
+    }).map(section => {
+      if (!search) return section;
+      if (String(section.title).toLowerCase().includes(lowerSearch)) return section;
+      return { ...section, rows: section.rows.filter((row: any) => Object.values(row.row_data).some(v => String(v).toLowerCase().includes(lowerSearch))) };
     });
+
+    if (filteredSections.length === 0) return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No se encontraron resultados.</div>;
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
         {filteredSections.map((section, idx) => (
           <div key={idx} className="section-block" style={{ background: 'white', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '1.5rem 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 1.5rem', marginBottom: '1.5rem' }}>
-              <div><h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', margin: 0 }}>{section.title}</h3>{section.subtitle && <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}</div>
+              <div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', margin: 0 }}>{section.title}</h3>
+                {section.subtitle && <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}
+              </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> Editar Tabla</button>
-                <button onClick={() => { const lastId = section.rows.length > 0 ? section.rows[section.rows.length - 1].id : (section.structuralIds.note || section.structuralIds.header || section.structuralIds.title); handleAddRow(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" }, lastId); }} className="btn-small-primary"><Plus size={14} /> Agregar Fila</button>
+                <button
+                  onClick={() => {
+                    const lastId = section.rows.length > 0
+                      ? section.rows[section.rows.length - 1].id
+                      : (section.structuralIds.note || section.structuralIds.header || section.structuralIds.subtitle || section.structuralIds.title);
+                    handleAddRow(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" }, lastId);
+                  }}
+                  className="btn-small-primary"
+                >
+                  <Plus size={14} /> Agregar Fila
+                </button>
                 <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger"><Trash2 size={14} /> Eliminar Tabla</button>
               </div>
             </div>
+
             <div style={{ overflowX: 'auto', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-                <thead><tr style={{ background: '#1e3a8a' }}>{(section.headers.length > 0 ? section.headers : columns).map((h: any) => (<th key={h} style={{ padding: '1.25rem 1rem', textAlign: 'left', color: 'white', fontWeight: 700, border: '1px solid #334155', fontSize: '0.75rem', textTransform: 'uppercase' }}>{section.labels[h] || h}</th>))}<th style={{ width: '100px', background: '#1e3a8a', border: '1px solid #334155' }}></th></tr></thead>
-                <tbody>{section.rows.map((row: any) => (
-                  <tr key={row.id} className="table-row-hover">
-                    {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
-                      const type = section.types[h] || "text";
-                      return (
-                        <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #f1f5f9', verticalAlign: 'top' }}>
-                          {editingRow === row.id ? (
-                            type === 'price' || type === 'number' ? (
-                              <input type="number" step={type === 'price' ? "0.01" : "1"} className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={h === section.headers[0]} />
-                            ) : (
-                              <textarea className="input-inline-textarea" value={editData[h] || ""} onChange={(e) => { handleValueChange(h, e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }} autoFocus={h === section.headers[0]} rows={1} style={{ overflow: 'hidden', resize: 'none' }} />
-                            )
-                          ) : (
-                            <div style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{formatWithTypes(row.row_data[h], type)}</div>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #f1f5f9', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                        {editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={16} /></button>}
-                        <button onClick={() => handleDelete(row.id)} className="btn-action delete"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
+                <thead>
+                  <tr style={{ background: '#1e3a8a' }}>
+                    {(section.headers.length > 0 ? section.headers : columns).map((h: any) => (
+                      <th key={h} style={{ padding: '1.25rem 1rem', textAlign: 'left', color: 'white', fontWeight: 700, border: '1px solid #334155', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                        {section.labels[h] || h}
+                      </th>
+                    ))}
+                    <th style={{ width: '100px', background: '#1e3a8a', border: '1px solid #334155' }}></th>
                   </tr>
-                ))}</tbody>
+                </thead>
+                <tbody>
+                  {section.rows.map((row: any) => (
+                    <tr key={row.id} className="table-row-hover">
+                      {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
+                        const type = section.types[h] || "text";
+                        const isDescriptionCol = h === section.headers[0] || String(h).includes("EMPTY");
+                        return (
+                          <td key={h} style={{ padding: '0.75rem 1rem', border: '1px solid #f1f5f9', minWidth: isDescriptionCol ? '300px' : 'auto' }}>
+                            {editingRow === row.id ? (
+                              isDescriptionCol && type === 'text' ? (
+                                <textarea
+                                  className="input-inline-area"
+                                  value={editData[h] || ""}
+                                  onChange={(e) => handleValueChange(h, e.target.value)}
+                                  autoFocus
+                                />
+                              ) : (
+                                <input type={type === 'number' || type === 'price' ? 'number' : 'text'} step={type === 'price' ? "0.01" : "1"} className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
+                              )
+                            ) : (
+                              <span style={{ fontWeight: String(h).includes("EMPTY") ? 700 : 400 }}>{formatWithTypes(row.row_data[h], type)}</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td style={{ textAlign: 'right', padding: '0.5rem 1rem', border: '1px solid #f1f5f9', background: 'white', position: 'sticky', right: 0, zIndex: 5 }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                          {editingRow === row.id ? <button onClick={() => handleSave(row.id)} className="btn-action save"><Save size={16} /></button> : <button onClick={() => handleEdit(row)} className="btn-action edit"><Edit2 size={16} /></button>}
+                          <button onClick={() => handleDelete(row.id)} className="btn-action delete"><Trash2 size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
             {section.note && (
@@ -349,15 +408,26 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100vh', padding: '1rem' }}>
       <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div><h2 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}><FileSpreadsheet size={32} color="var(--primary)" /> Módulo de Prestaciones</h2></div>
+        <div>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
+            <FileSpreadsheet size={32} color="var(--primary)" /> Módulo de Prestaciones
+          </h2>
+        </div>
         <div style={{ display: 'flex', gap: '1rem', flex: 1, maxWidth: '500px' }}>
-          <div style={{ position: 'relative', flex: 1 }}><Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} /><input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="modern-input" style={{ width: '100%', paddingLeft: '2.5rem' }} /></div>
-          {activeSheet === "Convenios Particulares" && (<button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}><Plus size={18} /> Nuevo Convenio</button>)}
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+            <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="modern-input" style={{ width: '100%', paddingLeft: '2.5rem' }} />
+          </div>
+          {activeSheet === "Convenios Particulares" && (
+            <button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}><Plus size={18} /> Nuevo Convenio</button>
+          )}
         </div>
       </div>
+
       <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>{initialSheets.map(sheet => (
         <button key={sheet} onClick={() => setActiveSheet(sheet)} className={activeSheet === sheet ? "tab-active" : "tab-inactive"}>{sheet}</button>
       ))}</div>
+
       <div style={{ flex: 1 }}>{loading ? (
         <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={48} className="animate-spin" /><p>Cargando...</p></div>
       ) : (activeSheet === "Convenios Particulares" ? renderSectionedView() : (
@@ -383,7 +453,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         .btn-small-secondary { background: #f1f5f9; color: #475569; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
         .btn-small-danger { background: #fee2e2; color: #ef4444; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
         .input-inline { width: 100%; border: 1px solid var(--primary); border-radius: 4px; padding: 0.3rem }
-        .input-inline-textarea { width: 100%; border: 1px solid var(--primary); border-radius: 4px; padding: 0.3rem; font-family: inherit; font-size: 0.9rem; line-height: 1.4; min-height: 38px; }
+        .input-inline-area { width: 100%; border: 1px solid var(--primary); border-radius: 6px; padding: 0.5rem; min-height: 80px; font-family: inherit; font-size: 0.9rem; resize: vertical; background: white; }
         .btn-action { background: none; border: none; cursor: pointer; }
         .btn-action.save { color: var(--success); }
         .btn-action.edit { color: var(--text-muted); }
