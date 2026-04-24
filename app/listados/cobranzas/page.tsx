@@ -9,11 +9,6 @@ export default async function CobranzasPage() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <header className="glass-panel" style={{ padding: '2rem' }}>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.25rem' }}>Módulo de Cobranzas</h2>
-                <p style={{ color: 'var(--text-muted)' }}>Seguimiento detallado de cobros y facturación a pacientes.</p>
-            </header>
-
             <ListadosNav />
 
             <section>
