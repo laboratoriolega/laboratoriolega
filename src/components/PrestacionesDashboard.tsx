@@ -18,7 +18,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
 
   
-  const isExcelSheet = isExcelSheet || activeSheet === "O. Sociales";
+  const isExcelSheet = activeSheet === "Panel BioM. Int.Panel" || activeSheet === "O. Sociales";
 
   const isStructuredSheet = useMemo(() => {
     if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva" || activeSheet === "Lab Clínico Noelia Dutto" || isExcelSheet) return true;
