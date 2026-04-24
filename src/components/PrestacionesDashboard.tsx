@@ -181,8 +181,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       const rd = row.row_data;
       const part = rd["__SECTION_PART__"]; // NEW ROBUST MARKER
 
-      const values = Object.values(rd);
-      const textValues = values.filter(v => v !== null && String(v).trim() !== '' && !k.startsWith("__"));
+      const entries = Object.entries(rd);
+      const textValues = entries.filter(([k, v]) => v !== null && String(v).trim() !== '' && !k.startsWith("__")).map(([_, v]) => v);
 
       // Fallback identification for old data
       const mainKey = Object.keys(rd).find(k => k === "__EMPTY" || k.toLowerCase().includes("laboratorio")) || Object.keys(rd)[0];
