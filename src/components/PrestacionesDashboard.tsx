@@ -411,6 +411,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         <div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
             <FileSpreadsheet size={32} color="var(--primary)" /> Módulo de Prestaciones
+            <span style={{ fontSize: '0.7rem', opacity: 0.3, fontWeight: 400 }}>v1.6.3</span>
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '1rem', flex: 1, maxWidth: '500px' }}>
