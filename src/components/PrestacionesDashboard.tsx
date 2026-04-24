@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { getPrestacionesBySheet, updatePrestacion, addPrestacion, deletePrestacion } from "@/actions/prestaciones";
 import { Search, Plus, Save, Trash2, Edit2, Loader2, FileSpreadsheet, Settings } from "lucide-react";
 import CreateSectionModal from "./CreateSectionModal";
+import { evaluateGrid, evaluateFormula, parseNumberValue, indexToCol } from "@/lib/formulas";
 
 export default function PrestacionesDashboard({ initialSheets }: { initialSheets: string[] }) {
   const [activeSheet, setActiveSheet] = useState(initialSheets[0] || "");
@@ -15,7 +16,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [isSaving, setIsSaving] = useState(false);
 
   const isStructuredSheet = useMemo(() => {
-    if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva" || activeSheet === "Lab Clínico Noelia Dutto") return true;
+    if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva" || activeSheet === "Lab Clínico Noelia Dutto" || activeSheet === "Panel BioM. Int.Panel") return true;
     return data.some(r => {
       try {
         const rd = typeof r.row_data === 'string' ? JSON.parse(r.row_data) : r.row_data;
@@ -54,6 +55,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     return Array.from(keys);
   }, [data]);
 
+  const evaluatedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return evaluateGrid({ rows: data, columns });
+  }, [data, columns]);
+
+
   const filteredData = useMemo(() => {
     if (!search) return data;
     const lowerSearch = search.toLowerCase();
@@ -85,7 +92,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
   const handleEdit = (row: any) => {
     setEditingRow(row.id);
-    setEditData({ ...row.row_data });
+    setEditData({ ...(row._raw_formulas || row.row_data) });
   };
 
   const handleValueChange = (col: string, val: string) => {
@@ -267,7 +274,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     const rawSections: any[] = [];
     let currentSection: any = null;
 
-    data.forEach((row) => {
+    evaluatedData.forEach((row) => {
       const rd = row.row_data;
       const part = rd["meta_part"] || rd["__SECTION_PART__"];
       const entries = Object.entries(rd);
@@ -359,10 +366,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead>
                   <tr style={{ background: '#244c7d' }}>
+                    {activeSheet === "Panel BioM. Int.Panel" && <th style={{width: '40px', background: '#1e3a8a', border: '1px solid #0f172a'}}></th>}
                     {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
                       const isDesc = h === section.headers[0] || h === columns[0] || h === "__EMPTY";
                       return (
                         <th key={h} style={{ padding: '1rem', textAlign: isDesc ? 'left' : 'right', color: 'white', fontWeight: 700, border: '1px solid #1e3a8a', fontSize: '0.85rem' }}>
+                          {activeSheet === "Panel BioM. Int.Panel" && <div style={{fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 800}}>{indexToCol(columns.indexOf(h))}</div>}
                           {section.labels[h] || h}
                         </th>
                       );
@@ -371,8 +380,11 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                   </tr>
                 </thead>
                 <tbody>
-                  {section.rows.map((row: any) => (
+                  {section.rows.map((row: any) => {
+                    const rowExcelIndex = evaluatedData.findIndex(r => r.id === row.id) + 1;
+                    return (
                     <tr key={row.id} className="table-row-hover">
+                      {activeSheet === "Panel BioM. Int.Panel" && <td style={{background: '#f8fafc', color: '#64748b', fontSize: '0.75rem', textAlign: 'center', borderRight: '1px solid #cbd5e1', fontWeight: 800}}>{rowExcelIndex}</td>}
                       {(section.headers.length > 0 ? section.headers : columns).map((h: any) => {
                         const type = section.types[h] || "text";
                         const isDescriptionCol = h === section.headers[0] || h === columns[0] || h === "__EMPTY";
@@ -389,7 +401,21 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                                   autoFocus
                                 />
                               ) : (
-                                <input type={isPrice ? 'number' : 'text'} step="0.01" className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
+                                <div style={{display: 'flex', flexDirection: 'column'}}>
+                                  <input type={isPrice && !(editData[h] && String(editData[h]).startsWith('=')) ? 'number' : 'text'} step="0.01" className="input-inline" value={editData[h] || ""} onChange={(e) => handleValueChange(h, e.target.value)} autoFocus={!isDescriptionCol && h === section.headers[0]} />
+                                  {editData[h] && String(editData[h]).startsWith('=') && (
+                                    <span style={{fontSize: '0.75rem', color: '#10b981', marginTop: '4px', fontWeight: 600, textAlign: 'right'}}>
+                                      Calculado: {formatWithTypes(evaluateFormula(editData[h], (cIdx, rIdx) => {
+                                         if (evaluatedData[rIdx]?.id === row.id) {
+                                            const raw = editData[columns[cIdx]];
+                                            if (typeof raw === 'string' && raw.startsWith('=')) return 0; 
+                                            return parseNumberValue(raw);
+                                         }
+                                         return evaluatedData[rIdx] ? parseNumberValue(evaluatedData[rIdx].row_data[columns[cIdx]]) : 0;
+                                      }), type)}
+                                    </span>
+                                  )}
+                                </div>
                               )
                             ) : (
                               <span style={{ fontWeight: isDescriptionCol ? 600 : 400, fontFamily: isPrice ? 'Courier New, monospace' : 'inherit' }}>{formatWithTypes(row.row_data[h], type)}</span>
@@ -404,7 +430,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  );})}
                 </tbody>
               </table>
             </div>
