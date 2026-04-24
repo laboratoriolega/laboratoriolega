@@ -418,7 +418,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
             <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="modern-input" style={{ width: '100%', paddingLeft: '2.5rem' }} />
           </div>
-          {(activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva") && (
+          {data.some(r => r.row_data["meta_part"]) && (
             <button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}><Plus size={18} /> Nuevo Convenio</button>
           )}
         </div>
@@ -430,7 +430,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
       <div style={{ flex: 1 }}>{loading ? (
         <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={48} className="animate-spin" /><p>Cargando...</p></div>
-      ) : ((activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva") ? renderSectionedView() : (
+      ) : (data.some(r => r.row_data["meta_part"]) ? renderSectionedView() : (
         <div className="glass-panel" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr style={{ background: 'var(--glass-bg)' }}>{columns.map(col => <th key={col} style={{ padding: '1rem', textAlign: 'left', fontWeight: 700 }}>{col}</th>)}<th></th></tr></thead>

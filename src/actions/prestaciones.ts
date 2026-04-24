@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 export async function getPrestacionesSheets() {
   try {
     const res = await query(
-      "SELECT DISTINCT sheet_name FROM prestaciones_data ORDER BY sheet_name ASC"
+      "SELECT DISTINCT TRIM(sheet_name) as sheet_name FROM prestaciones_data ORDER BY sheet_name ASC"
     );
     return { success: true, data: res.rows.map((r: any) => r.sheet_name) };
   } catch (error: any) {
