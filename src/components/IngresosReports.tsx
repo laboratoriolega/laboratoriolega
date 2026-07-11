@@ -15,6 +15,14 @@ const AIR_TEST_NAMES = new Set(['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON
 
 const COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
+const parseLocalDate = (dateStr: string, isEnd = false): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  if (isEnd) {
+    return new Date(year, month - 1, day, 23, 59, 59, 999);
+  }
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
 interface IngresosReportsProps {
   data: any[];
   onBack: () => void;
@@ -37,9 +45,12 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
 
   // Filter data by date range + extra filters
   const filteredData = useMemo(() => {
+    const startLimit = parseLocalDate(dateRange.start);
+    const endLimit = parseLocalDate(dateRange.end, true);
+
     return data.filter(item => {
       const date = new Date(item.appointment_date);
-      if (!isWithinInterval(date, { start: new Date(dateRange.start), end: new Date(dateRange.end) })) return false;
+      if (!isWithinInterval(date, { start: startLimit, end: endLimit })) return false;
 
       if (filterAnalysis.length > 0) {
         const itemTypes = item.analyses?.map((a: any) => (a.analysis_name || a.name || '').trim().toUpperCase()) ||
@@ -167,7 +178,7 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
 
   const exportCSV = () => {
     setShowExportMenu(false);
-    const dateLabel = `${format(new Date(dateRange.start), 'dd/MM/yyyy')} al ${format(new Date(dateRange.end), 'dd/MM/yyyy')}`;
+    const dateLabel = `${format(parseLocalDate(dateRange.start), 'dd/MM/yyyy')} al ${format(parseLocalDate(dateRange.end), 'dd/MM/yyyy')}`;
     const rows: string[] = [
       `Reporte Laboratorio Lega - ${dateLabel}`,
       '',
@@ -323,7 +334,7 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
           </div>
           <div style={{ textAlign: 'right' }}>
             <p style={{ margin: 0, fontWeight: 700 }}>REPORTE ESTADÍSTICO</p>
-            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{format(new Date(dateRange.start), 'dd/MM/yy')} al {format(new Date(dateRange.end), 'dd/MM/yy')}</p>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{format(parseLocalDate(dateRange.start), 'dd/MM/yy')} al {format(parseLocalDate(dateRange.end), 'dd/MM/yy')}</p>
           </div>
         </div>
 
