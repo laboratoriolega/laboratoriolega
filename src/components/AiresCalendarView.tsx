@@ -47,10 +47,12 @@ export default function AiresCalendarView({
   let day = startDate;
   while (day <= endDate) { daysGrid.push(day); day = addDays(day, 1); }
 
-  const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'Aires'];
+  const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES', 'TEST DE AIRE'];
   const airesAppts = (appointments || []).filter(a =>
     a &&
-    (airTestNames.includes(a.analysis_type) || a.aire_test_type || (a.analyses && a.analyses.some((ana: any) => airTestNames.includes(ana.name)))) &&
+    (airTestNames.includes((a.analysis_type || '').toUpperCase()) || 
+     (a.aire_test_type && airTestNames.includes(a.aire_test_type.toUpperCase())) || 
+     (a.analyses && a.analyses.some((ana: any) => airTestNames.includes((ana.name || '').toUpperCase())))) &&
     !a.is_domicilio
   );
 
@@ -75,8 +77,11 @@ export default function AiresCalendarView({
     if (apt.aire_test_type) return apt.aire_test_type;
     // Fall back to analyses array subtype or name
     if (apt.analyses && apt.analyses.length > 0) {
-      const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'Aires'];
-      const airAnalysis = apt.analyses.find((a: any) => airTestNames.includes((a.subtype || a.name || '').toUpperCase()));
+      const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES', 'TEST DE AIRE'];
+      const airAnalysis = apt.analyses.find((a: any) => 
+        airTestNames.includes((a.subtype || '').toUpperCase()) || 
+        airTestNames.includes((a.name || '').toUpperCase())
+      );
       if (airAnalysis) return airAnalysis.subtype || airAnalysis.name;
     }
     return apt.analysis_type;

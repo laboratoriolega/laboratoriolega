@@ -35,13 +35,13 @@ export default function MonthClientView({
 
   if (!appointments) return null;
 
-  const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'Aires'];
+  const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES', 'TEST DE AIRE'];
   const filteredAppointments = (appointments || []).filter(a =>
     a &&
     !a.is_domicilio &&
     !a.is_ingreso &&
-    !airTestNames.includes(a.analysis_type) &&
-    !(a.analyses && a.analyses.some((ana: any) => airTestNames.includes(ana.name)))
+    !airTestNames.includes((a.analysis_type || '').toUpperCase()) &&
+    !(a.analyses && a.analyses.some((ana: any) => airTestNames.includes((ana.name || '').toUpperCase())))
   );
 
   const monthStart = startOfMonth(currentDate);

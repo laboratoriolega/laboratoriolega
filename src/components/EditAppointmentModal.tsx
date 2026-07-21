@@ -20,7 +20,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
   useEffect(() => {
     if (ap) {
       setAnalysisType(ap.analysis_type || "");
-      const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES'];
+      const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES', 'TEST DE AIRE'];
       if (ap.analyses && ap.analyses.length > 0) {
         setAnalyses(ap.analyses.map((a: any) => ({ 
             analysis_name: a.name || '', 

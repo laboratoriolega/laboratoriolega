@@ -89,7 +89,7 @@ export async function createAppointment(formData: FormData) {
     const files = formData.getAll("document") as File[];
 
     // Turn limit for 'Aires' (Max 4 per day)
-    const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON'];
+    const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'TEST DE AIRE', 'AIRES'];
     if (airTestNames.includes(analysis_type?.toUpperCase() || "")) {
       const targetDateStr = appointment_date.split('T')[0];
       const countRes = await client.query(
@@ -229,7 +229,7 @@ export async function updateAppointment(formData: FormData) {
     const files = formData.getAll("document") as File[];
 
     // Check limit if changing type to an air test or changing date for an air test appointment
-    const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON'];
+    const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'TEST DE AIRE', 'AIRES'];
     if (airTestNames.includes(analysis_type?.toUpperCase() || "")) {
       const targetDateStr = appointment_date.split('T')[0];
       const countRes = await client.query(
@@ -329,7 +329,7 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
     const apt = current.rows[0];
 
     // Check limit if moving an air test
-    const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON'];
+    const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'TEST DE AIRE', 'AIRES'];
     if (airTestNames.includes(apt?.analysis_type?.toUpperCase() || "")) {
       const targetDateStr = newDate.split('T')[0];
       const countRes = await pool.query(
