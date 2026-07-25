@@ -68,16 +68,27 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
   // ── Ref para captura PDF ──────────────────────────────────────────────
   const reportRef = useRef<HTMLDivElement>(null);
 
-  // Cierra el dropdown al hacer click fuera
+  // ── Ref para el contenedor del menú de exportación ───────────────────
+  const exportContainerRef = useRef<HTMLDivElement>(null);
+
+  // Cierra los dropdowns al hacer click fuera de sus contenedores
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
+      // Cierra autocomplete de paciente
       if (
         patientInputRef.current && !patientInputRef.current.contains(e.target as Node) &&
-        suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)
+        (!suggestionsRef.current || !suggestionsRef.current.contains(e.target as Node))
       ) {
         setShowSuggestions(false);
       }
-      if (showExportMenu) setShowExportMenu(false);
+      // Cierra menú exportar SOLO si el click fue fuera del contenedor
+      if (
+        showExportMenu &&
+        exportContainerRef.current &&
+        !exportContainerRef.current.contains(e.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -219,7 +230,7 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
           </div>
 
           {generated && reportData.length > 0 && (
-            <div style={{ position: 'relative' }}>
+            <div ref={exportContainerRef} style={{ position: 'relative' }}>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowExportMenu((v) => !v); }}
                 className="btn-primary"
