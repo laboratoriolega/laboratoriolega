@@ -15,6 +15,7 @@ export default function UserManagementClient({ initialUsers, currentUserId }: { 
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)', textAlign: 'left' }}>
+              <th style={{ padding: '1rem', width: '50px' }}>Avatar</th>
               <th style={{ padding: '1rem' }}>Usuario</th>
               <th style={{ padding: '1rem' }}>Nombre Completo</th>
               <th style={{ padding: '1rem' }}>Rol</th>
@@ -24,6 +25,24 @@ export default function UserManagementClient({ initialUsers, currentUserId }: { 
           <tbody>
             {initialUsers.map((u: any) => (
               <tr key={u.id} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s ease' }} className="hoverable-row">
+                <td style={{ padding: '1rem' }}>
+                  <div style={{
+                    width: '38px', height: '38px',
+                    background: 'var(--primary)', borderRadius: '50%',
+                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 'bold', overflow: 'hidden', border: '2px solid var(--glass-border)'
+                  }}>
+                    {u.avatar_url ? (
+                      <img
+                        src={`/api/avatar/${u.id}?v=${u.updated_at ? new Date(u.updated_at).getTime() : Date.now()}`}
+                        alt={`Avatar de ${u.username}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      (u.full_name || u.username).charAt(0).toUpperCase()
+                    )}
+                  </div>
+                </td>
                 <td style={{ padding: '1rem', fontWeight: 600 }}>@{u.username}</td>
                 <td style={{ padding: '1rem' }}>{u.full_name || '-'}</td>
                 <td style={{ padding: '1rem' }}>

@@ -24,7 +24,7 @@ export async function getUsers() {
     const session = await getSession() as any;
     if (!session || session.role !== 'admin') throw new Error("Unauthorized");
 
-    const res = await pool.query("SELECT id, username, role, full_name FROM users ORDER BY username ASC");
+    const res = await pool.query("SELECT id, username, role, full_name, avatar_url, updated_at FROM users ORDER BY username ASC");
     return { data: res.rows, error: null };
   } catch (error: any) {
     return { data: null, error: error.message };
