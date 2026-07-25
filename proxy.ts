@@ -31,6 +31,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!token) {
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/resultado', request.url));
+    }
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
