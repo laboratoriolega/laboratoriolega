@@ -4,20 +4,27 @@ import { useState, useEffect } from "react";
 import { getIngresos } from "@/actions/ingresos";
 import IngresosTable from "@/components/IngresosTable";
 import NewIngresoModal from "@/components/NewIngresoModal";
-import { Plus, Calendar, Filter, Download, Activity, Clock, FileText, X, Car, CheckCircle, ArrowLeft } from "lucide-react";
+import { Plus, Filter, Activity, ArrowLeft, Users } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useSearchParams } from "next/navigation";
 
 import IngresosReports from "@/components/IngresosReports";
+import PatientsReport from "@/components/PatientsReport";
 
-export default function IngresosPageClient({ userRole }: { userRole: string }) {
+export default function IngresosPageClient({
+  userRole,
+  obrasSociales = [],
+}: {
+  userRole: string;
+  obrasSociales?: string[];
+}) {
   const [ingresos, setIngresos] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIngreso, setEditingIngreso] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"table" | "reports">("table");
+  const [view, setView] = useState<"table" | "reports" | "patients">("table");
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), 'MMMM yyyy', { locale: es }));
   const [bioqFilter, setBioqFilter] = useState<string>('');
   const [checklistFilter, setChecklistFilter] = useState<'all' | 'con' | 'sin'>('all');
@@ -120,28 +127,55 @@ export default function IngresosPageClient({ userRole }: { userRole: string }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
           <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
-            {view === 'table' ? 'Ingresos' : 'Reportes de Ingresos'}
+            {view === 'table' ? 'Ingresos' : view === 'reports' ? 'Reporte Estadístico' : 'Reporte de Pacientes'}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
             {view === 'table'
               ? 'Registro histórico y detallado de entrada de pacientes y cobros.'
-              : 'Visualización estadística de estudios, pacientes y facturación.'}
+              : view === 'reports'
+              ? 'Visualización estadística de estudios, pacientes y facturación.'
+              : 'Consulta operativa de pacientes atendidos en un período.'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          {!isBioq && (
+          {!isBioq && view !== 'table' && (
             <button
-              onClick={() => setView(view === 'table' ? 'reports' : 'table')}
+              onClick={() => setView('table')}
               className="btn-primary"
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1rem 1.5rem',
-                borderRadius: '14px', fontSize: '1rem', background: view === 'reports' ? 'var(--success)' : 'var(--primary)',
-                boxShadow: view === 'reports' ? '0 4px 6px -1px rgba(16, 185, 129, 0.4)' : undefined
+                borderRadius: '14px', fontSize: '1rem', background: 'var(--success)',
+                boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.4)'
               }}
             >
-              {view === 'table' ? <Activity size={22} /> : <ArrowLeft size={22} />}
-              {view === 'table' ? 'REPORTES' : 'VOLVER A LISTA'}
+              <ArrowLeft size={22} /> VOLVER A LISTA
             </button>
+          )}
+          {!isBioq && view === 'table' && (
+            <>
+              <button
+                onClick={() => setView('reports')}
+                className="btn-primary"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1rem 1.5rem',
+                  borderRadius: '14px', fontSize: '1rem',
+                }}
+              >
+                <Activity size={22} /> REPORTE ESTADÍSTICO
+              </button>
+              <button
+                onClick={() => setView('patients')}
+                className="btn-primary"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1rem 1.5rem',
+                  borderRadius: '14px', fontSize: '1rem',
+                  background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+                  boxShadow: '0 4px 6px -1px rgba(139, 92, 246, 0.4)',
+                }}
+              >
+                <Users size={22} /> REPORTE DE PACIENTES
+              </button>
+            </>
           )}
 
           {view === 'table' && !isBioq && (
@@ -290,8 +324,10 @@ export default function IngresosPageClient({ userRole }: { userRole: string }) {
             </div>
           )}
         </>
-      ) : (
+      ) : view === 'reports' ? (
         <IngresosReports data={ingresos} onBack={() => setView('table')} />
+      ) : (
+        <PatientsReport data={ingresos} obrasSociales={obrasSociales} onBack={() => setView('table')} />
       )}
 
       {!isBioq && (
