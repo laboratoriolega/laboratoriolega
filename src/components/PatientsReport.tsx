@@ -24,7 +24,12 @@ const fmtDate = (iso: string) =>
 
 const normalizeString = (str?: string) => {
   if (!str) return '';
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  return str.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+    .replace(/[^a-zA-Z0-9\s]/g, " ") // Reemplazar puntuación/símbolos por espacio
+    .replace(/\s+/g, " ")            // Colapsar múltiples espacios
+    .toLowerCase()
+    .trim();
 };
 
 // ---------------------------------------------------------------------------
