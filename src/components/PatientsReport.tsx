@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Download, ChevronDown, Users, Activity, Shield, CalendarDays } from 'lucide-react';
+import { Download, ChevronDown, Users, Activity, Shield, CalendarDays, X } from 'lucide-react';
 import { format, isWithinInterval } from 'date-fns';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,6 +22,14 @@ const parseLocalDate = (dateStr: string, isEnd = false): Date => {
 const fmtDate = (iso: string) =>
   format(new Date(iso), 'dd/MM/yyyy', { locale: es });
 
+const fmtDate = (iso: string) =>
+  format(new Date(iso), 'dd/MM/yyyy', { locale: es });
+
+const normalizeString = (str?: string) => {
+  if (!str) return '';
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+};
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -39,7 +47,8 @@ interface ReportFilters {
   dateEnd: string;
   obraSocial: string;
   patientName: string;
-  professional: string;
+  professionals: string[];
+  professionalInput: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,7 +62,8 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
     dateEnd: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     obraSocial: '',
     patientName: '',
-    professional: '',
+    professionals: [],
+    professionalInput: '',
   });
 
   // ── Estado de generación ──────────────────────────────────────────────
@@ -130,26 +140,39 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
   // ── Autocomplete suggestions ──────────────────────────────────────────
   const patientSuggestions = useMemo(() => {
     if (!filters.patientName.trim()) return [];
-    const q = filters.patientName.toLowerCase();
+    const q = normalizeString(filters.patientName);
     const names = Array.from(new Set(data.map((d) => d.name).filter(Boolean)));
     return names
-      .filter((n: string) => n.toLowerCase().includes(q))
+      .filter((n: string) => normalizeString(n).includes(q))
       .slice(0, 8);
   }, [filters.patientName, data]);
 
   const obraSocialSuggestions = useMemo(() => {
     if (!filters.obraSocial.trim()) return obrasSociales.slice(0, 8);
-    const q = filters.obraSocial.toLowerCase();
-    return obrasSociales.filter((os) => os.toLowerCase().includes(q)).slice(0, 8);
+    const q = normalizeString(filters.obraSocial);
+    return obrasSociales.filter((os) => normalizeString(os).includes(q)).slice(0, 8);
   }, [filters.obraSocial, obrasSociales]);
 
   const professionalSuggestions = useMemo(() => {
-    // Si no hay filtro, mostrar una sugerencia inicial o todos
-    const allProfs = Array.from(new Set([...profesionalesAdmin, ...Array.from(new Set(data.map((d) => d.professional_name).filter(Boolean)))])).sort();
-    if (!filters.professional.trim()) return allProfs.slice(0, 8);
-    const q = filters.professional.toLowerCase();
-    return allProfs.filter((p) => typeof p === 'string' && p.toLowerCase().includes(q)).slice(0, 8);
-  }, [filters.professional, profesionalesAdmin, data]);
+    const allProfs = Array.from(new Set([...profesionalesAdmin, ...data.map((d) => d.professional_name).filter(Boolean)])).sort() as string[];
+    
+    // Unificar por nombre normalizado
+    const uniqueMap = new Map<string, string>();
+    allProfs.forEach(p => {
+      const norm = normalizeString(p);
+      if (!uniqueMap.has(norm)) {
+        uniqueMap.set(norm, p);
+      }
+    });
+    const uniqueProfs = Array.from(uniqueMap.values());
+
+    if (!filters.professionalInput.trim()) return uniqueProfs.filter(p => !filters.professionals.includes(p)).slice(0, 8);
+    
+    const q = normalizeString(filters.professionalInput);
+    return uniqueProfs
+      .filter((p) => !filters.professionals.includes(p) && normalizeString(p).includes(q))
+      .slice(0, 8);
+  }, [filters.professionalInput, filters.professionals, profesionalesAdmin, data]);
 
   // ── Datos filtrados (solo cuando se presiona "Generar Reporte") ───────
   const reportData = useMemo(() => {
@@ -166,20 +189,21 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
 
         // Obra Social
         if (appliedFilters.obraSocial) {
-          const hi = (item.health_insurance || '').toUpperCase();
-          if (!hi.includes(appliedFilters.obraSocial.toUpperCase())) return false;
+          const hi = normalizeString(item.health_insurance);
+          if (!hi.includes(normalizeString(appliedFilters.obraSocial))) return false;
         }
 
         // Nombre de paciente
         if (appliedFilters.patientName.trim()) {
-          const n = (item.name || '').toLowerCase();
-          if (!n.includes(appliedFilters.patientName.trim().toLowerCase())) return false;
+          const n = normalizeString(item.name);
+          if (!n.includes(normalizeString(appliedFilters.patientName))) return false;
         }
 
-        // Profesional
-        if (appliedFilters.professional) {
-          const prof = (item.professional_name || '').toUpperCase();
-          if (!prof.includes(appliedFilters.professional.toUpperCase())) return false;
+        // Profesionales
+        if (appliedFilters.professionals && appliedFilters.professionals.length > 0) {
+          const profNorm = normalizeString(item.professional_name);
+          const match = appliedFilters.professionals.some(p => profNorm.includes(normalizeString(p)));
+          if (!match) return false;
         }
 
         return true;
@@ -404,21 +428,64 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
             )}
           </div>
 
-          {/* Profesional con autocomplete */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '220px', position: 'relative' }}>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>PROFESIONAL</label>
-            <input
-              ref={professionalInputRef}
-              type="text"
-              value={filters.professional}
-              onChange={(e) => {
-                setFilter('professional', e.target.value);
-                setShowProfessionalSuggestions(true);
+          {/* Profesional con autocomplete multiple */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '240px', position: 'relative' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>PROFESIONALES</label>
+            <div
+              onClick={() => { setShowProfessionalSuggestions(true); professionalInputRef.current?.focus(); }}
+              style={{
+                display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center',
+                padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid var(--glass-border)',
+                background: 'var(--glass-bg)', cursor: 'text', minHeight: '38px'
               }}
-              onFocus={() => setShowProfessionalSuggestions(true)}
-              placeholder="Escribir o seleccionar..."
-              style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem' }}
-            />
+            >
+              {filters.professionals.map(opt => (
+                <span
+                  key={opt}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.3rem',
+                    background: 'rgba(14, 165, 233, 0.15)', color: 'var(--primary)',
+                    border: '1px solid rgba(14, 165, 233, 0.35)', borderRadius: '20px',
+                    padding: '0.15rem 0.55rem 0.15rem 0.65rem', fontSize: '0.75rem', fontWeight: 600,
+                  }}
+                >
+                  {opt}
+                  <button
+                    type="button"
+                    onMouseDown={e => {
+                      e.preventDefault(); e.stopPropagation();
+                      setFilters(prev => ({ ...prev, professionals: prev.professionals.filter(o => o !== opt) }));
+                      setGenerated(false);
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: 0, display: 'flex', alignItems: 'center' }}
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
+
+              <input
+                ref={professionalInputRef}
+                type="text"
+                value={filters.professionalInput}
+                onChange={(e) => {
+                  setFilter('professionalInput', e.target.value);
+                  setShowProfessionalSuggestions(true);
+                }}
+                onFocus={() => setShowProfessionalSuggestions(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Backspace' && filters.professionalInput === '' && filters.professionals.length > 0) {
+                    setFilters(prev => ({ ...prev, professionals: prev.professionals.slice(0, -1) }));
+                    setGenerated(false);
+                  }
+                }}
+                placeholder={filters.professionals.length === 0 ? "Escribir o seleccionar..." : ""}
+                style={{
+                  border: 'none', outline: 'none', background: 'transparent',
+                  color: 'var(--text-main)', fontSize: '0.85rem', flex: 1, minWidth: '80px', fontWeight: 600
+                }}
+              />
+            </div>
             {showProfessionalSuggestions && professionalSuggestions.length > 0 && (
               <div
                 ref={professionalSuggestionsRef}
@@ -433,8 +500,13 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                   <button
                     key={name}
                     onClick={() => {
-                      setFilter('professional', name);
+                      setFilters(prev => ({ 
+                        ...prev, 
+                        professionals: [...prev.professionals, name],
+                        professionalInput: '' 
+                      }));
                       setShowProfessionalSuggestions(false);
+                      setGenerated(false);
                     }}
                     style={{
                       display: 'block', width: '100%', padding: '0.6rem 0.85rem',
@@ -540,9 +612,9 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                   Paciente: {appliedFilters.patientName}
                 </p>
               )}
-              {appliedFilters?.professional && (
+              {appliedFilters?.professionals && appliedFilters.professionals.length > 0 && (
                 <p style={{ margin: '0.1rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Profesional: {appliedFilters.professional}
+                  Profesional: {appliedFilters.professionals.join(', ')}
                 </p>
               )}
             </div>
