@@ -38,6 +38,7 @@ interface ReportFilters {
   dateEnd: string;
   obraSocial: string;
   patientName: string;
+  professional: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,6 +52,7 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
     dateEnd: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     obraSocial: '',
     patientName: '',
+    professional: '',
   });
 
   // ── Estado de generación ──────────────────────────────────────────────
@@ -104,6 +106,11 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
       .slice(0, 8);
   }, [filters.patientName, data]);
 
+  // ── Lista de profesionales (derivada de data) ──────────────────────────
+  const profesionales = useMemo(() => {
+    return Array.from(new Set(data.map((d) => d.professional_name).filter(Boolean))).sort() as string[];
+  }, [data]);
+
   // ── Datos filtrados (solo cuando se presiona "Generar Reporte") ───────
   const reportData = useMemo(() => {
     if (!appliedFilters) return [];
@@ -127,6 +134,12 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
         if (appliedFilters.patientName.trim()) {
           const n = (item.name || '').toLowerCase();
           if (!n.includes(appliedFilters.patientName.trim().toLowerCase())) return false;
+        }
+
+        // Profesional
+        if (appliedFilters.professional) {
+          const prof = (item.professional_name || '').toUpperCase();
+          if (!prof.includes(appliedFilters.professional.toUpperCase())) return false;
         }
 
         return true;
@@ -206,10 +219,10 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
       `Reporte de Pacientes - Laboratorio Lega - ${periodLabel}`,
       `Obra Social: ${obraSocialLabel}`,
       '',
-      'Fecha,Paciente,Obra Social',
+      'Fecha,Paciente,Obra Social,Profesional',
       ...reportData.map(
         (r) =>
-          `${fmtDate(r.appointment_date)},"${r.name || ''}","${r.health_insurance || ''}"`
+          `${fmtDate(r.appointment_date)},"${r.name || ''}","${r.health_insurance || ''}","${r.professional_name || ''}"`
       ),
       '',
       `Total de Atenciones,${summary.totalAtenciones}`,
@@ -318,6 +331,21 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
             </select>
           </div>
 
+          {/* Profesional */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '200px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>PROFESIONAL</label>
+            <select
+              value={filters.professional}
+              onChange={(e) => setFilter('professional', e.target.value)}
+              style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem' }}
+            >
+              <option value="">Todos</option>
+              {profesionales.map((prof) => (
+                <option key={prof} value={prof}>{prof}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Paciente con autocomplete */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '220px', position: 'relative' }}>
             <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>PACIENTE</label>
@@ -404,6 +432,11 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
               {appliedFilters?.patientName && (
                 <p style={{ margin: '0.1rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   Paciente: {appliedFilters.patientName}
+                </p>
+              )}
+              {appliedFilters?.professional && (
+                <p style={{ margin: '0.1rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Profesional: {appliedFilters.professional}
                 </p>
               )}
             </div>
@@ -506,6 +539,7 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                       <th style={thStyle}>Fecha</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>Paciente</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>Obra Social</th>
+                      <th style={{ ...thStyle, textAlign: 'left' }}>Profesional</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -540,6 +574,9 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                           ) : (
                             <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.82rem' }}>—</span>
                           )}
+                        </td>
+                        <td style={{ ...tdStyle, fontWeight: 600, fontSize: '0.8rem' }}>
+                          {row.professional_name || '—'}
                         </td>
                       </tr>
                     ))}
