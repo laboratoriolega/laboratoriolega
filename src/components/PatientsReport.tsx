@@ -22,9 +22,6 @@ const parseLocalDate = (dateStr: string, isEnd = false): Date => {
 const fmtDate = (iso: string) =>
   format(new Date(iso), 'dd/MM/yyyy', { locale: es });
 
-const fmtDate = (iso: string) =>
-  format(new Date(iso), 'dd/MM/yyyy', { locale: es });
-
 const normalizeString = (str?: string) => {
   if (!str) return '';
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
