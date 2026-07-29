@@ -7,6 +7,7 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { getProfesionales } from '@/actions/listados';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,10 +63,28 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
   // ── Export ────────────────────────────────────────────────────────────
   const [showExportMenu, setShowExportMenu] = useState(false);
 
-  // ── Autocomplete de paciente ──────────────────────────────────────────
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  // ── Autocomplete states & refs ──────────────────────────────────────────
+  const [showPatientSuggestions, setShowPatientSuggestions] = useState(false);
   const patientInputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const patientSuggestionsRef = useRef<HTMLDivElement>(null);
+
+  const [showObraSocialSuggestions, setShowObraSocialSuggestions] = useState(false);
+  const obraSocialInputRef = useRef<HTMLInputElement>(null);
+  const obraSocialSuggestionsRef = useRef<HTMLDivElement>(null);
+
+  const [showProfessionalSuggestions, setShowProfessionalSuggestions] = useState(false);
+  const professionalInputRef = useRef<HTMLInputElement>(null);
+  const professionalSuggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Cargar profesionales del admin
+  const [profesionalesAdmin, setProfesionalesAdmin] = useState<string[]>([]);
+  useEffect(() => {
+    getProfesionales().then(res => {
+      if (res.data) {
+        setProfesionalesAdmin(res.data.filter((o: any) => o.activo).map((o: any) => o.nombre).sort());
+      }
+    });
+  }, []);
 
   // ── Ref para captura PDF ──────────────────────────────────────────────
   const reportRef = useRef<HTMLDivElement>(null);
@@ -76,12 +95,24 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
   // Cierra los dropdowns al hacer click fuera de sus contenedores
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      // Cierra autocomplete de paciente
+      // Cierra autocompletes
       if (
         patientInputRef.current && !patientInputRef.current.contains(e.target as Node) &&
-        (!suggestionsRef.current || !suggestionsRef.current.contains(e.target as Node))
+        (!patientSuggestionsRef.current || !patientSuggestionsRef.current.contains(e.target as Node))
       ) {
-        setShowSuggestions(false);
+        setShowPatientSuggestions(false);
+      }
+      if (
+        obraSocialInputRef.current && !obraSocialInputRef.current.contains(e.target as Node) &&
+        (!obraSocialSuggestionsRef.current || !obraSocialSuggestionsRef.current.contains(e.target as Node))
+      ) {
+        setShowObraSocialSuggestions(false);
+      }
+      if (
+        professionalInputRef.current && !professionalInputRef.current.contains(e.target as Node) &&
+        (!professionalSuggestionsRef.current || !professionalSuggestionsRef.current.contains(e.target as Node))
+      ) {
+        setShowProfessionalSuggestions(false);
       }
       // Cierra menú exportar SOLO si el click fue fuera del contenedor
       if (
@@ -106,10 +137,19 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
       .slice(0, 8);
   }, [filters.patientName, data]);
 
-  // ── Lista de profesionales (derivada de data) ──────────────────────────
-  const profesionales = useMemo(() => {
-    return Array.from(new Set(data.map((d) => d.professional_name).filter(Boolean))).sort() as string[];
-  }, [data]);
+  const obraSocialSuggestions = useMemo(() => {
+    if (!filters.obraSocial.trim()) return obrasSociales.slice(0, 8);
+    const q = filters.obraSocial.toLowerCase();
+    return obrasSociales.filter((os) => os.toLowerCase().includes(q)).slice(0, 8);
+  }, [filters.obraSocial, obrasSociales]);
+
+  const professionalSuggestions = useMemo(() => {
+    // Si no hay filtro, mostrar una sugerencia inicial o todos
+    const allProfs = Array.from(new Set([...profesionalesAdmin, ...Array.from(new Set(data.map((d) => d.professional_name).filter(Boolean)))])).sort();
+    if (!filters.professional.trim()) return allProfs.slice(0, 8);
+    const q = filters.professional.toLowerCase();
+    return allProfs.filter((p) => typeof p === 'string' && p.toLowerCase().includes(q)).slice(0, 8);
+  }, [filters.professional, profesionalesAdmin, data]);
 
   // ── Datos filtrados (solo cuando se presiona "Generar Reporte") ───────
   const reportData = useMemo(() => {
@@ -316,34 +356,100 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
             />
           </div>
 
-          {/* Obra Social */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '200px' }}>
+          {/* Obra Social con autocomplete */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '220px', position: 'relative' }}>
             <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>OBRA SOCIAL</label>
-            <select
+            <input
+              ref={obraSocialInputRef}
+              type="text"
               value={filters.obraSocial}
-              onChange={(e) => setFilter('obraSocial', e.target.value)}
+              onChange={(e) => {
+                setFilter('obraSocial', e.target.value);
+                setShowObraSocialSuggestions(true);
+              }}
+              onFocus={() => setShowObraSocialSuggestions(true)}
+              placeholder="Escribir o seleccionar..."
               style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem' }}
-            >
-              <option value="">Todas</option>
-              {obrasSociales.map((os) => (
-                <option key={os} value={os}>{os}</option>
-              ))}
-            </select>
+            />
+            {showObraSocialSuggestions && obraSocialSuggestions.length > 0 && (
+              <div
+                ref={obraSocialSuggestionsRef}
+                style={{
+                  position: 'absolute', top: 'calc(100% + 2px)', left: 0, right: 0, zIndex: 600,
+                  background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                  borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                  maxHeight: '220px', overflowY: 'auto',
+                }}
+              >
+                {obraSocialSuggestions.map((name: string) => (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      setFilter('obraSocial', name);
+                      setShowObraSocialSuggestions(false);
+                    }}
+                    style={{
+                      display: 'block', width: '100%', padding: '0.6rem 0.85rem',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600,
+                      textAlign: 'left', borderBottom: '1px solid var(--glass-border)',
+                    }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(14,165,233,0.08)'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'none'; }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Profesional */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '200px' }}>
+          {/* Profesional con autocomplete */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '220px', position: 'relative' }}>
             <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>PROFESIONAL</label>
-            <select
+            <input
+              ref={professionalInputRef}
+              type="text"
               value={filters.professional}
-              onChange={(e) => setFilter('professional', e.target.value)}
+              onChange={(e) => {
+                setFilter('professional', e.target.value);
+                setShowProfessionalSuggestions(true);
+              }}
+              onFocus={() => setShowProfessionalSuggestions(true)}
+              placeholder="Escribir o seleccionar..."
               style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem' }}
-            >
-              <option value="">Todos</option>
-              {profesionales.map((prof) => (
-                <option key={prof} value={prof}>{prof}</option>
-              ))}
-            </select>
+            />
+            {showProfessionalSuggestions && professionalSuggestions.length > 0 && (
+              <div
+                ref={professionalSuggestionsRef}
+                style={{
+                  position: 'absolute', top: 'calc(100% + 2px)', left: 0, right: 0, zIndex: 600,
+                  background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                  borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                  maxHeight: '220px', overflowY: 'auto',
+                }}
+              >
+                {professionalSuggestions.map((name: string) => (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      setFilter('professional', name);
+                      setShowProfessionalSuggestions(false);
+                    }}
+                    style={{
+                      display: 'block', width: '100%', padding: '0.6rem 0.85rem',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600,
+                      textAlign: 'left', borderBottom: '1px solid var(--glass-border)',
+                    }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(14,165,233,0.08)'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'none'; }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Paciente con autocomplete */}
@@ -355,15 +461,15 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
               value={filters.patientName}
               onChange={(e) => {
                 setFilter('patientName', e.target.value);
-                setShowSuggestions(true);
+                setShowPatientSuggestions(true);
               }}
-              onFocus={() => setShowSuggestions(true)}
+              onFocus={() => setShowPatientSuggestions(true)}
               placeholder="Buscar por nombre..."
               style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem' }}
             />
-            {showSuggestions && patientSuggestions.length > 0 && (
+            {showPatientSuggestions && patientSuggestions.length > 0 && (
               <div
-                ref={suggestionsRef}
+                ref={patientSuggestionsRef}
                 style={{
                   position: 'absolute', top: 'calc(100% + 2px)', left: 0, right: 0, zIndex: 600,
                   background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
@@ -376,7 +482,7 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                     key={name}
                     onClick={() => {
                       setFilter('patientName', name);
-                      setShowSuggestions(false);
+                      setShowPatientSuggestions(false);
                     }}
                     style={{
                       display: 'block', width: '100%', padding: '0.6rem 0.85rem',
