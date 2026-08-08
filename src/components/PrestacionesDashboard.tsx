@@ -398,9 +398,17 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     }
     return val || "-";
   };
+  const getColumnLetter = (idx: number) => {
+    let temp, letter = '';
+    let col = idx + 1;
+    while (col > 0) {
+      temp = (col - 1) % 26;
+      letter = String.fromCharCode(temp + 65) + letter;
+      col = (col - temp - 1) / 26;
+    }
+    return letter;
+  };
 
-
-  
   const handleDesignColorChange = (colKey: string, color: string, type: 'cell' | 'col') => {
       setDesignData((prev: any) => ({
           ...prev,
@@ -582,10 +590,16 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
             <thead>
               <tr style={{ background: 'var(--glass-bg)', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                <th style={{ width: '40px', background: 'var(--glass-border)', position: 'sticky', left: 0, zIndex: 12, textAlign: 'center', color: 'var(--text-muted)' }}>#</th>
                 {(section.headers.length > 0 ? section.headers : columns).map((h: string) => {
                   if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__' || h.startsWith('__col_color_')) return null;
+                  const validCols = (section.headers.length > 0 ? section.headers : columns).filter((c: string) => !(c === 'id' || c === 'sheet_name' || c === 'meta_part' || c.startsWith('__cell_color_') || c === '__row_color' || c === '__SECTION_PART__' || c.startsWith('__col_color_')));
+                  const colIdx = validCols.indexOf(h);
                   return (
                     <th key={h} style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: 'var(--text-main)', borderBottom: '2px solid var(--primary)', whiteSpace: 'nowrap', backgroundColor: section.headerCellColors?.[h] || 'transparent' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', textAlign: 'center', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', padding: '2px 4px', width: 'fit-content', minWidth: '24px' }}>
+                        {getColumnLetter(colIdx)}
+                      </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {designModeSectionId === section.structuralIds.header && (
                           <div style={{ display: 'flex', gap: '4px' }}>
@@ -626,6 +640,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                     className={`table-row-hover ${dragOverRowId === row.id ? 'drag-over' : ''}`} 
                     style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: row.row_data.__row_color || (i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)') }}
                   >
+                    <td style={{ width: '40px', background: 'var(--glass-border)', position: 'sticky', left: 0, zIndex: 5, textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem' }}>
+                      {i + 1}
+                    </td>
                     {(section.headers.length > 0 ? section.headers : columns).map((h: string) => {
                       if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__' || h.startsWith('__col_color_')) return null;
                       const cellColor = row.row_data[`__cell_color_${h}`];
@@ -638,9 +655,16 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                       return (
                         <td key={h} style={{ padding: '0.85rem 1rem', border: '1px solid var(--glass-border)', background: finalBg }}>
                           {editingRow === row.id ? (
-                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                              {isExcelSheet && <input type="color" title="Color de celda" value={editData[`__cell_color_${h}`] || "#ffffff"} onChange={(e) => setEditData({ ...editData, [`__cell_color_${h}`]: e.target.value })} style={{ width: '20px', height: '20px', padding: 0, border: 'none' }} />}
-                              <input className="input-inline" value={editData[h] || ""} onChange={e => handleValueChange(h, e.target.value)} style={{ minWidth: isPrice ? '120px' : 'auto' }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                {isExcelSheet && <input type="color" title="Color de celda" value={editData[`__cell_color_${h}`] || "#ffffff"} onChange={(e) => setEditData({ ...editData, [`__cell_color_${h}`]: e.target.value })} style={{ width: '20px', height: '20px', padding: 0, border: 'none' }} />}
+                                <input className="input-inline" value={editData[h] || ""} onChange={e => handleValueChange(h, e.target.value)} style={{ minWidth: isPrice ? '120px' : 'auto' }} />
+                              </div>
+                              {String(editData[h]).startsWith('=') && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '2px', fontWeight: 600 }}>
+                                   = {formatWithTypes(row.row_data[h], section.types[h] || 'text')}
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <span style={{ fontWeight: isDescriptionCol ? 600 : 400, fontFamily: isPrice ? 'Courier New, monospace' : 'inherit' }}>{formatWithTypes(row.row_data[h], section.types[h] || 'text')}</span>
