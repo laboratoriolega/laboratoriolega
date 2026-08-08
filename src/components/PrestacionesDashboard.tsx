@@ -583,7 +583,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                               style={{ width: '16px', height: '16px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '50%' }} 
                             />
                           </div>
-                        )}}
+                        )}
+                        {section.labels[h] || h}
+                      </div>
+                    </th>
+                  );
+                })}
                 <th style={{ position: 'sticky', right: 0, background: 'var(--glass-bg)', borderBottom: '2px solid var(--primary)', zIndex: 11 }}></th>
               </tr>
             </thead>
