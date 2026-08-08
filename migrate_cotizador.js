@@ -33,8 +33,18 @@ async function migrateSheet(ws, sheetName, numCols, emptyPrefixes, heuristicFn) 
             );
         }
 
+        const secondUpper = second.toUpperCase();
+        
+        let metaPart = 'DATA';
+        
+        // PAMI: Check for Month titles
+        const months = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        if (sheetName === 'Federacion-PAMI' && months.includes(first.toUpperCase()) && (second === 'NBU' || !second)) {
+            metaPart = 'MONTH_TITLE';
+        }
+
         // Split TITLE and HEADER for PAMI patients
-        if (sheetName === 'Federacion-PAMI' && (second === 'Costo' || second === 'COBRADO' || second === 'Importe')) {
+        if (sheetName === 'Federacion-PAMI' && (second === 'Costo' || second === 'COBRADO' || second === 'Importe' || secondUpper.startsWith('COSTO'))) {
             await pool.query(
                 `INSERT INTO prestaciones_data (sheet_name, row_index, row_data) VALUES ($1, $2, $3)`,
                 [sheetName, rowIndex++, JSON.stringify({ __EMPTY: first, meta_part: 'TITLE' })]
@@ -46,15 +56,20 @@ async function migrateSheet(ws, sheetName, numCols, emptyPrefixes, heuristicFn) 
         // Check Convenios Particulares TITLE
         const hasOtherCols = row.slice(1).some(v => v !== null && v !== '');
         
-        let metaPart = 'DATA';
         if (sheetName === 'Cotizador') {
             if (first === 'Prestaciones ') metaPart = 'HEADER';
             else if (first.startsWith('NOTA:')) metaPart = 'NOTE';
             else metaPart = 'DATA';
         } else if (sheetName === 'Federacion-PAMI') {
-            if (first === 'Prestaciones') metaPart = 'HEADER';
-            else if (first.startsWith('NOTA:')) metaPart = 'NOTE';
-            else metaPart = 'DATA';
+            if (metaPart === 'MONTH_TITLE') {
+                // Keep it
+            } else if (first === 'Prestaciones') {
+                metaPart = 'HEADER';
+            } else if (first.startsWith('NOTA:')) {
+                metaPart = 'NOTE';
+            } else {
+                metaPart = 'DATA';
+            }
         } else if (sheetName === 'Convenios Particulares') {
             if (first && !hasOtherCols && !first.startsWith('NOTA:')) metaPart = 'TITLE';
             else if (first === 'Prestaciones ') metaPart = 'HEADER';
