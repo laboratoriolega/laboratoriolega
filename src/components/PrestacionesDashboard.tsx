@@ -528,7 +528,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 </thead>
                 <tbody>
                   {section.rows.map((row: any) => {
-                    const rowExcelIndex = evaluatedData.findIndex(r => r.id === row.id) + 1;
+                    const rowExcelIndex = (row.row_index ?? 0) + 1;
                     return (
                     <tr 
                       key={row.id} 
@@ -696,9 +696,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                     const rd = row.row_data;
                     const mainVal = rd['__EMPTY'] || rd[Object.keys(rd).find(k => k !== 'meta_part') || ''] || '-';
                     return (
-                      <tr key={row.id} style={{ borderBottom: '1px solid var(--glass-border)' }}
+                      <tr
+                        key={row.id}
                         onClick={() => { setActiveCotizadorSubTab(sheet); setSearch(''); }}
-                        className="table-row-hover" title={`Ver en ${SUBTAB_LABELS[sheet]}`} style={{ cursor: 'pointer', borderBottom: '1px solid var(--glass-border)' }}
+                        className="table-row-hover"
+                        title={`Ver en ${SUBTAB_LABELS[sheet]}`}
+                        style={{ cursor: 'pointer', borderBottom: '1px solid var(--glass-border)' }}
                       >
                         <td style={{ padding: '0.6rem 1rem', fontWeight: 600, minWidth: '200px' }}>{String(mainVal)}</td>
                         {Object.entries(rd).filter(([k]) => k !== '__EMPTY' && k !== 'meta_part' && !k.startsWith('__cell_color') && k !== '__row_color' && rd[k] !== '').slice(0, 5).map(([k, v]) => (
