@@ -396,14 +396,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           Object.keys(rd).forEach(k => { if (!isInternalKey(k)) currentSection.types[k] = rd[k]; });
           if (isExcelSheet) {
              let priceCols: string[] = [];
-             if (activeSheet === "Panel BioM. Int.Panel") {
-               priceCols = ["__EMPTY_1", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9", "__EMPTY_10"];
-             } else if (activeSheet === "O. Sociales") {
-               priceCols = ["__EMPTY_2", "__EMPTY_4", "__EMPTY_6", "__EMPTY_7"];
-             } else if (activeSheet === "Delgado") {
+             if (activeSheet === "Delgado") {
                priceCols = ["__EMPTY_1", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9"];
-             } else if (activeSheet === "Federacion-PAMI") {
-               priceCols = ["__EMPTY_1", "__EMPTY_2", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9", "__EMPTY_10", "__EMPTY_11", "__EMPTY_12"];
              } else if (activeSheet === "Cotizador") {
                priceCols = ["__EMPTY_1", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8"];
              }
