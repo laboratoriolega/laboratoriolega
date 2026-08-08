@@ -480,7 +480,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 {section.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => openEditModal(section)} className="btn-small-secondary" style={{ color: 'var(--text-main)' }}><Settings size={14} /> Editar Tabla</button>
+                <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> <span>Editar Tabla</span></button>
                 <button
                   onClick={() => {
                     const lastId = section.rows.length > 0
@@ -488,11 +488,11 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                       : (section.structuralIds.note || section.structuralIds.header || section.structuralIds.subtitle || section.structuralIds.title);
                     handleAddRow(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" }, lastId);
                   }}
-                  style={{ background: 'var(--primary)', color: '#ffffff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}
+                  className="btn-small-primary"
                 >
-                  <Plus size={14} color="#ffffff" /> <span style={{color:'#ffffff'}}>Agregar Fila</span>
+                  <Plus size={14} /> <span>Agregar Fila</span>
                 </button>
-                <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger" style={{ color: 'var(--danger)' }}><Trash2 size={14} /> Eliminar Tabla</button>
+                <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger"><Trash2 size={14} /> <span>Eliminar Tabla</span></button>
               </div>
             </div>
 
@@ -743,9 +743,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               style={{ width: '100%', paddingLeft: '2.5rem' }}
             />
           </div>
-          {activeMainTab === 'general' && data.some(r => r.row_data["meta_part"]) && (
+          {data.some(r => r.row_data["meta_part"]) && (
             <button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}>
-              <Plus size={18} /> Nuevo Convenio
+              <Plus size={18} /> Crear Tabla
             </button>
           )}
         </div>
@@ -820,10 +820,15 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         .modern-input { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.6rem 1rem; }
         .tab-active { padding: 0.6rem 1.2rem; background: var(--primary); color: white; border: none; border-radius: 12px 12px 0 0; font-weight: 700; cursor: pointer; }
         .tab-inactive { padding: 0.6rem 1.2rem; background: var(--glass-bg); color: var(--text-muted); border: 1px solid var(--glass-border); border-bottom: none; border-radius: 12px 12px 0 0; cursor: pointer; }
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-        .btn-small-primary { background: var(--primary); color: white !important; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-        .btn-small-secondary { background: var(--glass-bg); color: var(--text-muted); border: 1px solid var(--glass-border); padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
-        .btn-small-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-small-primary { background: var(--primary); color: white !important; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.2s; }
+        .btn-small-primary span, .btn-small-primary svg { color: white !important; }
+        .btn-small-secondary { background: #e2e8f0; color: #334155 !important; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s; }
+        .btn-small-secondary span, .btn-small-secondary svg { color: #334155 !important; }
+        .btn-small-danger { background: #ef4444; color: white !important; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3); transition: all 0.2s; }
+        .btn-small-danger span, .btn-small-danger svg { color: white !important; }
+        .btn-small-primary:hover, .btn-small-secondary:hover, .btn-small-danger:hover { opacity: 0.9; transform: translateY(-1px); }
         .input-inline { width: 100%; border: 1px solid var(--primary); border-radius: 4px; padding: 0.3rem; background: var(--glass-bg); color: var(--text-main); }
         .input-inline-area { width: 100%; border: 1px solid var(--primary); border-radius: 6px; padding: 0.5rem; min-height: 80px; font-family: inherit; font-size: 0.9rem; resize: vertical; background: var(--glass-bg); color: var(--text-main); }
         .btn-action { background: none; border: none; cursor: pointer; }
