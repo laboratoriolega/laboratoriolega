@@ -544,18 +544,27 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             <thead>
               <tr style={{ background: 'var(--glass-bg)', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 {(section.headers.length > 0 ? section.headers : columns).map((h: string) => {
-                  if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__') return null;
+                  if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__' || h.startsWith('__col_color_')) return null;
                   return (
-                    <th key={h} style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: 'var(--text-main)', borderBottom: '2px solid var(--primary)', whiteSpace: 'nowrap' }}>
+                    <th key={h} style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: 'var(--text-main)', borderBottom: '2px solid var(--primary)', whiteSpace: 'nowrap', backgroundColor: section.headerCellColors?.[h] || 'transparent' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {editingRow && isExcelSheet && (
-                          <input 
-                            type="color" 
-                            title="Color de columna" 
-                            value={editData?.[`__cell_color_${h}`] || "#ffffff"} 
-                            onChange={(e) => setEditData({ ...editData, [`__cell_color_${h}`]: e.target.value })} 
-                            style={{ width: '16px', height: '16px', padding: 0, border: 'none', cursor: 'pointer' }} 
-                          />
+                        {isExcelSheet && editingRow !== null && (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <input 
+                              type="color" 
+                              title="Color del nombre (celda)" 
+                              value={section.headerCellColors?.[h] || "#ffffff"} 
+                              onChange={(e) => updateHeaderColor(section.structuralIds.header, h, e.target.value, 'cell')} 
+                              style={{ width: '16px', height: '16px', padding: 0, border: 'none', cursor: 'pointer' }} 
+                            />
+                            <input 
+                              type="color" 
+                              title="Color de TODA la columna" 
+                              value={section.colColors?.[h] || "#ffffff"} 
+                              onChange={(e) => updateHeaderColor(section.structuralIds.header, h, e.target.value, 'col')} 
+                              style={{ width: '16px', height: '16px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '50%' }} 
+                            />
+                          </div>
                         )}
                         {section.labels[h] || h}
                       </div>
@@ -579,12 +588,14 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                     style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: row.row_data.__row_color || (i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)') }}
                   >
                     {(section.headers.length > 0 ? section.headers : columns).map((h: string) => {
-                      if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__') return null;
+                      if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__' || h.startsWith('__col_color_')) return null;
                       const cellColor = row.row_data[`__cell_color_${h}`];
+                      const colColor = section.colColors?.[h];
+                      const finalBg = cellColor || colColor || 'transparent';
                       const isPrice = section.types[h] === 'price';
                       const isDescriptionCol = h === '__EMPTY' || h === '__EMPTY_1' && section.headers.includes('__EMPTY_1');
                       return (
-                        <td key={h} style={{ padding: '0.85rem 1rem', border: '1px solid var(--glass-border)', background: cellColor || 'transparent' }}>
+                        <td key={h} style={{ padding: '0.85rem 1rem', border: '1px solid var(--glass-border)', background: finalBg }}>
                           {editingRow === row.id ? (
                             <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                               {isExcelSheet && <input type="color" title="Color de celda" value={editData[`__cell_color_${h}`] || "#ffffff"} onChange={(e) => setEditData({ ...editData, [`__cell_color_${h}`]: e.target.value })} style={{ width: '20px', height: '20px', padding: 0, border: 'none' }} />}
@@ -649,6 +660,11 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ width: '8px', height: '24px', background: 'var(--primary)', borderRadius: '4px' }}></div>
                 {month}
+                {groupedByMonth[month][0]?.monthNote && (
+                   <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: '1rem', fontStyle: 'italic' }}>
+                     {groupedByMonth[month][0].monthNote}
+                   </span>
+                )}
               </h2>
               <div style={{ color: 'var(--primary)', fontWeight: 700 }}>
                 {expandedMonths[month] ? 'Ocultar ▲' : 'Ver Detalles ▼'}
@@ -767,8 +783,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               {activeMainTab === 'cotizador' && activeCotizadorSubTab === 'Federacion-PAMI' && (
                 <button 
-                  className="btn-secondary" 
-                  onClick={() => handleAddRow('Federacion-PAMI', { "__EMPTY": "NUEVO MES", "meta_part": "MONTH_TITLE", "__EMPTY_1": "NBU" }, undefined)} 
+                  className="btn-primary" 
+                  onClick={() => setIsMonthModalOpen(true)} 
                   disabled={isSaving}
                 >
                   <Plus size={18} /> Nuevo Mes
@@ -884,6 +900,28 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           opacity: 1;
         }
       `}</style>
+
+      {isMonthModalOpen && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div className="modal-content glass-panel" style={{ background: 'white', padding: '2rem', borderRadius: '24px', maxWidth: '500px', width: '100%' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)' }}>Crear Nuevo Mes</h2>
+            <form onSubmit={handleCreateMonth} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b' }}>Nombre del Mes</label>
+                <input type="text" className="modern-input" placeholder="Ej: ENERO 2027" value={newMonthTitle} onChange={e => setNewMonthTitle(e.target.value)} required />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b' }}>Descripción / Nota (Opcional)</label>
+                <input type="text" className="modern-input" placeholder="Ej: Valores actualizados al..." value={newMonthNote} onChange={e => setNewMonthNote(e.target.value)} />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" onClick={() => setIsMonthModalOpen(false)} className="btn-secondary" style={{ flex: 1, padding: '0.75rem' }}>Cancelar</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, padding: '0.75rem' }} disabled={isSaving}>Crear Mes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
