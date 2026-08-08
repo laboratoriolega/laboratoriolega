@@ -729,7 +729,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               {activeMainTab === 'cotizador' && activeCotizadorSubTab === 'Federacion-PAMI' && (
                 <button 
                   className="btn-secondary" 
-                  onClick={() => handleAddRow('Federacion-PAMI', { "__EMPTY": "NUEVO MES", "meta_part": "MONTH_TITLE", "__EMPTY_1": "NBU" }, null)} 
+                  onClick={() => handleAddRow('Federacion-PAMI', { "__EMPTY": "NUEVO MES", "meta_part": "MONTH_TITLE", "__EMPTY_1": "NBU" }, undefined)} 
                   disabled={isSaving}
                 >
                   <Plus size={18} /> Nuevo Mes
