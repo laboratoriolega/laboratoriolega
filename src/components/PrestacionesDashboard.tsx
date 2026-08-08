@@ -481,6 +481,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       if (isForcedMonth) {
         currentMonth = String(mainVal).trim();
         currentMonthId = row.id;
+        currentMonthNote = rd["__EMPTY_1"] || "";
       } else if (isForcedTitle || isHeuristicTitle) {
         currentSection = {
           title: mainVal, subtitle: "", headers: [], labels: {}, types: {}, rows: [], note: "", allIds: [row.id],
@@ -559,7 +560,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                className={designModeSectionId === section.structuralIds.header ? "btn-small-primary" : "btn-small-secondary"}
                style={designModeSectionId === section.structuralIds.header ? { backgroundColor: 'var(--success)', color: 'white' } : {}}
             >
-               <Palette size={14} /> <span>{designModeSectionId === section.structuralIds.header ? "Guardar Colores" : "🎨 Diseño"}</span>
+               <Palette size={14} /> <span>{designModeSectionId === section.structuralIds.header ? "Guardar Colores" : "Diseño"}</span>
             </button>
             <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> <span>Editar Tabla</span></button>
             <button
@@ -706,8 +707,17 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                    </span>
                 )}
               </h2>
-              <div style={{ color: 'var(--primary)', fontWeight: 700 }}>
-                {expandedMonths[month] ? 'Ocultar ▲' : 'Ver Detalles ▼'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); openEditMonth(groupedByMonth[month][0].monthId, month, groupedByMonth[month][0].monthNote); }}
+                  className="btn-small-secondary"
+                  style={{ background: 'white' }}
+                >
+                  <Edit2 size={14} /> Editar Mes
+                </button>
+                <div style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                  {expandedMonths[month] ? 'Ocultar ▲' : 'Ver Detalles ▼'}
+                </div>
               </div>
             </div>
             
