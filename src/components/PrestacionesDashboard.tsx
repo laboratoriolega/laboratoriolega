@@ -7,12 +7,20 @@ import { PrestacionesIcon } from "./icons/PrestacionesIcon";
 import CreateSectionModal from "./CreateSectionModal";
 import { evaluateGrid, evaluateFormula, parseNumberValue, indexToCol } from "@/lib/formulas";
 
+// Sub-pestañas dentro de la pestaña "Cotizador"
+const COTIZADOR_SUBTABS = [
+  { label: 'Federacion PAMI', sheet: 'Federacion-PAMI' },
+  { label: 'Cotizador', sheet: 'Cotizador' },
+  { label: 'Convenios Particulares', sheet: 'Convenios Particulares' },
+];
+
 export default function PrestacionesDashboard({ initialSheets }: { initialSheets: string[] }) {
-  // Solo mostrar las pestañas relevantes: Delgado (como "General") y Cotizador
-  const VISIBLE_SHEETS = ['Delgado', 'Cotizador'];
-  const visibleSheets = VISIBLE_SHEETS.filter(s => initialSheets.includes(s));
-  
-  const [activeSheet, setActiveSheet] = useState(visibleSheets[0] || "");
+  const [activeMainTab, setActiveMainTab] = useState<'general' | 'cotizador'>('general');
+  const [activeCotizadorSubTab, setActiveCotizadorSubTab] = useState<string>('Federacion-PAMI');
+
+  // La sheet activa se deriva de las pestañas
+  const activeSheet: string = activeMainTab === 'general' ? 'Delgado' : activeCotizadorSubTab;
+
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -22,28 +30,58 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
 
-  
-  const isExcelSheet = activeSheet === "Delgado" || activeSheet === "Cotizador";
+  // Datos precargados de los 3 sub-tabs para búsqueda cruzada
+  const [cotizadorDataMap, setCotizadorDataMap] = useState<{[sheet: string]: any[]}>({});
+  const [loadingCotizadorAll, setLoadingCotizadorAll] = useState(false);
+
+  const isExcelSheet = activeSheet === 'Delgado' || activeSheet === 'Cotizador' || activeSheet === 'Federacion-PAMI';
 
   const isStructuredSheet = useMemo(() => {
-    if (activeSheet === "Delgado" || activeSheet === "Cotizador") return true;
+    if (isExcelSheet || activeSheet === 'Convenios Particulares') return true;
     return data.some(r => {
       try {
         const rd = typeof r.row_data === 'string' ? JSON.parse(r.row_data) : r.row_data;
         return rd && (rd["meta_part"] || rd["__SECTION_PART__"]);
       } catch { return false; }
     });
-  }, [data, activeSheet]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  }, [data, activeSheet, isExcelSheet]);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingSectionData, setEditingSectionData] = useState<any>(null);
 
+  // Cargar datos del sub-tab activo
   useEffect(() => {
     if (activeSheet) {
+      setEditingRow(null);
+      setEditData(null);
       loadSheetData(activeSheet);
     }
   }, [activeSheet]);
+
+  // Cuando el usuario entra a Cotizador, precargar los 3 sub-sheets para búsqueda cruzada
+  useEffect(() => {
+    if (activeMainTab === 'cotizador' && Object.keys(cotizadorDataMap).length === 0) {
+      loadAllCotizadorData();
+    }
+  }, [activeMainTab]);
+
+  const loadAllCotizadorData = async () => {
+    setLoadingCotizadorAll(true);
+    const subSheets = COTIZADOR_SUBTABS.map(s => s.sheet);
+    const results = await Promise.all(subSheets.map(s => getPrestacionesBySheet(s)));
+    const dataMap: {[key: string]: any[]} = {};
+    subSheets.forEach((s, i) => {
+      if (results[i].success && results[i].data) {
+        dataMap[s] = (results[i].data as any[]).map((r: any) => ({
+          ...r,
+          row_data: typeof r.row_data === 'string' ? JSON.parse(r.row_data) : r.row_data
+        }));
+      }
+    });
+    setCotizadorDataMap(dataMap);
+    setLoadingCotizadorAll(false);
+  };
 
   const loadSheetData = async (sheetName: string) => {
     setLoading(true);
@@ -400,6 +438,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                priceCols = ["__EMPTY_1", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9"];
              } else if (activeSheet === "Cotizador") {
                priceCols = ["__EMPTY_1", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8"];
+             } else if (activeSheet === "Federacion-PAMI") {
+               priceCols = ["__EMPTY_1", "__EMPTY_2", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7"];
              }
              priceCols.forEach(c => currentSection.types[c] = "price");
           }
@@ -448,10 +488,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                       : (section.structuralIds.note || section.structuralIds.header || section.structuralIds.subtitle || section.structuralIds.title);
                     handleAddRow(activeSheet, { "__EMPTY": "Nueva Prestación...", "meta_part": "DATA" }, lastId);
                   }}
-                  className="btn-small-primary"
-                  style={{ color: 'white' }}
+                  style={{ background: 'var(--primary)', color: '#ffffff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }}
                 >
-                  <Plus size={14} /> Agregar Fila
+                  <Plus size={14} color="#ffffff" /> <span style={{color:'#ffffff'}}>Agregar Fila</span>
                 </button>
                 <button onClick={() => handleDeleteSection(section.allIds)} className="btn-small-danger" style={{ color: 'var(--danger)' }}><Trash2 size={14} /> Eliminar Tabla</button>
               </div>
@@ -615,39 +654,150 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     );
   };
 
+  // Búsqueda cruzada dentro del tab Cotizador
+  const renderCotizadorCrossSearch = () => {
+    const lowerSearch = search.toLowerCase();
+    const SUBTAB_LABELS: {[k: string]: string} = {
+      'Federacion-PAMI': 'Federacion PAMI',
+      'Cotizador': 'Cotizador (Maria Andrea Delgado)',
+      'Convenios Particulares': 'Convenios Particulares',
+    };
+    const SKIP_PARTS = ['TITLE', 'SUBTITLE', 'METADATA', 'HEADER', 'NOTE'];
+
+    const grouped: {[sheet: string]: any[]} = {};
+    COTIZADOR_SUBTABS.forEach(({ sheet }) => {
+      const rows = cotizadorDataMap[sheet] || [];
+      const matches = rows.filter(r => {
+        const rd = r.row_data;
+        if (SKIP_PARTS.includes(rd.meta_part)) return false;
+        return Object.values(rd).some(v => String(v).toLowerCase().includes(lowerSearch));
+      });
+      if (matches.length > 0) grouped[sheet] = matches;
+    });
+
+    const totalFound = Object.values(grouped).reduce((acc, arr) => acc + arr.length, 0);
+    if (totalFound === 0) return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No se encontraron resultados en ninguna tabla del Cotizador.</div>;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ padding: '0.75rem 1rem', background: 'rgba(14,165,233,0.1)', borderRadius: '12px', border: '1px solid rgba(14,165,233,0.2)', fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 600 }}>
+          🔍 Se encontraron <strong>{totalFound}</strong> resultado(s) buscando <em>"{search}"</em> en {Object.keys(grouped).length} tabla(s)
+        </div>
+        {Object.entries(grouped).map(([sheet, rows]) => (
+          <div key={sheet} style={{ background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--glass-border)', overflow: 'hidden' }}>
+            <div style={{ padding: '1rem 1.5rem', background: 'rgba(14,165,233,0.08)', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>📋 {SUBTAB_LABELS[sheet]}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'var(--glass-bg)', padding: '0.2rem 0.6rem', borderRadius: '20px', border: '1px solid var(--glass-border)' }}>{rows.length} resultado(s)</div>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <tbody>
+                  {rows.map((row: any) => {
+                    const rd = row.row_data;
+                    const mainVal = rd['__EMPTY'] || rd[Object.keys(rd).find(k => k !== 'meta_part') || ''] || '-';
+                    return (
+                      <tr key={row.id} style={{ borderBottom: '1px solid var(--glass-border)' }}
+                        onClick={() => { setActiveCotizadorSubTab(sheet); setSearch(''); }}
+                        className="table-row-hover" title={`Ver en ${SUBTAB_LABELS[sheet]}`} style={{ cursor: 'pointer', borderBottom: '1px solid var(--glass-border)' }}
+                      >
+                        <td style={{ padding: '0.6rem 1rem', fontWeight: 600, minWidth: '200px' }}>{String(mainVal)}</td>
+                        {Object.entries(rd).filter(([k]) => k !== '__EMPTY' && k !== 'meta_part' && !k.startsWith('__cell_color') && k !== '__row_color' && rd[k] !== '').slice(0, 5).map(([k, v]) => (
+                          <td key={k} style={{ padding: '0.6rem 1rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                            {typeof v === 'number' ? new Intl.NumberFormat('es-AR', {style:'currency',currency:'ARS',maximumFractionDigits:2}).format(v as number) : String(v)}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100vh', padding: '1rem' }}>
+      {/* Header */}
       <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
             <PrestacionesIcon size={32} style={{ stroke: 'var(--primary)' }} /> Módulo de Prestaciones
-            <span style={{ fontSize: '0.7rem', opacity: 0.3, fontWeight: 400 }}>v1.7.0</span>
+            <span style={{ fontSize: '0.7rem', opacity: 0.3, fontWeight: 400 }}>v2.0</span>
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '1rem', flex: 1, maxWidth: '500px' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-            <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="modern-input" style={{ width: '100%', paddingLeft: '2.5rem' }} />
+            <input
+              type="text"
+              placeholder={activeMainTab === 'cotizador' ? 'Buscar en todas las tablas del Cotizador...' : 'Buscar...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="modern-input"
+              style={{ width: '100%', paddingLeft: '2.5rem' }}
+            />
           </div>
-          {data.some(r => r.row_data["meta_part"]) && (
-            <button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}><Plus size={18} /> Nuevo Convenio</button>
+          {activeMainTab === 'general' && data.some(r => r.row_data["meta_part"]) && (
+            <button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}>
+              <Plus size={18} /> Nuevo Convenio
+            </button>
           )}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>
-        {visibleSheets.map(sheet => {
-          // Mostrar "General" en lugar de "Delgado" en la UI
-          const displayName = sheet === 'Delgado' ? 'General' : sheet;
-          return (
-            <button key={sheet} onClick={() => setActiveSheet(sheet)} className={activeSheet === sheet ? "tab-active" : "tab-inactive"}>{displayName}</button>
-          );
-        })}
+      {/* Pestañas principales: General | Cotizador */}
+      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0', borderBottom: '2px solid var(--glass-border)' }}>
+        <button
+          onClick={() => { setActiveMainTab('general'); setSearch(''); }}
+          className={activeMainTab === 'general' ? 'tab-active' : 'tab-inactive'}
+        >General</button>
+        <button
+          onClick={() => { setActiveMainTab('cotizador'); setSearch(''); }}
+          className={activeMainTab === 'cotizador' ? 'tab-active' : 'tab-inactive'}
+        >Cotizador</button>
       </div>
 
+      {/* Sub-pestañas dentro de Cotizador */}
+      {activeMainTab === 'cotizador' && (
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingLeft: '0.5rem' }}>
+          {COTIZADOR_SUBTABS.map(({ label, sheet }) => (
+            <button
+              key={sheet}
+              onClick={() => { setActiveCotizadorSubTab(sheet); setSearch(''); }}
+              style={{
+                padding: '0.45rem 1rem',
+                background: activeCotizadorSubTab === sheet ? 'rgba(14,165,233,0.15)' : 'transparent',
+                color: activeCotizadorSubTab === sheet ? 'var(--primary)' : 'var(--text-muted)',
+                border: activeCotizadorSubTab === sheet ? '1px solid rgba(14,165,233,0.4)' : '1px solid var(--glass-border)',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                fontWeight: activeCotizadorSubTab === sheet ? 700 : 400,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >{label}</button>
+          ))}
+          {search && !loadingCotizadorAll && (
+            <div style={{ marginLeft: 'auto', padding: '0.45rem 0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Search size={13} /> Buscando en todas las tablas...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Contenido */}
       <div style={{ flex: 1 }}>{loading ? (
         <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={48} className="animate-spin" /><p>Cargando...</p></div>
-      ) : (isStructuredSheet ? renderSectionedView() : (
+      ) : (
+        // Búsqueda cruzada en Cotizador cuando hay query
+        activeMainTab === 'cotizador' && search && !loadingCotizadorAll ? renderCotizadorCrossSearch() :
+        activeMainTab === 'cotizador' && search && loadingCotizadorAll ? (
+          <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={32} className="animate-spin" style={{ margin: '0 auto' }} /><p>Cargando datos para búsqueda...</p></div>
+        ) :
+        isStructuredSheet ? renderSectionedView() : (
         <div className="glass-panel" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr style={{ background: 'var(--glass-bg)' }}>{columns.map(col => <th key={col} style={{ padding: '1rem', textAlign: 'left', fontWeight: 700 }}>{col}</th>)}<th></th></tr></thead>
