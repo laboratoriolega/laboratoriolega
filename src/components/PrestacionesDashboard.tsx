@@ -506,7 +506,22 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               <tr style={{ background: 'var(--glass-bg)', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 {(section.headers.length > 0 ? section.headers : columns).map((h: string) => {
                   if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__') return null;
-                  return <th key={h} style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: 'var(--text-main)', borderBottom: '2px solid var(--primary)', whiteSpace: 'nowrap' }}>{section.labels[h] || h}</th>;
+                  return (
+                    <th key={h} style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: 'var(--text-main)', borderBottom: '2px solid var(--primary)', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {editingRow && isExcelSheet && (
+                          <input 
+                            type="color" 
+                            title="Color de columna" 
+                            value={editData?.[`__cell_color_${h}`] || "#ffffff"} 
+                            onChange={(e) => setEditData({ ...editData, [`__cell_color_${h}`]: e.target.value })} 
+                            style={{ width: '16px', height: '16px', padding: 0, border: 'none', cursor: 'pointer' }} 
+                          />
+                        )}
+                        {section.labels[h] || h}
+                      </div>
+                    </th>
+                  );
                 })}
                 <th style={{ position: 'sticky', right: 0, background: 'var(--glass-bg)', borderBottom: '2px solid var(--primary)', zIndex: 11 }}></th>
               </tr>
@@ -515,7 +530,15 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
               {section.rows.map((row: any, i: number) => {
                 const type = section.types[row] || 'text';
                 return (
-                  <tr key={row.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: row.row_data.__row_color || (i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)') }}>
+                  <tr 
+                    key={row.id} 
+                    draggable={editingRow === null}
+                    onDragStart={(e) => handleDragStart(e, row.id)}
+                    onDragOver={(e) => handleDragOver(e, row.id)}
+                    onDrop={(e) => handleDrop(e, row.id)}
+                    className={`table-row-hover ${dragOverRowId === row.id ? 'drag-over' : ''}`} 
+                    style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: row.row_data.__row_color || (i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)') }}
+                  >
                     {(section.headers.length > 0 ? section.headers : columns).map((h: string) => {
                       if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__') return null;
                       const cellColor = row.row_data[`__cell_color_${h}`];
@@ -595,6 +618,14 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             
             {expandedMonths[month] && (
               <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '3rem', borderTop: '1px solid var(--glass-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                   <button 
+                     className="btn-small-primary" 
+                     onClick={() => { setModalMode("create"); setEditingSectionData({ month: month, monthId: groupedByMonth[month][0].monthId }); setIsModalOpen(true); }}
+                   >
+                     <Plus size={14} /> Crear Tabla en {month}
+                   </button>
+                </div>
                 {groupedByMonth[month].map((section, idx) => renderSection(section, idx))}
               </div>
             )}
@@ -678,7 +709,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         <div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
             <PrestacionesIcon size={32} style={{ stroke: 'var(--primary)' }} /> Módulo de Prestaciones
-            <span style={{ fontSize: '0.7rem', opacity: 0.3, fontWeight: 400 }}>v2.0</span>
+            <span style={{ fontSize: '0.7rem', opacity: 0.3, fontWeight: 400 }}>v3.7</span>
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '1rem', flex: 1, maxWidth: '500px' }}>
@@ -694,9 +725,20 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             />
           </div>
           {data.some(r => r.row_data["meta_part"]) && (
-            <button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}>
-              <Plus size={18} /> Crear Tabla
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {activeMainTab === 'cotizador' && activeCotizadorSubTab === 'Federacion-PAMI' && (
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => handleAddRow('Federacion-PAMI', { "__EMPTY": "NUEVO MES", "meta_part": "MONTH_TITLE", "__EMPTY_1": "NBU" }, null)} 
+                  disabled={isSaving}
+                >
+                  <Plus size={18} /> Nuevo Mes
+                </button>
+              )}
+              <button className="btn-primary" onClick={() => { setModalMode("create"); setEditingSectionData(null); setIsModalOpen(true); }} disabled={isSaving}>
+                <Plus size={18} /> Crear Tabla
+              </button>
+            </div>
           )}
         </div>
       </div>
