@@ -8,7 +8,11 @@ import CreateSectionModal from "./CreateSectionModal";
 import { evaluateGrid, evaluateFormula, parseNumberValue, indexToCol } from "@/lib/formulas";
 
 export default function PrestacionesDashboard({ initialSheets }: { initialSheets: string[] }) {
-  const [activeSheet, setActiveSheet] = useState(initialSheets[0] || "");
+  // Solo mostrar las pestañas relevantes: Delgado (como "General") y Cotizador
+  const VISIBLE_SHEETS = ['Delgado', 'Cotizador'];
+  const visibleSheets = VISIBLE_SHEETS.filter(s => initialSheets.includes(s));
+  
+  const [activeSheet, setActiveSheet] = useState(visibleSheets[0] || "");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -19,10 +23,10 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
 
   
-  const isExcelSheet = activeSheet === "Panel BioM. Int.Panel" || activeSheet === "O. Sociales" || activeSheet === "Delgado" || activeSheet === "Federacion-PAMI" || activeSheet === "Cotizador";
+  const isExcelSheet = activeSheet === "Delgado" || activeSheet === "Cotizador";
 
   const isStructuredSheet = useMemo(() => {
-    if (activeSheet === "Convenios Particulares" || activeSheet === "Dra. Selva" || activeSheet === "Lab Clínico Noelia Dutto" || isExcelSheet) return true;
+    if (activeSheet === "Delgado" || activeSheet === "Cotizador") return true;
     return data.some(r => {
       try {
         const rd = typeof r.row_data === 'string' ? JSON.parse(r.row_data) : r.row_data;
@@ -401,7 +405,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
              } else if (activeSheet === "Federacion-PAMI") {
                priceCols = ["__EMPTY_1", "__EMPTY_2", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9", "__EMPTY_10", "__EMPTY_11", "__EMPTY_12"];
              } else if (activeSheet === "Cotizador") {
-               priceCols = ["__EMPTY_1", "__EMPTY_3", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8", "__EMPTY_9", "__EMPTY_10", "__EMPTY_11", "__EMPTY_12"];
+               priceCols = ["__EMPTY_1", "__EMPTY_4", "__EMPTY_5", "__EMPTY_6", "__EMPTY_7", "__EMPTY_8"];
              }
              priceCols.forEach(c => currentSection.types[c] = "price");
           }
@@ -637,9 +641,15 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>{initialSheets.map(sheet => (
-        <button key={sheet} onClick={() => setActiveSheet(sheet)} className={activeSheet === sheet ? "tab-active" : "tab-inactive"}>{sheet}</button>
-      ))}</div>
+      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>
+        {visibleSheets.map(sheet => {
+          // Mostrar "General" en lugar de "Delgado" en la UI
+          const displayName = sheet === 'Delgado' ? 'General' : sheet;
+          return (
+            <button key={sheet} onClick={() => setActiveSheet(sheet)} className={activeSheet === sheet ? "tab-active" : "tab-inactive"}>{displayName}</button>
+          );
+        })}
+      </div>
 
       <div style={{ flex: 1 }}>{loading ? (
         <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 size={48} className="animate-spin" /><p>Cargando...</p></div>
@@ -664,7 +674,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         .tab-active { padding: 0.6rem 1.2rem; background: var(--primary); color: white; border: none; border-radius: 12px 12px 0 0; font-weight: 700; cursor: pointer; }
         .tab-inactive { padding: 0.6rem 1.2rem; background: var(--glass-bg); color: var(--text-muted); border: 1px solid var(--glass-border); border-bottom: none; border-radius: 12px 12px 0 0; cursor: pointer; }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-        .btn-small-primary { background: var(--primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
+        .btn-small-primary { background: var(--primary); color: white !important; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         .btn-small-secondary { background: var(--glass-bg); color: var(--text-muted); border: 1px solid var(--glass-border); padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
         .btn-small-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; }
         .input-inline { width: 100%; border: 1px solid var(--primary); border-radius: 4px; padding: 0.3rem; background: var(--glass-bg); color: var(--text-main); }
