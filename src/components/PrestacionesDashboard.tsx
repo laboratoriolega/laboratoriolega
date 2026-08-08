@@ -53,6 +53,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
   const [newMonthTitle, setNewMonthTitle] = useState("");
   const [newMonthNote, setNewMonthNote] = useState("");
+  const [editingMonthId, setEditingMonthId] = useState<number | null>(null);
+  const [designModeSectionId, setDesignModeSectionId] = useState<number | null>(null);
+  const [designData, setDesignData] = useState<any>(null);
 
   // Cargar datos del sub-tab activo
   useEffect(() => {
@@ -523,6 +526,21 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
             {section.subtitle && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontWeight: 600 }}>{section.subtitle}</p>}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button 
+               onClick={() => {
+                   if (designModeSectionId === section.structuralIds.header) {
+                       handleSaveDesign(section.structuralIds.header);
+                   } else {
+                       setDesignModeSectionId(section.structuralIds.header);
+                       const hd = data.find(r => r.id === section.structuralIds.header)?.row_data || {};
+                       setDesignData(hd);
+                   }
+               }} 
+               className={designModeSectionId === section.structuralIds.header ? "btn-small-primary" : "btn-small-secondary"}
+               style={designModeSectionId === section.structuralIds.header ? { backgroundColor: 'var(--success)', color: 'white' } : {}}
+            >
+               <Palette size={14} /> <span>{designModeSectionId === section.structuralIds.header ? "Guardar Colores" : "🎨 Diseño"}</span>
+            </button>
             <button onClick={() => openEditModal(section)} className="btn-small-secondary"><Settings size={14} /> <span>Editar Tabla</span></button>
             <button
               onClick={() => {
@@ -548,29 +566,24 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                   return (
                     <th key={h} style={{ padding: '1rem', textAlign: 'left', fontWeight: 800, color: 'var(--text-main)', borderBottom: '2px solid var(--primary)', whiteSpace: 'nowrap', backgroundColor: section.headerCellColors?.[h] || 'transparent' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {isExcelSheet && editingRow !== null && (
+                        {designModeSectionId === section.structuralIds.header && (
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <input 
                               type="color" 
                               title="Color del nombre (celda)" 
-                              value={section.headerCellColors?.[h] || "#ffffff"} 
-                              onChange={(e) => updateHeaderColor(section.structuralIds.header, h, e.target.value, 'cell')} 
+                              value={designData?.[`__cell_color_${h}`] || section.headerCellColors?.[h] || "#ffffff"} 
+                              onChange={(e) => handleDesignColorChange(h, e.target.value, 'cell')} 
                               style={{ width: '16px', height: '16px', padding: 0, border: 'none', cursor: 'pointer' }} 
                             />
                             <input 
                               type="color" 
                               title="Color de TODA la columna" 
-                              value={section.colColors?.[h] || "#ffffff"} 
-                              onChange={(e) => updateHeaderColor(section.structuralIds.header, h, e.target.value, 'col')} 
+                              value={designData?.[`__col_color_${h}`] || section.colColors?.[h] || "#ffffff"} 
+                              onChange={(e) => handleDesignColorChange(h, e.target.value, 'col')} 
                               style={{ width: '16px', height: '16px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '50%' }} 
                             />
                           </div>
-                        )}
-                        {section.labels[h] || h}
-                      </div>
-                    </th>
-                  );
-                })}
+                        )}}
                 <th style={{ position: 'sticky', right: 0, background: 'var(--glass-bg)', borderBottom: '2px solid var(--primary)', zIndex: 11 }}></th>
               </tr>
             </thead>
@@ -590,7 +603,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                     {(section.headers.length > 0 ? section.headers : columns).map((h: string) => {
                       if (h === 'id' || h === 'sheet_name' || h === 'meta_part' || h.startsWith('__cell_color_') || h === '__row_color' || h === '__SECTION_PART__' || h.startsWith('__col_color_')) return null;
                       const cellColor = row.row_data[`__cell_color_${h}`];
-                      const colColor = section.colColors?.[h];
+                      const colColor = designModeSectionId === section.structuralIds.header && designData?.[`__col_color_${h}`] 
+                                        ? designData[`__col_color_${h}`] 
+                                        : section.colColors?.[h];
                       const finalBg = cellColor || colColor || 'transparent';
                       const isPrice = section.types[h] === 'price';
                       const isDescriptionCol = h === '__EMPTY' || h === '__EMPTY_1' && section.headers.includes('__EMPTY_1');
@@ -904,7 +919,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
       {isMonthModalOpen && (
         <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div className="modal-content glass-panel" style={{ background: 'white', padding: '2rem', borderRadius: '24px', maxWidth: '500px', width: '100%' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)' }}>Crear Nuevo Mes</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', color: 'var(--primary)' }}>{editingMonthId !== null ? 'Editar Mes' : 'Crear Nuevo Mes'}</h2>
             <form onSubmit={handleCreateMonth} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b' }}>Nombre del Mes</label>
@@ -915,8 +930,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
                 <input type="text" className="modern-input" placeholder="Ej: Valores actualizados al..." value={newMonthNote} onChange={e => setNewMonthNote(e.target.value)} />
               </div>
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" onClick={() => setIsMonthModalOpen(false)} className="btn-secondary" style={{ flex: 1, padding: '0.75rem' }}>Cancelar</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, padding: '0.75rem' }} disabled={isSaving}>Crear Mes</button>
+                <button type="button" onClick={() => { setIsMonthModalOpen(false); setEditingMonthId(null); }} className="btn-secondary" style={{ flex: 1, padding: '0.75rem' }}>Cancelar</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, padding: '0.75rem' }} disabled={isSaving}>{editingMonthId !== null ? 'Guardar Cambios' : 'Crear Mes'}</button>
               </div>
             </form>
           </div>

@@ -29,7 +29,7 @@ export default function CreateSectionModal({ isOpen, onClose, onSubmit, initialD
                 setTitle(initialData.title);
                 setSubtitle(initialData.subtitle);
                 setNote(initialData.note);
-                setColumns(initialData.columns.length > 0 ? [...initialData.columns] : [
+                setColumns(initialData.columns?.length > 0 ? [...initialData.columns] : [
                     { name: "Prestaciones", type: "text" },
                     { name: "Costo Interno", type: "price" },
                     { name: "Costo", type: "price" },
