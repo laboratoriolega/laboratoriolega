@@ -3,6 +3,7 @@ import { Users } from "lucide-react";
 import { format } from "date-fns";
 import PatientFilters from "@/components/PatientFilters";
 import PatientTableActions from "@/components/PatientTableActions";
+import NewPatientButton from "@/components/NewPatientButton";
 import { Suspense } from "react";
 import { getSession } from "@/lib/auth";
 
@@ -35,7 +36,10 @@ export default async function PacientesPage({ searchParams }: { searchParams: Pr
 
       <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Todos los Pacientes ({patients.length})</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>Todos los Pacientes ({patients.length})</h3>
+            <NewPatientButton />
+          </div>
           <Suspense fallback={<div style={{ width: '300px', height: '40px', background: 'var(--glass-bg)', borderRadius: '8px' }} />}>
             <PatientFilters />
           </Suspense>

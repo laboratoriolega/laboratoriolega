@@ -66,6 +66,35 @@ export async function deletePatient(id: string) {
   }
 }
 
+export async function createPatient(formData: FormData) {
+  try {
+    const name = (formData.get("name") as string)?.toUpperCase().trim();
+    const dni = formData.get("dni") as string;
+    const phone = formData.get("phone") as string;
+    const email = formData.get("email") as string;
+    const health_insurance = formData.get("health_insurance") as string;
+    const birth_date = formData.get("birth_date") as string;
+    const address = formData.get("address") as string;
+
+    if (!name || !dni) return { error: "Nombre y DNI son requeridos" };
+
+    const res = await pool.query(
+      `INSERT INTO patients (name, dni, email, phone, health_insurance, birth_date, address)
+       VALUES ($1, $2, $3, $4, $5, NULLIF($6, '')::date, $7)
+       RETURNING id`,
+      [name, dni, email || null, phone || null, health_insurance || null, birth_date, address || null]
+    );
+
+    revalidatePath("/pacientes");
+    revalidatePath("/");
+    return { success: true, id: res.rows[0].id };
+  } catch (error: any) {
+    console.error("Create patient error:", error);
+    return { error: error.message };
+  }
+}
+
+
 export async function searchPatients(query: string) {
   try {
     if (!query || query.length < 2) return { data: [], error: null };

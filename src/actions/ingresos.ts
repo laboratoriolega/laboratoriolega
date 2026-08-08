@@ -115,17 +115,57 @@ export async function createIngreso(formData: FormData) {
     let patientId;
 
     if (existingId) {
-      // Editing an existing ingreso: get the patient_id from the appointment and update that patient directly.
-      // This prevents creating a duplicate when the name changes.
-      const existingApt = await client.query("SELECT patient_id FROM appointments WHERE id = $1", [existingId]);
-      patientId = existingApt.rows[0]?.patient_id;
-      if (patientId) {
-        await client.query(
-          `UPDATE patients SET name = $1, dni = $2, email = $3, phone = $4, health_insurance = $5,
-            birth_date = NULLIF($6, '')::date, address = $7
-           WHERE id = $8`,
-          [name, dni, email, phone, health_insurance, birth_date, address, patientId]
+      // Editing an existing ingreso: check if the name/DNI changed.
+      // If they changed, we must NOT update the old patient (other ingresos share it).
+      // Instead, find-or-create a patient matching the new DNI+name, and re-link this appointment.
+      const existingApt = await client.query(
+        "SELECT patient_id, p.name as cur_name, p.dni as cur_dni FROM appointments a JOIN patients p ON a.patient_id = p.id WHERE a.id = $1",
+        [existingId]
+      );
+      const currentPatientId = existingApt.rows[0]?.patient_id;
+      const currentName = (existingApt.rows[0]?.cur_name || '').toUpperCase().trim();
+      const currentDni = (existingApt.rows[0]?.cur_dni || '').trim();
+
+      const nameChanged = currentName !== name.toUpperCase().trim();
+      const dniChanged  = currentDni  !== dni.trim();
+
+      if (!nameChanged && !dniChanged) {
+        // Same patient — safe to update contact fields only (email, phone, etc.)
+        patientId = currentPatientId;
+        if (patientId) {
+          await client.query(
+            `UPDATE patients SET email = $1, phone = $2, health_insurance = $3,
+              birth_date = NULLIF($4, '')::date, address = $5
+             WHERE id = $6`,
+            [email, phone, health_insurance, birth_date, address, patientId]
+          );
+        }
+      } else {
+        // Name or DNI changed → find-or-create the target patient, never touch the old one
+        const targetRes = await client.query(
+          "SELECT id FROM patients WHERE dni = $1 AND UPPER(name) = UPPER($2)",
+          [dni, name]
         );
+        if (targetRes.rows.length > 0) {
+          patientId = targetRes.rows[0].id;
+          // Update contact fields on the target patient
+          await client.query(
+            `UPDATE patients SET email = $1, phone = $2, health_insurance = $3,
+              birth_date = NULLIF($4, '')::date, address = $5
+             WHERE id = $6`,
+            [email, phone, health_insurance, birth_date, address, patientId]
+          );
+        } else {
+          // Create a brand-new patient record for the new identity
+          const creatorName = session?.full_name || session?.username || "Sistema";
+          const newPatientRes = await client.query(
+            `INSERT INTO patients (name, dni, email, phone, health_insurance, birth_date, address, created_by)
+             VALUES ($1, $2, $3, $4, $5, NULLIF($6, '')::date, $7, $8)
+             RETURNING id`,
+            [name, dni, email, phone, health_insurance, birth_date, address, creatorName]
+          );
+          patientId = newPatientRes.rows[0].id;
+        }
       }
     } else {
       // New ingreso: find by DNI + name to allow multiple people to share a DNI placeholder ('.')
