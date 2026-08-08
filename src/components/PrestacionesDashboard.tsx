@@ -401,19 +401,25 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
 
 
   
-  const updateHeaderColor = async (headerRowId: number, colKey: string, color: string, type: 'cell' | 'col') => {
-    const headerRow = data.find(r => r.id === headerRowId);
-    if (!headerRow) return;
-    const updatedRowData = { ...headerRow.row_data };
-    if (type === 'cell') {
-        updatedRowData[`__cell_color_${colKey}`] = color;
-    } else {
-        updatedRowData[`__col_color_${colKey}`] = color;
-    }
-    const res = await updatePrestacion(headerRowId, updatedRowData);
-    if (res.success) {
-        setData(prev => prev.map(r => r.id === headerRowId ? { ...r, row_data: updatedRowData } : r));
-    }
+  const handleDesignColorChange = (colKey: string, color: string, type: 'cell' | 'col') => {
+      setDesignData((prev: any) => ({
+          ...prev,
+          [type === 'cell' ? `__cell_color_${colKey}` : `__col_color_${colKey}`]: color
+      }));
+  };
+
+  const handleSaveDesign = async (headerRowId: number) => {
+      const headerRow = data.find(r => r.id === headerRowId);
+      if (!headerRow) return;
+      setIsSaving(true);
+      const updatedRowData = { ...headerRow.row_data, ...designData };
+      const res = await updatePrestacion(headerRowId, updatedRowData);
+      if (res.success) {
+          setData(prev => prev.map(r => r.id === headerRowId ? { ...r, row_data: updatedRowData } : r));
+      }
+      setDesignModeSectionId(null);
+      setDesignData(null);
+      setIsSaving(false);
   };
 
   const handleCreateMonth = async (e: React.FormEvent) => {
@@ -421,11 +427,25 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
     if (!newMonthTitle) return;
     setIsSaving(true);
     const rd = { "__EMPTY": newMonthTitle.toUpperCase(), "meta_part": "MONTH_TITLE", "__EMPTY_1": newMonthNote };
-    await handleAddRow('Federacion-PAMI', rd, undefined);
+    if (editingMonthId !== null) {
+       await updatePrestacion(editingMonthId, rd);
+    } else {
+       await handleAddRow('Federacion-PAMI', rd, undefined);
+    }
+    const freshRes = await getPrestacionesBySheet(activeSheet);
+    if (freshRes.success) setData(freshRes.data || []);
     setIsMonthModalOpen(false);
     setNewMonthTitle('');
     setNewMonthNote('');
+    setEditingMonthId(null);
     setIsSaving(false);
+  };
+
+  const openEditMonth = (monthId: number, currentName: string, currentNote: string) => {
+    setEditingMonthId(monthId);
+    setNewMonthTitle(currentName);
+    setNewMonthNote(currentNote || '');
+    setIsMonthModalOpen(true);
   };
 
   const renderSectionedView = () => {
