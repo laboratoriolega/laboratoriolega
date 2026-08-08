@@ -71,6 +71,10 @@ export default async function RootLayout({
     return (
       <html lang="es">
         <head>
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="apple-mobile-web-app-title" content="LEGA" />
+          <meta name="mobile-web-app-capable" content="yes" />
           <script dangerouslySetInnerHTML={{
             __html: `
             (function() {
@@ -93,6 +97,10 @@ export default async function RootLayout({
   return (
     <html lang="es">
       <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="LEGA" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <script dangerouslySetInnerHTML={{
           __html: `
           (function() {
