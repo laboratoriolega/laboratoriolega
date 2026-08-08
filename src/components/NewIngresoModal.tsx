@@ -238,10 +238,41 @@ function IngresoForm({ mode, nextReportId, selectedPatient, editingIngreso, setS
     const n = [...analyses]; n[index] = { ...n[index], [field]: value }; setAnalyses(n);
   };
 
+  // src es el ingreso original (para fechas, pagos, etc.)
+  // patientSrc es quien provee los datos personales: si el usuario seleccionó otro paciente, usar ese.
   const src = editingIngreso || selectedPatient;
+  const patientSrc = selectedPatient || editingIngreso;
+
   const d = src?.appointment_date ? new Date(src.appointment_date) : new Date();
   const defaultDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const [appointmentDate, setAppointmentDate] = useState(defaultDate);
+
+  // Campos de datos del paciente — controlados para que se actualicen al seleccionar otro paciente
+  const [patientName, setPatientName] = useState(patientSrc?.name || '');
+  const [patientDni, setPatientDni] = useState(patientSrc?.dni || '');
+  const [patientPhone, setPatientPhone] = useState(patientSrc?.phone || '');
+  const [patientEmail, setPatientEmail] = useState(patientSrc?.email || '');
+  const [patientAddress, setPatientAddress] = useState(patientSrc?.address || '');
+  const [patientBirthDate, setPatientBirthDate] = useState(
+    patientSrc?.birth_date ? new Date(patientSrc.birth_date).toISOString().split('T')[0] : ''
+  );
+  const [patientInsurance, setPatientInsurance] = useState(patientSrc?.health_insurance || 'Particular');
+
+  // Cuando el usuario elige otro paciente desde el buscador, actualizar todos los campos
+  const prevPatientId = useState(patientSrc?.id)[0];
+  useEffect(() => {
+    if (selectedPatient && selectedPatient.id !== prevPatientId) {
+      setPatientName(selectedPatient.name || '');
+      setPatientDni(selectedPatient.dni || '');
+      setPatientPhone(selectedPatient.phone || '');
+      setPatientEmail(selectedPatient.email || '');
+      setPatientAddress(selectedPatient.address || '');
+      setPatientBirthDate(
+        selectedPatient.birth_date ? new Date(selectedPatient.birth_date).toISOString().split('T')[0] : ''
+      );
+      setPatientInsurance(selectedPatient.health_insurance || 'Particular');
+    }
+  }, [selectedPatient]);
 
   const [coseguroVal, setCoseguroVal] = useState(src?.coseguro ? String(src.coseguro) : '');
   const [particularVal, setParticularVal] = useState(src?.particular_price ? String(src.particular_price) : '');
@@ -296,29 +327,29 @@ function IngresoForm({ mode, nextReportId, selectedPatient, editingIngreso, setS
         <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-main)' }}>Nombre Completo</label>
-            <input name="name" required defaultValue={src?.name} style={inputStyle} />
+            <input name="name" required value={patientName} onChange={e => setPatientName(e.target.value)} style={inputStyle} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-main)' }}>DNI</label>
-            <input name="dni" required defaultValue={src?.dni} style={inputStyle} />
+            <input name="dni" required value={patientDni} onChange={e => setPatientDni(e.target.value)} style={inputStyle} />
           </div>
         </div>
 
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-main)' }}>Nacimiento</label>
-          <input name="birth_date" type="date" defaultValue={src?.birth_date ? new Date(src.birth_date).toISOString().split('T')[0] : ''} style={inputStyle} />
+          <input name="birth_date" type="date" value={patientBirthDate} onChange={e => setPatientBirthDate(e.target.value)} style={inputStyle} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-main)' }}>Teléfono</label>
-          <input name="phone" defaultValue={src?.phone} style={inputStyle} />
+          <input name="phone" value={patientPhone} onChange={e => setPatientPhone(e.target.value)} style={inputStyle} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-main)' }}>Email</label>
-          <input name="email" defaultValue={src?.email} style={inputStyle} />
+          <input name="email" value={patientEmail} onChange={e => setPatientEmail(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ gridColumn: 'span 2' }}>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-main)' }}>Dirección</label>
-          <input name="address" defaultValue={src?.address} style={inputStyle} />
+          <input name="address" value={patientAddress} onChange={e => setPatientAddress(e.target.value)} style={inputStyle} />
         </div>
 
         <div style={{ gridColumn: 'span 2', height: '1px', background: 'var(--glass-border)', margin: '0.5rem 0' }} />
@@ -353,7 +384,12 @@ function IngresoForm({ mode, nextReportId, selectedPatient, editingIngreso, setS
 
         <div style={{ gridColumn: 'span 2' }}>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-main)' }}>Obra Social</label>
-          <HealthInsuranceInput defaultValue={src?.health_insurance || 'Particular'} listId="insurance-list-ingreso" style={{ ...inputStyle, background: 'var(--glass-bg)' }} />
+          <HealthInsuranceInput
+            key={patientInsurance}
+            defaultValue={patientInsurance}
+            listId="insurance-list-ingreso"
+            style={{ ...inputStyle, background: 'var(--glass-bg)' }}
+          />
         </div>
 
         {/* Dates / Report ID / Professional */}
