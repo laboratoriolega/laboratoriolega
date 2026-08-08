@@ -9,17 +9,16 @@ import { evaluateGrid, evaluateFormula, parseNumberValue, indexToCol } from "@/l
 
 // Sub-pestañas dentro de la pestaña "Cotizador"
 const COTIZADOR_SUBTABS = [
-  { label: 'Federacion PAMI', sheet: 'Federacion-PAMI' },
   { label: 'Cotizador', sheet: 'Cotizador' },
   { label: 'Convenios Particulares', sheet: 'Convenios Particulares' },
 ];
 
 export default function PrestacionesDashboard({ initialSheets }: { initialSheets: string[] }) {
-  const [activeMainTab, setActiveMainTab] = useState<'general' | 'cotizador'>('general');
-  const [activeCotizadorSubTab, setActiveCotizadorSubTab] = useState<string>('Federacion-PAMI');
+  const [activeMainTab, setActiveMainTab] = useState<'general' | 'federacion_pami' | 'cotizador'>('general');
+  const [activeCotizadorSubTab, setActiveCotizadorSubTab] = useState<string>('Cotizador');
 
   // La sheet activa se deriva de las pestañas
-  const activeSheet: string = activeMainTab === 'general' ? 'Delgado' : activeCotizadorSubTab;
+  const activeSheet: string = activeMainTab === 'general' ? 'Delgado' : activeMainTab === 'federacion_pami' ? 'Federacion-PAMI' : activeCotizadorSubTab;
 
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -855,7 +854,7 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           </div>
           {data.some(r => r.row_data["meta_part"]) && (
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {activeMainTab === 'cotizador' && activeCotizadorSubTab === 'Federacion-PAMI' && (
+              {activeMainTab === 'federacion_pami' && (
                 <button 
                   className="btn-primary" 
                   onClick={() => setIsMonthModalOpen(true)} 
@@ -872,16 +871,20 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
         </div>
       </div>
 
-      {/* Pestañas principales: General | Cotizador */}
+      {/* Pestañas principales: General | Federacion PAMI | Cotizador */}
       <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0', borderBottom: '2px solid var(--glass-border)' }}>
         <button
           onClick={() => { setActiveMainTab('general'); setSearch(''); }}
           className={activeMainTab === 'general' ? 'tab-active' : 'tab-inactive'}
-        >General</button>
+        >GENERAL</button>
+        <button
+          onClick={() => { setActiveMainTab('federacion_pami'); setSearch(''); }}
+          className={activeMainTab === 'federacion_pami' ? 'tab-active' : 'tab-inactive'}
+        >FEDERACION PAMI</button>
         <button
           onClick={() => { setActiveMainTab('cotizador'); setSearch(''); }}
           className={activeMainTab === 'cotizador' ? 'tab-active' : 'tab-inactive'}
-        >Cotizador</button>
+        >COTIZADOR</button>
       </div>
 
       {/* Sub-pestañas dentro de Cotizador */}
