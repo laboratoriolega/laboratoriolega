@@ -50,6 +50,9 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingSectionData, setEditingSectionData] = useState<any>(null);
   const [expandedMonths, setExpandedMonths] = useState<{[key: string]: boolean}>({});
+  const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
+  const [newMonthTitle, setNewMonthTitle] = useState("");
+  const [newMonthNote, setNewMonthNote] = useState("");
 
   // Cargar datos del sub-tab activo
   useEffect(() => {
@@ -394,11 +397,40 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
   };
 
 
+  
+  const updateHeaderColor = async (headerRowId: number, colKey: string, color: string, type: 'cell' | 'col') => {
+    const headerRow = data.find(r => r.id === headerRowId);
+    if (!headerRow) return;
+    const updatedRowData = { ...headerRow.row_data };
+    if (type === 'cell') {
+        updatedRowData[`__cell_color_${colKey}`] = color;
+    } else {
+        updatedRowData[`__col_color_${colKey}`] = color;
+    }
+    const res = await updatePrestacion(headerRowId, updatedRowData);
+    if (res.success) {
+        setData(prev => prev.map(r => r.id === headerRowId ? { ...r, row_data: updatedRowData } : r));
+    }
+  };
+
+  const handleCreateMonth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMonthTitle) return;
+    setIsSaving(true);
+    const rd = { "__EMPTY": newMonthTitle.toUpperCase(), "meta_part": "MONTH_TITLE", "__EMPTY_1": newMonthNote };
+    await handleAddRow('Federacion-PAMI', rd, undefined);
+    setIsMonthModalOpen(false);
+    setNewMonthTitle('');
+    setNewMonthNote('');
+    setIsSaving(false);
+  };
+
   const renderSectionedView = () => {
     const rawSections: any[] = [];
     let currentSection: any = null;
     let currentMonth: string | null = null;
     let currentMonthId: number | null = null;
+    let currentMonthNote: string = "";
 
     evaluatedData.forEach((row) => {
       const rd = row.row_data;
@@ -431,7 +463,8 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           title: mainVal, subtitle: "", headers: [], labels: {}, types: {}, rows: [], note: "", allIds: [row.id],
           structuralIds: { title: row.id, subtitle: null, metadata: null, header: null, note: null },
           month: currentMonth,
-          monthId: currentMonthId
+          monthId: currentMonthId,
+          monthNote: currentMonthNote
         };
         rawSections.push(currentSection);
       } else if (currentSection) {
@@ -457,6 +490,12 @@ export default function PrestacionesDashboard({ initialSheets }: { initialSheets
           currentSection.structuralIds.header = row.id;
           currentSection.headers = Object.keys(rd).filter(k => !isInternalKey(k) && (rd[k] || k === mainKey));
           currentSection.headers.forEach((h: string) => currentSection.labels[h] = rd[h]);
+          currentSection.colColors = {};
+          currentSection.headerCellColors = {};
+          currentSection.headers.forEach((h: string) => {
+             if (rd[`__col_color_${h}`]) currentSection.colColors[h] = rd[`__col_color_${h}`];
+             if (rd[`__cell_color_${h}`]) currentSection.headerCellColors[h] = rd[`__cell_color_${h}`];
+          });
         } else if (isForcedNote || (!part && String(mainVal).includes("NOTA:"))) {
           currentSection.note = mainVal;
           currentSection.structuralIds.note = row.id;
