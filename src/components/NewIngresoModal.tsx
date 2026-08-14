@@ -8,6 +8,7 @@ import TipoAnalisisInput from "./TipoAnalisisInput";
 import { searchPatients } from "@/actions/medical_results";
 import { getTodayAppointments } from "@/actions/appointments";
 import { createIngreso, getNextReportId } from "@/actions/ingresos";
+import PatientInsuranceSelector from "./PatientInsuranceSelector";
 
 interface NewIngresoModalProps {
   isOpen: boolean;
@@ -384,6 +385,11 @@ function IngresoForm({ mode, nextReportId, selectedPatient, editingIngreso, setS
 
         <div style={{ gridColumn: 'span 2' }}>
           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-main)' }}>Obra Social</label>
+          <PatientInsuranceSelector
+            patientId={selectedPatient?.id}
+            selectedInsurance={patientInsurance}
+            onSelect={(ins) => setPatientInsurance(ins)}
+          />
           <HealthInsuranceInput
             key={patientInsurance}
             defaultValue={patientInsurance}

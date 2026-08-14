@@ -10,7 +10,9 @@ import { format } from 'date-fns';
 export async function getTodayAppointments() {
   try {
     const res = await pool.query(`
-      SELECT a.id, a.appointment_date, a.analysis_type, p.name, p.dni, p.health_insurance, p.phone, p.email, p.birth_date, p.address
+      SELECT a.id, a.appointment_date, a.analysis_type,
+             p.name, p.dni, p.phone, p.birth_date, p.address, p.email,
+             COALESCE(NULLIF(a.health_insurance, ''), p.health_insurance) AS health_insurance
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
       WHERE DATE(a.appointment_date) = CURRENT_DATE
@@ -37,7 +39,8 @@ export async function getAppointments() {
                FROM appointment_analyses aa
                WHERE aa.appointment_id = a.id
              ) as analyses,
-             p.name, p.dni, p.phone, p.health_insurance, a.indications_sent 
+             p.name, p.dni, p.phone, a.indications_sent,
+             COALESCE(NULLIF(a.health_insurance, ''), p.health_insurance) AS health_insurance
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
       ORDER BY a.appointment_date ASC
@@ -111,7 +114,7 @@ export async function createAppointment(formData: FormData) {
     let patientId;
     if (patientRes.rows.length > 0) {
       patientId = patientRes.rows[0].id;
-      // Update other details if changed
+      // Update contact fields; health_insurance on patients is kept as "last known" for autocomplete
       await client.query(
         "UPDATE patients SET email = $1, phone = $2, health_insurance = $3 WHERE id = $4",
         [email, phone, health_insurance, patientId]
@@ -126,12 +129,23 @@ export async function createAppointment(formData: FormData) {
       patientId = newPatientRes.rows[0].id;
     }
 
-    // Insert Appointment
+    // Insert Appointment — health_insurance is stored immutably on this row
     const aptRes = await client.query(
-      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, aire_test_type, observations, is_domicilio, domicilio_address, google_maps_link) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
-      [patientId, appointment_date, analysis_type, aire_test_type, observations, is_domicilio, domicilio_address, google_maps_link]
+      'INSERT INTO appointments (patient_id, appointment_date, analysis_type, aire_test_type, observations, is_domicilio, domicilio_address, google_maps_link, health_insurance) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, \'\')) RETURNING id',
+      [patientId, appointment_date, analysis_type, aire_test_type, observations, is_domicilio, domicilio_address, google_maps_link, health_insurance]
     );
     const appointmentId = aptRes.rows[0].id;
+
+    // Upsert OS into patient history
+    if (patientId && health_insurance) {
+      await client.query(
+        `INSERT INTO patient_health_insurances (patient_id, health_insurance, last_used_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (patient_id, health_insurance)
+         DO UPDATE SET last_used_at = NOW()`,
+        [patientId, health_insurance]
+      );
+    }
 
     // Insert Analyses (Multiple)
     const analysisNames = formData.getAll("analysis_name") as string[];
@@ -243,10 +257,11 @@ export async function updateAppointment(formData: FormData) {
 
     await client.query(
       `UPDATE appointments a
-       SET appointment_date = $1, analysis_type = $2, aire_test_type = $3, observations = $4, is_domicilio = $5, domicilio_address = $6, google_maps_link = $7
+       SET appointment_date = $1, analysis_type = $2, aire_test_type = $3, observations = $4, is_domicilio = $5, domicilio_address = $6, google_maps_link = $7,
+           health_insurance = NULLIF($9, '')
        FROM patients p
        WHERE a.patient_id = p.id AND a.id = $8`,
-      [appointment_date, analysis_type, aire_test_type, observations, is_domicilio, domicilio_address, google_maps_link, id]
+      [appointment_date, analysis_type, aire_test_type, observations, is_domicilio, domicilio_address, google_maps_link, id, health_insurance]
     );
 
     // Sync Multiple Analyses
@@ -274,10 +289,24 @@ export async function updateAppointment(formData: FormData) {
       );
     }
 
+    // Update patients.health_insurance as "last known" for autocomplete in future forms
     await client.query(
       `UPDATE patients SET health_insurance = $1 WHERE id = (SELECT patient_id FROM appointments WHERE id = $2)`,
       [health_insurance, id]
     );
+
+    // Upsert OS into patient history
+    const aptPatientRes = await client.query('SELECT patient_id FROM appointments WHERE id = $1', [id]);
+    const aptPatientId = aptPatientRes.rows[0]?.patient_id;
+    if (aptPatientId && health_insurance) {
+      await client.query(
+        `INSERT INTO patient_health_insurances (patient_id, health_insurance, last_used_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (patient_id, health_insurance)
+         DO UPDATE SET last_used_at = NOW()`,
+        [aptPatientId, health_insurance]
+      );
+    }
 
     // Get patient DNI for filename
     const patientRes = await client.query('SELECT dni FROM patients WHERE id = (SELECT patient_id FROM appointments WHERE id = $1)', [id]);

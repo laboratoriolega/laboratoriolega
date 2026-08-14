@@ -9,7 +9,12 @@ export async function getIngresos(search?: string) {
     // We fetch everything that is an ingreso OR is a completed/confirmed appointment
     // This includes historical data from internal calendar and domicilio if they have these statuses.
     const res = await pool.query(`
-      SELECT a.*, p.name, p.dni, p.phone, p.email, p.health_insurance, p.birth_date, p.address, a.biochemical_notice,
+      SELECT a.*,
+             p.name, p.dni, p.phone, p.email, p.birth_date, p.address,
+             -- Prefer the OS stored on the appointment itself (immutable per visit);
+             -- fall back to patients.health_insurance for older rows without it.
+             COALESCE(NULLIF(a.health_insurance, ''), p.health_insurance) AS health_insurance,
+             a.biochemical_notice,
              COALESCE((
                SELECT SUM(cp.monto) 
                FROM coseguro_pagos cp 
@@ -130,7 +135,8 @@ export async function createIngreso(formData: FormData) {
       const dniChanged  = currentDni  !== dni.trim();
 
       if (!nameChanged && !dniChanged) {
-        // Same patient — safe to update contact fields only (email, phone, etc.)
+        // Same patient — update contact fields and set health_insurance as "last known" for autocomplete.
+        // We do NOT rely on patients.health_insurance for reports; each appointment stores its own.
         patientId = currentPatientId;
         if (patientId) {
           await client.query(
@@ -148,7 +154,7 @@ export async function createIngreso(formData: FormData) {
         );
         if (targetRes.rows.length > 0) {
           patientId = targetRes.rows[0].id;
-          // Update contact fields on the target patient
+          // Update contact fields on the target patient; update health_insurance as last-known
           await client.query(
             `UPDATE patients SET email = $1, phone = $2, health_insurance = $3,
               birth_date = NULLIF($4, '')::date, address = $5
@@ -175,6 +181,7 @@ export async function createIngreso(formData: FormData) {
       );
       if (patientRes.rows.length > 0) {
         patientId = patientRes.rows[0].id;
+        // Update contact fields; keep health_insurance as "last known" on patients for autocomplete
         await client.query(
           `UPDATE patients SET
             email = $1, phone = $2, health_insurance = $3,
@@ -218,25 +225,38 @@ export async function createIngreso(formData: FormData) {
             appointment_date = COALESCE(NULLIF($12, '')::timestamp, appointment_date),
             coseguro_agregado = $13, factura_instante = $14,
             coseguro_payment_method = NULLIF($15, ''), particular_payment_method = NULLIF($16, ''),
-            payment_combined = $17
+            payment_combined = $17,
+            health_insurance = NULLIF($19, '')
            WHERE id = $11`,
-          [patientId, analysis_type, aire_test_type, observations, report_id, result_date, coseguro, particular_price, payment_method, professional_name, existingId, appointment_date, coseguro_agregado, factura_instante, coseguro_payment_method, particular_payment_method, payment_combined, newStatus]
+          [patientId, analysis_type, aire_test_type, observations, report_id, result_date, coseguro, particular_price, payment_method, professional_name, existingId, appointment_date, coseguro_agregado, factura_instante, coseguro_payment_method, particular_payment_method, payment_combined, newStatus, health_insurance]
         );
         aptId = existingId;
         // Clean old analyses and insert new ones
         await client.query("DELETE FROM appointment_analyses WHERE appointment_id = $1", [aptId]);
       } else {
-        // Insert Appointment as Ingreso
+        // Insert Appointment as Ingreso — health_insurance is stored immutably on this row
         const aptRes = await client.query(
           `INSERT INTO appointments
            (patient_id, appointment_date, analysis_type, aire_test_type, observations, status,
             report_id, result_date, coseguro, particular_price, payment_method, professional_name, is_ingreso,
-            coseguro_agregado, factura_instante, coseguro_payment_method, particular_payment_method, payment_combined)
-           VALUES ($1, $2, $3, $4, $5, 'COMPLETADO', $6, NULLIF($7, '')::timestamp, NULLIF($8, '')::numeric, NULLIF($9, '')::numeric, $10, $11, TRUE, $12, $13, NULLIF($14,''), NULLIF($15,''), $16)
+            coseguro_agregado, factura_instante, coseguro_payment_method, particular_payment_method, payment_combined,
+            health_insurance)
+           VALUES ($1, $2, $3, $4, $5, 'COMPLETADO', $6, NULLIF($7, '')::timestamp, NULLIF($8, '')::numeric, NULLIF($9, '')::numeric, $10, $11, TRUE, $12, $13, NULLIF($14,''), NULLIF($15,''), $16, NULLIF($17,''))
            RETURNING id`,
-          [patientId, appointment_date || new Date().toISOString(), analysis_type, aire_test_type, observations, report_id, result_date, coseguro, particular_price, payment_method, professional_name, coseguro_agregado, factura_instante, coseguro_payment_method, particular_payment_method, payment_combined]
+          [patientId, appointment_date || new Date().toISOString(), analysis_type, aire_test_type, observations, report_id, result_date, coseguro, particular_price, payment_method, professional_name, coseguro_agregado, factura_instante, coseguro_payment_method, particular_payment_method, payment_combined, health_insurance]
         );
         aptId = aptRes.rows[0].id;
+      }
+
+      // Upsert OS into patient history so the selector can show it next time
+      if (patientId && health_insurance) {
+        await client.query(
+          `INSERT INTO patient_health_insurances (patient_id, health_insurance, last_used_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (patient_id, health_insurance)
+           DO UPDATE SET last_used_at = NOW()`,
+          [patientId, health_insurance]
+        );
       }
 
     // Insert Analyses (Multiple)
@@ -583,6 +603,21 @@ export async function markAllGlobalNotificationsRead() {
   }
 }
 
+export async function getPatientHealthInsurances(patientId: string) {
+  try {
+    if (!patientId) return { data: [] };
+    const res = await pool.query(
+      `SELECT health_insurance FROM patient_health_insurances
+       WHERE patient_id = $1
+       ORDER BY last_used_at DESC`,
+      [patientId]
+    );
+    return { data: res.rows.map((r: any) => r.health_insurance as string) };
+  } catch {
+    return { data: [] as string[] };
+  }
+}
+
 export async function ensureIngresosExtColumns() {
   try {
     await pool.query(`
@@ -591,6 +626,35 @@ export async function ensureIngresosExtColumns() {
       ALTER TABLE appointments ADD COLUMN IF NOT EXISTS coseguro_payment_method VARCHAR(200);
       ALTER TABLE appointments ADD COLUMN IF NOT EXISTS particular_payment_method VARCHAR(200);
       ALTER TABLE appointments ADD COLUMN IF NOT EXISTS payment_combined BOOLEAN DEFAULT FALSE;
+
+      -- Store OS immutably per appointment/ingreso
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS health_insurance VARCHAR(500);
+
+      -- Backfill: copy current patient OS to existing appointments that don't have one
+      UPDATE appointments a
+      SET health_insurance = p.health_insurance
+      FROM patients p
+      WHERE a.patient_id = p.id
+        AND (a.health_insurance IS NULL OR a.health_insurance = '');
+      -- Historical list of all OS a patient has ever used (for the selector in modals)
+      CREATE TABLE IF NOT EXISTS patient_health_insurances (
+        id SERIAL PRIMARY KEY,
+        patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+        health_insurance VARCHAR(500) NOT NULL,
+        last_used_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, health_insurance)
+      );
+
+      -- Populate history from existing data
+      INSERT INTO patient_health_insurances (patient_id, health_insurance)
+      SELECT DISTINCT patient_id,
+        COALESCE(NULLIF(a.health_insurance, ''), p.health_insurance) AS health_insurance
+      FROM appointments a
+      JOIN patients p ON a.patient_id = p.id
+      WHERE COALESCE(NULLIF(a.health_insurance, ''), p.health_insurance) IS NOT NULL
+        AND COALESCE(NULLIF(a.health_insurance, ''), p.health_insurance) <> ''
+      ON CONFLICT DO NOTHING;
+
       CREATE TABLE IF NOT EXISTS pago_obrasocial (
         id SERIAL PRIMARY KEY,
         ingreso_id UUID REFERENCES appointments(id) ON DELETE SET NULL,

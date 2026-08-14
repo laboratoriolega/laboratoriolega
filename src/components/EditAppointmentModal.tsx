@@ -9,17 +9,20 @@ import TipoAnalisisInput from "./TipoAnalisisInput";
 import { format } from "date-fns";
 import { compressImage } from "@/lib/compression";
 import Portal from "./Portal";
+import PatientInsuranceSelector from "./PatientInsuranceSelector";
 
 export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: { isOpen: boolean, onClose: () => void, ap: any, isAires?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [analysisType, setAnalysisType] = useState("");
   const [analyses, setAnalyses] = useState<{ analysis_name: string, aire_test_subtype?: string, is_aire?: boolean }[]>([{ analysis_name: '', aire_test_subtype: '', is_aire: true }]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [insuranceValue, setInsuranceValue] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     if (ap) {
       setAnalysisType(ap.analysis_type || "");
+      setInsuranceValue(ap.health_insurance || "");
       const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES', 'TEST DE AIRE'];
       if (ap.analyses && ap.analyses.length > 0) {
         setAnalyses(ap.analyses.map((a: any) => ({ 
@@ -182,7 +185,18 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
           </div>
           <div>
             <label style={labelStyle}>Obra Social</label>
-            <HealthInsuranceInput defaultValue={ap.health_insurance} listId="insurance-list-editapt" className="input-field" style={inputStyle} />
+            <PatientInsuranceSelector
+              patientId={ap.patient_id}
+              selectedInsurance={insuranceValue}
+              onSelect={(ins) => setInsuranceValue(ins)}
+            />
+            <HealthInsuranceInput
+              key={insuranceValue}
+              defaultValue={insuranceValue}
+              listId="insurance-list-editapt"
+              className="input-field"
+              style={inputStyle}
+            />
           </div>
 
           <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>

@@ -10,6 +10,7 @@ import HealthInsuranceInput from "./HealthInsuranceInput";
 import TipoAnalisisInput from "./TipoAnalisisInput";
 import { compressImage } from "@/lib/compression";
 import Portal from "./Portal";
+import PatientInsuranceSelector from "./PatientInsuranceSelector";
 
 type PatientSuggestion = { id: string; name: string; dni: string; phone: string; health_insurance: string };
 
@@ -50,6 +51,7 @@ export default function AppointmentModal({
   const [dniValue, setDniValue] = useState(initialData?.dni || "");
   const [phoneValue, setPhoneValue] = useState(initialData?.phone || "");
   const [insuranceValue, setInsuranceValue] = useState(initialData?.health_insurance || "");
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<PatientSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSearch, setActiveSearch] = useState<"name" | "dni" | null>(null);
@@ -72,6 +74,7 @@ export default function AppointmentModal({
       setDniValue(initialData?.dni || "");
       setPhoneValue(initialData?.phone || "");
       setInsuranceValue(initialData?.health_insurance || "");
+      setSelectedPatientId(null);
       setSuggestions([]);
       setShowSuggestions(false);
       if (formRef.current) formRef.current.reset();
@@ -118,6 +121,7 @@ export default function AppointmentModal({
     setDniValue(p.dni);
     setPhoneValue(p.phone || "");
     setInsuranceValue(p.health_insurance || "");
+    setSelectedPatientId(p.id);
     setSuggestions([]);
     setShowSuggestions(false);
   }
@@ -323,7 +327,13 @@ export default function AppointmentModal({
             <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div>
                 <label style={labelStyle}>Obra Social</label>
+                <PatientInsuranceSelector
+                  patientId={selectedPatientId}
+                  selectedInsurance={insuranceValue}
+                  onSelect={(ins) => setInsuranceValue(ins)}
+                />
                 <HealthInsuranceInput
+                  key={insuranceValue}
                   defaultValue={insuranceValue}
                   listId="insurance-list-apt"
                   className="modern-input"
