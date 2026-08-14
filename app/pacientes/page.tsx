@@ -84,9 +84,25 @@ export default async function PacientesPage({ searchParams }: { searchParams: Pr
                     <td style={{ padding: '0.65rem 0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{p.dni}</td>
                     <td style={{ padding: '0.65rem 0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{p.phone || '-'}</td>
                     <td style={{ padding: '0.65rem 0.75rem' }}>
-                      <span style={{ background: 'rgba(0,0,0,0.05)', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                        {p.health_insurance}
-                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                        {(p.health_insurance_list && p.health_insurance_list.length > 0
+                          ? p.health_insurance_list
+                          : p.health_insurance ? [p.health_insurance] : []
+                        ).map((ins: string, idx: number) => (
+                          <span key={ins} style={{
+                            background: idx === 0 ? 'rgba(14,165,233,0.1)' : 'rgba(0,0,0,0.05)',
+                            color: idx === 0 ? 'var(--primary)' : 'var(--text-muted)',
+                            padding: '0.15rem 0.55rem', borderRadius: '12px',
+                            fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap',
+                            border: idx === 0 ? '1px solid rgba(14,165,233,0.25)' : '1px solid var(--glass-border)'
+                          }}>
+                            {ins}
+                          </span>
+                        ))}
+                        {!p.health_insurance_list?.length && !p.health_insurance && (
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>-</span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '0.65rem 0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                       {(() => {

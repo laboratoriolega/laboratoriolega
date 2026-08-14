@@ -5,14 +5,24 @@ import { revalidatePath } from 'next/cache';
 
 export async function getPatients() {
   try {
-    const res = await pool.query('SELECT * FROM patients ORDER BY name ASC');
+    const res = await pool.query(`
+      SELECT p.*,
+        (
+          SELECT json_agg(phi.health_insurance ORDER BY phi.last_used_at DESC)
+          FROM patient_health_insurances phi
+          WHERE phi.patient_id = p.id
+        ) AS health_insurance_list
+      FROM patients p
+      ORDER BY p.name ASC
+    `);
     return {
       data: res.rows.map(row => ({
         ...row,
         name: row.name ? row.name.toUpperCase() : row.name,
         birth_date: row.birth_date ? new Date(row.birth_date).toISOString() : null,
         created_at: row.created_at ? new Date(row.created_at).toISOString() : null,
-        created_by: row.created_by || null
+        created_by: row.created_by || null,
+        health_insurance_list: row.health_insurance_list || []
       })),
       error: null 
     };
@@ -23,7 +33,9 @@ export async function getPatients() {
 }
 
 export async function updatePatient(formData: FormData) {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     const id = formData.get("id");
     const name = (formData.get("name") as string)?.toUpperCase().trim();
     const dni = formData.get("dni") as string;
@@ -32,7 +44,7 @@ export async function updatePatient(formData: FormData) {
     const health_insurance = formData.get("health_insurance") as string;
     const birth_date = formData.get("birth_date") as string;
 
-    await pool.query(
+    await client.query(
       `UPDATE patients SET 
         name = $1, 
         dni = $2, 
@@ -44,6 +56,34 @@ export async function updatePatient(formData: FormData) {
       [name, dni, phone, email, health_insurance, birth_date, id]
     );
 
+    // Upsert each OS in the list into patient_health_insurances
+    const insuranceListRaw = formData.get("health_insurance_list") as string;
+    if (insuranceListRaw) {
+      const insurances = insuranceListRaw.split('|||').map(s => s.trim()).filter(Boolean);
+      for (const ins of insurances) {
+        await client.query(
+          `INSERT INTO patient_health_insurances (patient_id, health_insurance, last_used_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (patient_id, health_insurance) DO UPDATE SET last_used_at = NOW()`,
+          [id, ins]
+        );
+      }
+    }
+
+    // Remove any OS that were explicitly deleted (sent as health_insurance_removed)
+    const removedRaw = formData.get("health_insurance_removed") as string;
+    if (removedRaw) {
+      const removed = removedRaw.split('|||').map(s => s.trim()).filter(Boolean);
+      for (const ins of removed) {
+        await client.query(
+          `DELETE FROM patient_health_insurances WHERE patient_id = $1 AND health_insurance = $2`,
+          [id, ins]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
     revalidatePath("/pacientes");
     revalidatePath("/pacientes/[id]", "page");
     revalidatePath("/");
@@ -51,8 +91,11 @@ export async function updatePatient(formData: FormData) {
     
     return { success: true };
   } catch (error: any) {
+    await client.query('ROLLBACK');
     console.error("Update patient error:", error);
     return { error: error.message };
+  } finally {
+    client.release();
   }
 }
 export async function deletePatient(id: string) {
