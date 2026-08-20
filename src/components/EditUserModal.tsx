@@ -73,7 +73,8 @@ export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boole
         <div className="glass-panel" style={{
           background: "var(--glass-bg)", width: "100%", maxWidth: "450px",
           borderRadius: "16px", boxShadow: "var(--glass-shadow)",
-          overflow: "hidden", border: "1px solid var(--glass-border)"
+          border: "1px solid var(--glass-border)",
+          maxHeight: "90vh", display: "flex", flexDirection: "column"
         }}>
           <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-gradient-end)" }}>
             <h3 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0, color: "var(--text-main)" }}>
@@ -82,7 +83,7 @@ export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boole
             <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem", overflowY: "auto" }}>
             <div>
               <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Nombre de Usuario</label>
               <input required name="username" defaultValue={user.username} type="text" className="input-field" />

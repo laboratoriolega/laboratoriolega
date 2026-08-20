@@ -105,7 +105,7 @@ export default function PermissionsTreeSelector({ role, initialPermissions, onCh
   };
 
   return (
-    <div style={{ border: "1px solid var(--glass-border)", borderRadius: "8px", padding: "1rem", background: "rgba(255,255,255,0.02)", maxHeight: "400px", overflowY: "auto" }}>
+    <div style={{ border: "1px solid var(--glass-border)", borderRadius: "8px", padding: "1rem", background: "rgba(255,255,255,0.02)" }}>
       <h4 style={{ margin: "0 0 1rem 0", fontSize: "0.9rem", color: "var(--text-muted)" }}>Permisos Personalizados</h4>
       {MODULES.map(mod => renderModule(mod))}
     </div>
