@@ -67,7 +67,7 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
            </div>
            <div>
              <label style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Código de Sistema</label>
-             <input name="codigo_sistema" className="input-field" placeholder="Ej: 1234" />
+             <input name="codigo_sistema" className="input-field" placeholder="Ej: 1234" onChange={(e) => e.target.value = e.target.value.toUpperCase()} />
            </div>
            <div>
              <label style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Código NBU / Obs</label>
@@ -105,7 +105,10 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
                       <input 
                         className="input-field" 
                         defaultValue={item.codigo_sistema} 
-                        onChange={(e) => setEditValues({ ...editValues, codigo_sistema: e.target.value })}
+                        onChange={(e) => {
+                          e.target.value = e.target.value.toUpperCase();
+                          setEditValues({ ...editValues, codigo_sistema: e.target.value });
+                        }}
                       />
                     ) : (
                       <span style={{ fontFamily: "monospace", color: "var(--primary)", fontWeight: 600 }}>

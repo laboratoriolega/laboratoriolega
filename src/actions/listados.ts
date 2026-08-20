@@ -1139,3 +1139,108 @@ export async function deleteTipoAnalisis(id: number) {
   }
 }
 
+// --- NOTAS WS ---
+export async function getNotas() {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    const res = await pool.query("SELECT * FROM notas_ws ORDER BY created_at DESC");
+    return { data: res.rows, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
+}
+
+export async function createNota(formData: FormData) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    const titulo = formData.get("titulo") as string;
+    const contenido = formData.get("contenido") as string;
+    const color = formData.get("color") as string || '#fef68a';
+    await pool.query("INSERT INTO notas_ws (titulo, contenido, color) VALUES ($1, $2, $3)", [titulo, contenido, color]);
+    revalidatePath("/listados/notes");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function updateNota(id: number, data: any) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    const fields = Object.keys(data).map((k, i) => `${k} = $${i + 1}`).join(", ");
+    const values = Object.values(data);
+    await pool.query(`UPDATE notas_ws SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = $${values.length + 1}`, [...values, id]);
+    revalidatePath("/listados/notes");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function deleteNota(id: number) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    await pool.query("DELETE FROM notas_ws WHERE id = $1", [id]);
+    revalidatePath("/listados/notes");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+// --- ANALISIS LISTA ---
+export async function getAnalisisLista() {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    const res = await pool.query("SELECT * FROM analisis_lista ORDER BY id ASC");
+    return { data: res.rows, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
+}
+
+export async function createAnalisisLista(data: any) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    await pool.query(
+      "INSERT INTO analisis_lista (analisis, derivacion, muestra, guia, indicaciones, demora, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+      [data.analisis || '', data.derivacion || '', data.muestra || '', data.guia || '', data.indicaciones || '', data.demora || '', data.observaciones || '']
+    );
+    revalidatePath("/listados/analisis");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function updateAnalisisLista(id: number, data: any) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    const fields = Object.keys(data).map((k, i) => `${k} = $${i + 1}`).join(", ");
+    const values = Object.values(data);
+    await pool.query(`UPDATE analisis_lista SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = $${values.length + 1}`, [...values, id]);
+    revalidatePath("/listados/analisis");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function deleteAnalisisLista(id: number) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    await pool.query("DELETE FROM analisis_lista WHERE id = $1", [id]);
+    revalidatePath("/listados/analisis");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
