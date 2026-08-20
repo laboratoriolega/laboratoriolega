@@ -157,6 +157,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
   
   // File viewer modal state
   const [viewFile, setViewFile] = useState<any>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const filteredItems = items.filter(item => 
     (item.titulo && item.titulo.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -241,7 +242,11 @@ export default function NotesBoard({ data }: { data: any[] }) {
         }}>
           <div className="glass-panel" style={{ width: "90%", maxWidth: "500px", padding: "2rem", position: "relative", maxHeight: "90vh", overflowY: "auto" }}>
             <button 
-              onClick={() => setShowModal(false)}
+              onClick={() => {
+                setShowModal(false);
+                setEditingItem(null);
+                setSelectedFiles([]);
+              }}
               style={{ position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
             >
               <X size={24} />
@@ -271,9 +276,30 @@ export default function NotesBoard({ data }: { data: any[] }) {
                 <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                   <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", background: "var(--glass-bg)", border: "1px dashed var(--glass-border)", borderRadius: "8px", fontSize: "0.85rem", color: "var(--text-muted)" }}>
                     <Paperclip size={16} /> Subir Archivos
-                    <input type="file" name="documents" multiple style={{ display: "none" }} />
+                    <input 
+                      type="file" 
+                      name="documents" 
+                      multiple 
+                      style={{ display: "none" }} 
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setSelectedFiles(Array.from(e.target.files));
+                        }
+                      }}
+                    />
                   </label>
                 </div>
+
+                {selectedFiles.length > 0 && (
+                  <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--primary)", fontWeight: 600 }}>Archivos seleccionados para subir:</p>
+                    {selectedFiles.map((file, idx) => (
+                      <div key={idx} style={{ fontSize: "0.8rem", color: "var(--text-main)" }}>
+                        • {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                      </div>
+                    ))}
+                  </div>
+                )}
                 
                 {editingItem?.documents && (
                   <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -345,9 +371,11 @@ export default function NotesBoard({ data }: { data: any[] }) {
               </button>
             </div>
             
-            <div style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "center", background: "var(--bg-main)", borderRadius: "8px", minHeight: "200px" }}>
+            <div style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "center", background: "var(--bg-main)", borderRadius: "8px", minHeight: "200px", width: "100%" }}>
               {isImage(viewFile.filename) ? (
                 <img src={`/api/notas/doc/${viewFile.id}`} alt={viewFile.filename} style={{ maxWidth: "100%", maxHeight: "60vh", objectFit: "contain" }} />
+              ) : viewFile.filename.toLowerCase().endsWith('.pdf') ? (
+                <iframe src={`/api/notas/doc/${viewFile.id}`} style={{ width: "100%", height: "60vh", border: "none" }} title={viewFile.filename} />
               ) : (
                 <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
                   <FileIcon size={48} style={{ margin: "0 auto 1rem", opacity: 0.5 }} />
@@ -361,7 +389,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(`${window.location.origin}/api/notas/doc/${viewFile.id}`);
-                    alert("Enlace copiado al portapapeles");
+                    alert("Enlace copiado al portapapeles. (Para copiar la imagen en sí, podés hacerle clic derecho y elegir 'Copiar imagen')");
                   } catch (e) {
                     console.error("Error copiando", e);
                   }
