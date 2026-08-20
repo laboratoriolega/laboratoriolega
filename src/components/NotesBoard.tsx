@@ -29,6 +29,18 @@ const pastelColors = [
   "#FFF3E0", // Orange (Soft)
 ];
 
+function getSoftColor(color: string) {
+  const map: Record<string, string> = {
+    "#fef68a": "#FFF9C4",
+    "#fbcfe8": "#FCE4EC",
+    "#bbf7d0": "#E8F5E9",
+    "#bfdbfe": "#E3F2FD",
+    "#e9d5ff": "#F3E5F5",
+    "#fed7aa": "#FFF3E0",
+  };
+  return map[color?.toLowerCase()] || color || "#FFF9C4";
+}
+
 function isImage(filename: string) {
   const ext = filename.split('.').pop()?.toLowerCase();
   return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
@@ -55,11 +67,14 @@ function NoteCard({ item, onEdit, onDelete, onViewFile }: { item: any, onEdit: (
     ? item.contenido.substring(0, MAX_CHARS) + "..."
     : item.contenido;
 
-  const docs = item.documents && typeof item.documents === 'string' ? JSON.parse(item.documents) : (item.documents || []);
+  let docs = [];
+  try {
+    docs = typeof item.documents === 'string' ? JSON.parse(item.documents) : (item.documents || []);
+  } catch(e) {}
 
   return (
     <div style={{
-      backgroundColor: item.color || "#FFF9C4",
+      backgroundColor: getSoftColor(item.color),
       padding: "1.5rem",
       borderRadius: "4px",
       boxShadow: "2px 4px 12px rgba(0,0,0,0.1)",
@@ -263,7 +278,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
                 {editingItem?.documents && (
                   <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>Archivos Actuales:</p>
-                    {JSON.parse(editingItem.documents).map((doc: any) => (
+                    {(typeof editingItem.documents === 'string' ? JSON.parse(editingItem.documents) : editingItem.documents).map((doc: any) => (
                       <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem", background: "rgba(0,0,0,0.02)", borderRadius: "4px", border: "1px solid rgba(0,0,0,0.05)" }}>
                         <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingRight: "1rem" }}>{doc.filename}</span>
                         <button type="button" onClick={() => handleDeleteDocument(doc.id, editingItem.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", padding: "4px" }}>
@@ -284,7 +299,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
                         type="radio" 
                         name="color" 
                         value={color} 
-                        defaultChecked={editingItem ? editingItem.color === color : color === "#FFF9C4"}
+                        defaultChecked={editingItem ? getSoftColor(editingItem.color) === color : color === "#FFF9C4"}
                         style={{ display: "none" }}
                       />
                       <div style={{ 
