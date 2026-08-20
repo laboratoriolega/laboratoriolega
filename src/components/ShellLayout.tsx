@@ -95,7 +95,7 @@ export default function ShellLayout({ children, session, userData }: ShellLayout
         </div>
 
         <div style={{ marginTop: isCollapsed ? '1rem' : '1rem' }}>
-          <SidebarNav userRole={userRole} isCollapsed={isCollapsed} />
+          <SidebarNav session={session} isCollapsed={isCollapsed} />
         </div>
 
         {/* User Profile Section */}

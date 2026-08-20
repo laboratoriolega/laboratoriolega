@@ -28,7 +28,8 @@ export async function login(formData: FormData) {
     const token = await signToken({
       id: user.id,
       username: user.username,
-      role: user.role
+      role: user.role,
+      custom_permissions: typeof user.custom_permissions === 'string' ? JSON.parse(user.custom_permissions) : user.custom_permissions
     });
 
     const cookieStore = await cookies();

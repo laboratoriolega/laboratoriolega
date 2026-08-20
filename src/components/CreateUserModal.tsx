@@ -4,15 +4,19 @@ import { useState } from "react";
 import { UserPlus, X, Shield, User } from "lucide-react";
 import { createUser } from "@/actions/users";
 import Portal from "./Portal";
+import PermissionsTreeSelector from "./PermissionsTreeSelector";
 
 export default function CreateUserModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("administracion");
+  const [permissions, setPermissions] = useState<any>({});
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
+    formData.append("custom_permissions", JSON.stringify(permissions));
     const res = await createUser(formData);
     if (!res.error) {
       setIsOpen(false);
@@ -65,14 +69,19 @@ export default function CreateUserModal() {
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem" }}>Rol / Permisos</label>
-              <select name="role" required className="input-field">
+              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem" }}>Rol</label>
+              <select name="role" required className="input-field" value={selectedRole} onChange={e => setSelectedRole(e.target.value)}>
                 <option value="administracion">Administración</option>
                 <option value="bioquimico">Bioquímico</option>
                 <option value="gerente">Gerente</option>
                 <option value="admin">Administrador (Control Total)</option>
               </select>
             </div>
+
+            <PermissionsTreeSelector
+              role={selectedRole}
+              onChange={setPermissions}
+            />
 
             <button
               type="submit"

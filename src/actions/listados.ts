@@ -1209,8 +1209,8 @@ export async function createAnalisisLista(data: any) {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
     await pool.query(
-      "INSERT INTO analisis_lista (analisis, derivacion, muestra, guia, indicaciones, demora, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-      [data.analisis || '', data.derivacion || '', data.muestra || '', data.guia || '', data.indicaciones || '', data.demora || '', data.observaciones || '']
+      "INSERT INTO analisis_lista (data) VALUES ($1)",
+      [JSON.stringify(data)]
     );
     revalidatePath("/listados/analisis");
     return { success: true };
@@ -1223,9 +1223,7 @@ export async function updateAnalisisLista(id: number, data: any) {
   try {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
-    const fields = Object.keys(data).map((k, i) => `${k} = $${i + 1}`).join(", ");
-    const values = Object.values(data);
-    await pool.query(`UPDATE analisis_lista SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = $${values.length + 1}`, [...values, id]);
+    await pool.query(`UPDATE analisis_lista SET data = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [JSON.stringify(data), id]);
     revalidatePath("/listados/analisis");
     return { success: true };
   } catch (error: any) {
@@ -1238,6 +1236,34 @@ export async function deleteAnalisisLista(id: number) {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
     await pool.query("DELETE FROM analisis_lista WHERE id = $1", [id]);
+    revalidatePath("/listados/analisis");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function getAnalisisConfig() {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    const res = await pool.query("SELECT config FROM analisis_lista_config LIMIT 1");
+    if (res.rows.length === 0) return { data: null, error: "Config not found" };
+    return { data: res.rows[0].config, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
+}
+
+export async function updateAnalisisConfig(config: any) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    // Ensure only admins or those with write permission can change config
+    if (session.role !== 'admin' && session.custom_permissions?.["listados:analisis"] !== "write") {
+       throw new Error("No tienes permisos para modificar la configuración");
+    }
+    await pool.query("UPDATE analisis_lista_config SET config = $1 WHERE id = (SELECT id FROM analisis_lista_config LIMIT 1)", [JSON.stringify(config)]);
     revalidatePath("/listados/analisis");
     return { success: true };
   } catch (error: any) {

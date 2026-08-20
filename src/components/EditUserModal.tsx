@@ -1,14 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateUser } from "@/actions/users";
 import { X, User, Shield, Loader2, UserCog } from "lucide-react";
 import Portal from "./Portal";
+import PermissionsTreeSelector from "./PermissionsTreeSelector";
 
 export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boolean, onClose: () => void, user: any }) {
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(user?.role || "administracion");
+  const [permissions, setPermissions] = useState<any>({});
   const router = useRouter();
+
+
+  useEffect(() => {
+    if (user) {
+      setSelectedRole(user.role);
+    }
+  }, [user]);
 
   if (!isOpen || !user) return null;
 
@@ -85,13 +95,20 @@ export default function EditUserModal({ isOpen, onClose, user }: { isOpen: boole
 
             <div>
               <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Rol</label>
-              <select name="role" defaultValue={user.role} className="input-field">
+              <select name="role" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="input-field">
                 <option value="administracion">Administración</option>
                 <option value="bioquimico">Bioquímico</option>
                 <option value="gerente">Gerente</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
+
+            <PermissionsTreeSelector 
+              role={selectedRole} 
+              initialPermissions={typeof user.custom_permissions === "string" ? JSON.parse(user.custom_permissions) : user.custom_permissions}
+              onChange={setPermissions} 
+            />
+            <input type="hidden" name="custom_permissions" value={JSON.stringify(permissions)} />
 
             <div style={{ padding: '0.75rem', background: 'rgba(14, 165, 233, 0.05)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>Nueva Contraseña (Opcional)</label>

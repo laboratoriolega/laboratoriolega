@@ -80,7 +80,7 @@ export default function MobileNav({ session, userData }: { session: any, userDat
 
         <ThemeToggle />
         <div style={{ flex: 1, overflowY: 'auto', marginTop: '1rem' }} onClick={() => setIsOpen(false)}>
-           <SidebarNav userRole={session.role} />
+           <SidebarNav session={session} />
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
