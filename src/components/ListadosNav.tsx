@@ -20,7 +20,7 @@ export default function ListadosNav({ customPermissions, role }: { customPermiss
     { name: "Apross", href: "/listados/apross", id: "listados:apross" },
     { name: "Requiere Facturación", href: "/listados/cobranzas", id: "listados:cobranzas" },
     { name: "Pago O. Social", href: "/listados/pago-obrasocial", id: "listados:pago-obrasocial" },
-    { name: "Notas", href: "/listados/notes", id: "listados:notas" },
+    { name: "Notas", href: "/listados/notes", id: "listados:notes" },
     { name: "Análisis que sí hacemos", href: "/listados/analisis", id: "listados:analisis" },
     { name: "Codigos de Sistema", href: "/listados/codigos", id: "listados:codigos" },
     { name: "OSDE", href: "/listados/osde", id: "listados:osde" },
