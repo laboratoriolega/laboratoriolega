@@ -1144,7 +1144,18 @@ export async function getNotas() {
   try {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
-    const res = await pool.query("SELECT * FROM notas_ws ORDER BY created_at DESC");
+    const res = await pool.query(`
+      SELECT n.*, 
+             COALESCE(
+               json_agg(
+                 json_build_object('id', d.id, 'url', d.url, 'filename', d.filename)
+               ) FILTER (WHERE d.id IS NOT NULL), '[]'
+             ) as documents
+      FROM notas_ws n
+      LEFT JOIN notas_ws_documents d ON n.id = d.nota_id
+      GROUP BY n.id
+      ORDER BY n.created_at DESC
+    `);
     return { data: res.rows, error: null };
   } catch (error: any) {
     return { data: null, error: error.message };
@@ -1157,8 +1168,28 @@ export async function createNota(formData: FormData) {
     if (!session) throw new Error("No autenticado");
     const titulo = formData.get("titulo") as string;
     const contenido = formData.get("contenido") as string;
-    const color = formData.get("color") as string || '#fef68a';
-    await pool.query("INSERT INTO notas_ws (titulo, contenido, color) VALUES ($1, $2, $3)", [titulo, contenido, color]);
+    const color = formData.get("color") as string || '#FFF9C4';
+    
+    const res = await pool.query(
+      "INSERT INTO notas_ws (titulo, contenido, color) VALUES ($1, $2, $3) RETURNING id", 
+      [titulo, contenido, color]
+    );
+    const notaId = res.rows[0].id;
+
+    // Handle documents
+    const files = formData.getAll("documents") as File[];
+    for (const file of files) {
+      if (file && file.size > 0 && file.name) {
+        const ext = file.name.split('.').pop() || 'bin';
+        const filename = `nota-${notaId}-${Date.now()}.${ext}`;
+        const blob = await put(filename, file, { access: 'public' });
+        await pool.query(
+          "INSERT INTO notas_ws_documents (nota_id, url, filename) VALUES ($1, $2, $3)",
+          [notaId, blob.url, file.name]
+        );
+      }
+    }
+
     revalidatePath("/listados/notes");
     return { success: true };
   } catch (error: any) {
@@ -1166,13 +1197,33 @@ export async function createNota(formData: FormData) {
   }
 }
 
-export async function updateNota(id: number, data: any) {
+export async function updateNota(id: number, formData: FormData) {
   try {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
-    const fields = Object.keys(data).map((k, i) => `${k} = $${i + 1}`).join(", ");
-    const values = Object.values(data);
-    await pool.query(`UPDATE notas_ws SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = $${values.length + 1}`, [...values, id]);
+    const titulo = formData.get("titulo") as string;
+    const contenido = formData.get("contenido") as string;
+    const color = formData.get("color") as string;
+    
+    await pool.query(
+      `UPDATE notas_ws SET titulo = $1, contenido = $2, color = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4`, 
+      [titulo, contenido, color, id]
+    );
+
+    // Handle documents
+    const files = formData.getAll("documents") as File[];
+    for (const file of files) {
+      if (file && file.size > 0 && file.name) {
+        const ext = file.name.split('.').pop() || 'bin';
+        const filename = `nota-${id}-${Date.now()}.${ext}`;
+        const blob = await put(filename, file, { access: 'public' });
+        await pool.query(
+          "INSERT INTO notas_ws_documents (nota_id, url, filename) VALUES ($1, $2, $3)",
+          [id, blob.url, file.name]
+        );
+      }
+    }
+
     revalidatePath("/listados/notes");
     return { success: true };
   } catch (error: any) {
@@ -1185,6 +1236,28 @@ export async function deleteNota(id: number) {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
     await pool.query("DELETE FROM notas_ws WHERE id = $1", [id]);
+    revalidatePath("/listados/notes");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function deleteNotaDocument(id: number) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+    
+    const docRes = await pool.query("SELECT url FROM notas_ws_documents WHERE id = $1", [id]);
+    if (docRes.rows.length > 0) {
+      try {
+        await del(docRes.rows[0].url);
+      } catch(e) {
+        console.error("Vercel blob delete error", e);
+      }
+    }
+    
+    await pool.query("DELETE FROM notas_ws_documents WHERE id = $1", [id]);
     revalidatePath("/listados/notes");
     return { success: true };
   } catch (error: any) {
