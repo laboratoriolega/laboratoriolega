@@ -158,6 +158,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
   // File viewer modal state
   const [viewFile, setViewFile] = useState<any>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [docToDelete, setDocToDelete] = useState<number | null>(null);
 
   const filteredItems = items.filter(item => 
     (item.titulo && item.titulo.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -184,13 +185,24 @@ export default function NotesBoard({ data }: { data: any[] }) {
     }
   }
 
-  async function handleDeleteDocument(docId: number, notaId: number) {
-    if (!confirm("¿Eliminar este archivo adjunto?")) return;
+  async function handleDeleteDocument(docId: number) {
     const res = await deleteNotaDocument(docId);
     if (!res.error) {
-      window.location.reload();
+      if (editingItem) {
+        setEditingItem({
+          ...editingItem,
+          documents: editingItem.documents.filter((d: any) => d.id !== docId)
+        });
+      }
+      setItems(items.map((it: any) => {
+        if (it.id === editingItem?.id) {
+          return { ...it, documents: it.documents.filter((d: any) => d.id !== docId) };
+        }
+        return it;
+      }));
+      setDocToDelete(null);
     } else {
-      alert(res.error);
+      alert("Error eliminando: " + res.error);
     }
   }
 
@@ -307,7 +319,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
                     {(typeof editingItem.documents === 'string' ? JSON.parse(editingItem.documents) : editingItem.documents).map((doc: any) => (
                       <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem", background: "rgba(0,0,0,0.02)", borderRadius: "4px", border: "1px solid rgba(0,0,0,0.05)" }}>
                         <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingRight: "1rem" }}>{doc.filename}</span>
-                        <button type="button" onClick={() => handleDeleteDocument(doc.id, editingItem.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", padding: "4px" }}>
+                        <button type="button" onClick={() => setDocToDelete(doc.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", padding: "4px" }}>
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -315,6 +327,28 @@ export default function NotesBoard({ data }: { data: any[] }) {
                   </div>
                 )}
               </div>
+
+              {docToDelete !== null && (
+                <div style={{
+                  position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                  background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center",
+                  borderRadius: "12px", zIndex: 1100, backdropFilter: "blur(2px)"
+                }}>
+                  <div className="glass-panel" style={{ padding: "1.5rem", textAlign: "center", maxWidth: "300px" }}>
+                    <Trash2 size={32} style={{ color: "var(--danger)", marginBottom: "1rem" }} />
+                    <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem" }}>¿Eliminar adjunto?</h3>
+                    <p style={{ margin: "0 0 1.5rem 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                      Esta acción no se puede deshacer.
+                    </p>
+                    <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                      <button type="button" className="btn-secondary" onClick={() => setDocToDelete(null)}>Cancelar</button>
+                      <button type="button" className="btn-primary" style={{ background: "var(--danger)" }} onClick={() => handleDeleteDocument(docToDelete)}>
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", color: "var(--text-muted)" }}>Color de Post-it</label>
