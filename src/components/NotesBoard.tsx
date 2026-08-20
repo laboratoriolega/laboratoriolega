@@ -159,6 +159,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
   const [viewFile, setViewFile] = useState<any>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [docToDelete, setDocToDelete] = useState<number | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const filteredItems = items.filter(item => 
     (item.titulo && item.titulo.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -422,15 +423,28 @@ export default function NotesBoard({ data }: { data: any[] }) {
               <button 
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(`${window.location.origin}/api/notas/doc/${viewFile.id}`);
-                    alert("Enlace copiado al portapapeles. (Para copiar la imagen en sí, podés hacerle clic derecho y elegir 'Copiar imagen')");
+                    const docUrl = `/api/notas/doc/${viewFile.id}`;
+                    if (isImage(viewFile.filename)) {
+                      const response = await fetch(docUrl);
+                      const blob = await response.blob();
+                      await navigator.clipboard.write([
+                        new ClipboardItem({ [blob.type]: blob })
+                      ]);
+                      setToastMessage("Imagen copiada al portapapeles");
+                    } else {
+                      await navigator.clipboard.writeText(`${window.location.origin}${docUrl}`);
+                      setToastMessage("Enlace copiado al portapapeles");
+                    }
+                    setTimeout(() => setToastMessage(null), 3000);
                   } catch (e) {
                     console.error("Error copiando", e);
+                    setToastMessage("Error al copiar");
+                    setTimeout(() => setToastMessage(null), 3000);
                   }
                 }}
                 className="btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
               >
-                <Copy size={16} /> Copiar Enlace
+                <Copy size={16} /> {isImage(viewFile.filename) ? "Copiar Imagen" : "Copiar Enlace"}
               </button>
               <a href={`/api/notas/doc/${viewFile.id}`} download target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
                 <button className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -438,6 +452,18 @@ export default function NotesBoard({ data }: { data: any[] }) {
                 </button>
               </a>
             </div>
+
+            {toastMessage && (
+              <div style={{
+                position: "absolute", bottom: "2rem", left: "50%", transform: "translateX(-50%)",
+                background: "var(--success)", color: "white", padding: "0.75rem 1.5rem",
+                borderRadius: "2rem", fontSize: "0.9rem", fontWeight: 600,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 1200,
+                animation: "fadeInUp 0.3s ease"
+              }}>
+                {toastMessage}
+              </div>
+            )}
           </div>
         </div>
       )}
