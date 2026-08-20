@@ -2,33 +2,28 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
 
-export default function ListadosNav({ isAviola }: { isAviola?: boolean }) {
+import { hasPermission } from "@/lib/permissions";
+
+export default function ListadosNav({ customPermissions }: { customPermissions?: any }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  let perms = typeof customPermissions === 'string' ? JSON.parse(customPermissions) : (customPermissions || {});
+  
   let tabs = [
-    { name: "Pendientes", href: "/listados/pendientes" },
-    { name: "Apross", href: "/listados/apross" },
-    { name: "Requiere Facturación", href: "/listados/cobranzas" },
-    { name: "Pago O. Social", href: "/listados/pago-obrasocial" },
-    { name: "Notas", href: "/listados/notes" },
-    { name: "Análisis que sí hacemos", href: "/listados/analisis" },
-    { name: "Codigos de Sistema", href: "/listados/codigos" },
-    { name: "OSDE", href: "/listados/osde" },
-    { name: "Precios Facturacion", href: "/listados/precios" },
+    { name: "Pendientes", href: "/listados/pendientes", id: "listados:pendientes" },
+    { name: "Apross", href: "/listados/apross", id: "listados:apross" },
+    { name: "Requiere Facturación", href: "/listados/cobranzas", id: "listados:cobranzas" },
+    { name: "Pago O. Social", href: "/listados/pago-obrasocial", id: "listados:pago-obrasocial" },
+    { name: "Notas", href: "/listados/notes", id: "listados:notas" },
+    { name: "Análisis que sí hacemos", href: "/listados/analisis", id: "listados:analisis" },
+    { name: "Codigos de Sistema", href: "/listados/codigos", id: "listados:codigos" },
+    { name: "OSDE", href: "/listados/osde", id: "listados:osde" },
+    { name: "Precios Facturacion", href: "/listados/precios", id: "listados:precios" },
   ];
 
-  if (isAviola) {
-    tabs = tabs.filter(t => t.href === "/listados/analisis");
-  }
-
-  useEffect(() => {
-    if (isAviola && pathname !== "/listados/analisis" && pathname.startsWith("/listados")) {
-      router.push("/listados/analisis");
-    }
-  }, [isAviola, pathname, router]);
+  tabs = tabs.filter(t => hasPermission(perms, t.id, "read"));
 
   return (
     <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", borderBottom: "1px solid var(--glass-border)", paddingBottom: "1rem", overflowX: "auto" }}>

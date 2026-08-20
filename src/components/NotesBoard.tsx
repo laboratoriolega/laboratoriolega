@@ -425,17 +425,42 @@ export default function NotesBoard({ data }: { data: any[] }) {
                   try {
                     const docUrl = `/api/notas/doc/${viewFile.id}`;
                     if (isImage(viewFile.filename)) {
-                      const response = await fetch(docUrl);
-                      const blob = await response.blob();
-                      await navigator.clipboard.write([
-                        new ClipboardItem({ [blob.type]: blob })
-                      ]);
-                      setToastMessage("Imagen copiada al portapapeles");
+                      const img = new Image();
+                      img.crossOrigin = "anonymous";
+                      img.onload = async () => {
+                        try {
+                          const canvas = document.createElement("canvas");
+                          canvas.width = img.naturalWidth;
+                          canvas.height = img.naturalHeight;
+                          const ctx = canvas.getContext("2d");
+                          if (!ctx) throw new Error("No context");
+                          ctx.drawImage(img, 0, 0);
+                          
+                          canvas.toBlob(async (blob) => {
+                            if (blob) {
+                              await navigator.clipboard.write([
+                                new ClipboardItem({ "image/png": blob })
+                              ]);
+                              setToastMessage("Imagen copiada al portapapeles");
+                              setTimeout(() => setToastMessage(null), 3000);
+                            }
+                          }, "image/png");
+                        } catch (e) {
+                          console.error("Error drawing image to copy", e);
+                          setToastMessage("Error al copiar imagen");
+                          setTimeout(() => setToastMessage(null), 3000);
+                        }
+                      };
+                      img.onerror = () => {
+                        setToastMessage("Error al cargar imagen para copiar");
+                        setTimeout(() => setToastMessage(null), 3000);
+                      };
+                      img.src = docUrl;
                     } else {
                       await navigator.clipboard.writeText(`${window.location.origin}${docUrl}`);
                       setToastMessage("Enlace copiado al portapapeles");
+                      setTimeout(() => setToastMessage(null), 3000);
                     }
-                    setTimeout(() => setToastMessage(null), 3000);
                   } catch (e) {
                     console.error("Error copiando", e);
                     setToastMessage("Error al copiar");
