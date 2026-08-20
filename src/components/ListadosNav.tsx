@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, DEFAULT_ROLE_PERMISSIONS } from "@/lib/permissions";
 
-export default function ListadosNav({ customPermissions }: { customPermissions?: any }) {
+export default function ListadosNav({ customPermissions, role }: { customPermissions?: any, role?: string }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  let perms = typeof customPermissions === 'string' ? JSON.parse(customPermissions) : (customPermissions || {});
+  let perms = customPermissions;
+  if (typeof perms === "string") perms = JSON.parse(perms);
+  if (!perms && role) {
+    perms = DEFAULT_ROLE_PERMISSIONS[role] || {};
+  }
   
   let tabs = [
     { name: "Pendientes", href: "/listados/pendientes", id: "listados:pendientes" },

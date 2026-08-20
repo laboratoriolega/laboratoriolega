@@ -11,7 +11,7 @@ export default async function ListadosLayout({ children }: { children: React.Rea
         <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Gestión de pendientes, códigos y precios.</p>
       </header>
 
-      <ListadosNav customPermissions={session?.custom_permissions} />
+      <ListadosNav customPermissions={session?.custom_permissions} role={session?.role} />
 
       <main>
         {children}
