@@ -347,7 +347,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
             
             <div style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "center", background: "var(--bg-main)", borderRadius: "8px", minHeight: "200px" }}>
               {isImage(viewFile.filename) ? (
-                <img src={viewFile.url} alt={viewFile.filename} style={{ maxWidth: "100%", maxHeight: "60vh", objectFit: "contain" }} />
+                <img src={`/api/notas/doc/${viewFile.id}`} alt={viewFile.filename} style={{ maxWidth: "100%", maxHeight: "60vh", objectFit: "contain" }} />
               ) : (
                 <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
                   <FileIcon size={48} style={{ margin: "0 auto 1rem", opacity: 0.5 }} />
@@ -360,7 +360,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
               <button 
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(viewFile.url);
+                    await navigator.clipboard.writeText(`${window.location.origin}/api/notas/doc/${viewFile.id}`);
                     alert("Enlace copiado al portapapeles");
                   } catch (e) {
                     console.error("Error copiando", e);
@@ -370,7 +370,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
               >
                 <Copy size={16} /> Copiar Enlace
               </button>
-              <a href={viewFile.url} download target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+              <a href={`/api/notas/doc/${viewFile.id}`} download target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
                 <button className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <Download size={16} /> Descargar
                 </button>

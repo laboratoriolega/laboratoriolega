@@ -1182,7 +1182,7 @@ export async function createNota(formData: FormData) {
       if (file && file.size > 0 && file.name) {
         const ext = file.name.split('.').pop() || 'bin';
         const filename = `nota-${notaId}-${Date.now()}.${ext}`;
-        const blob = await put(filename, file, { access: 'public' });
+        const blob = await put(filename, file, { access: 'private' });
         await pool.query(
           "INSERT INTO notas_ws_documents (nota_id, url, filename) VALUES ($1, $2, $3)",
           [notaId, blob.url, file.name]
@@ -1216,7 +1216,7 @@ export async function updateNota(id: number, formData: FormData) {
       if (file && file.size > 0 && file.name) {
         const ext = file.name.split('.').pop() || 'bin';
         const filename = `nota-${id}-${Date.now()}.${ext}`;
-        const blob = await put(filename, file, { access: 'public' });
+        const blob = await put(filename, file, { access: 'private' });
         await pool.query(
           "INSERT INTO notas_ws_documents (nota_id, url, filename) VALUES ($1, $2, $3)",
           [id, blob.url, file.name]
