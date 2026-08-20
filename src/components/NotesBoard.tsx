@@ -105,7 +105,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
             borderRadius: "4px",
             boxShadow: "2px 4px 12px rgba(0,0,0,0.1)",
             position: "relative",
-            minHeight: "250px",
+            minHeight: "120px",
             display: "flex",
             flexDirection: "column",
             borderBottomRightRadius: "30px", // Folded corner effect
@@ -114,28 +114,27 @@ export default function NotesBoard({ data }: { data: any[] }) {
           }}>
             <div style={{ position: "absolute", top: 0, right: 0, width: "30px", height: "30px", background: "rgba(0,0,0,0.05)", borderBottomLeftRadius: "15px" }}></div>
             
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, borderBottom: "1px solid rgba(0,0,0,0.1)", paddingBottom: "0.5rem", width: "100%" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem", borderBottom: "1px solid rgba(0,0,0,0.1)", paddingBottom: "0.5rem" }}>
+              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, paddingRight: "1rem" }}>
                 {item.titulo}
               </h3>
+              <div style={{ display: "flex", gap: "0.25rem", zIndex: 10 }}>
+                <button onClick={() => handleCopy(item)} style={{ color: copiedId === item.id ? "var(--success)" : "rgba(0,0,0,0.6)", padding: "4px", background: "transparent", border: "none", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8rem", fontWeight: 600 }} title="Copiar">
+                  {copiedId === item.id ? "¡Copiado!" : <Copy size={16} />}
+                </button>
+                <button onClick={() => { setEditingItem(item); setShowModal(true); }} style={{ color: "rgba(0,0,0,0.6)", padding: "4px", background: "transparent", border: "none", cursor: "pointer", borderRadius: "4px" }} title="Editar">
+                  <Edit size={16} />
+                </button>
+                <button onClick={() => handleDelete(item.id)} style={{ color: "#ef4444", padding: "4px", background: "transparent", border: "none", cursor: "pointer", borderRadius: "4px" }} title="Eliminar">
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
             
             <div 
               style={{ flex: 1, whiteSpace: "pre-wrap", overflowWrap: "break-word", fontSize: "0.95rem", lineHeight: "1.5" }}
               dangerouslySetInnerHTML={{ __html: formatWhatsAppText(item.contenido) }}
             />
-            
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "1rem", borderTop: "1px solid rgba(0,0,0,0.05)", paddingTop: "0.5rem" }}>
-              <button onClick={() => handleCopy(item)} style={{ color: copiedId === item.id ? "var(--success)" : "rgba(0,0,0,0.6)", padding: "4px", background: "transparent", border: "none", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8rem", fontWeight: 600 }}>
-                {copiedId === item.id ? "¡Copiado!" : <Copy size={16} />}
-              </button>
-              <button onClick={() => { setEditingItem(item); setShowModal(true); }} style={{ color: "rgba(0,0,0,0.6)", padding: "4px", background: "transparent", border: "none", cursor: "pointer", borderRadius: "4px" }}>
-                <Edit size={16} />
-              </button>
-              <button onClick={() => handleDelete(item.id)} style={{ color: "#ef4444", padding: "4px", background: "transparent", border: "none", cursor: "pointer", borderRadius: "4px" }}>
-                <Trash2 size={16} />
-              </button>
-            </div>
           </div>
         ))}
         {filteredItems.length === 0 && (

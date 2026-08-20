@@ -63,7 +63,7 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
         }} className="glass-panel" style={{ padding: "1.5rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", alignItems: "end" }}>
            <div>
              <label style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Nombre del Análisis</label>
-             <input name="analisis" required className="input-field" placeholder="Ej: Ferritina" />
+             <input name="analisis" required className="input-field" placeholder="Ej: Ferritina" onChange={(e) => e.target.value = e.target.value.toUpperCase()} />
            </div>
            <div>
              <label style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Código de Sistema</label>
@@ -99,7 +99,20 @@ export default function SystemCodesTable({ data }: { data: any[] }) {
             <tbody>
               {filteredItems.map((item: any) => (
                 <tr key={item.id} className="hoverable-row" style={{ borderBottom: "1px solid var(--glass-border)" }}>
-                  <td style={{ padding: "1rem", fontSize: "0.9rem", fontWeight: 500 }}>{item.analisis}</td>
+                  <td style={{ padding: "1rem", fontSize: "0.9rem", fontWeight: 500 }}>
+                    {editingId === item.id ? (
+                      <input 
+                        className="input-field" 
+                        defaultValue={item.analisis} 
+                        onChange={(e) => {
+                          e.target.value = e.target.value.toUpperCase();
+                          setEditValues({ ...editValues, analisis: e.target.value });
+                        }}
+                      />
+                    ) : (
+                      item.analisis
+                    )}
+                  </td>
                   <td style={{ padding: "1rem" }}>
                     {editingId === item.id ? (
                       <input 
