@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function ListadosNav() {
+export default function ListadosNav({ isAviola }: { isAviola?: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
 
-  const tabs = [
+  let tabs = [
     { name: "Pendientes", href: "/listados/pendientes" },
     { name: "Apross", href: "/listados/apross" },
     { name: "Requiere Facturación", href: "/listados/cobranzas" },
@@ -17,6 +19,16 @@ export default function ListadosNav() {
     { name: "OSDE", href: "/listados/osde" },
     { name: "Precios Facturacion", href: "/listados/precios" },
   ];
+
+  if (isAviola) {
+    tabs = tabs.filter(t => t.href === "/listados/analisis");
+  }
+
+  useEffect(() => {
+    if (isAviola && pathname !== "/listados/analisis" && pathname.startsWith("/listados")) {
+      router.push("/listados/analisis");
+    }
+  }, [isAviola, pathname, router]);
 
   return (
     <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", borderBottom: "1px solid var(--glass-border)", paddingBottom: "1rem", overflowX: "auto" }}>
