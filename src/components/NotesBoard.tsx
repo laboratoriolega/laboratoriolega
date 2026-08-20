@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Save, X, Plus, Trash2, Edit } from "lucide-react";
+import { Search, Save, X, Plus, Trash2, Edit, Copy } from "lucide-react";
 import { createNota, updateNota, deleteNota } from "@/actions/listados";
 
 function formatWhatsAppText(text: string) {
@@ -34,6 +34,7 @@ export default function NotesBoard({ data }: { data: any[] }) {
   const [items, setItems] = useState(data);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const filteredItems = items.filter(item => 
     (item.titulo && item.titulo.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -61,6 +62,16 @@ export default function NotesBoard({ data }: { data: any[] }) {
     const res = await deleteNota(id);
     if (!res.error) {
       setItems(items.filter((it: any) => it.id !== id));
+    }
+  }
+
+  async function handleCopy(item: any) {
+    try {
+      await navigator.clipboard.writeText(item.contenido);
+      setCopiedId(item.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
     }
   }
 
@@ -115,6 +126,9 @@ export default function NotesBoard({ data }: { data: any[] }) {
             />
             
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "1rem", borderTop: "1px solid rgba(0,0,0,0.05)", paddingTop: "0.5rem" }}>
+              <button onClick={() => handleCopy(item)} style={{ color: copiedId === item.id ? "var(--success)" : "rgba(0,0,0,0.6)", padding: "4px", background: "transparent", border: "none", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8rem", fontWeight: 600 }}>
+                {copiedId === item.id ? "¡Copiado!" : <Copy size={16} />}
+              </button>
               <button onClick={() => { setEditingItem(item); setShowModal(true); }} style={{ color: "rgba(0,0,0,0.6)", padding: "4px", background: "transparent", border: "none", cursor: "pointer", borderRadius: "4px" }}>
                 <Edit size={16} />
               </button>
