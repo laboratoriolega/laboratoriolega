@@ -1281,10 +1281,13 @@ export async function createAnalisisLista(data: any) {
   try {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
+    
+    const analisis = data.analisis || '';
     await pool.query(
-      "INSERT INTO analisis_lista (data) VALUES ($1)",
-      [JSON.stringify(data)]
+      "INSERT INTO analisis_lista (analisis, data) VALUES ($1, $2)",
+      [analisis, JSON.stringify(data)]
     );
+    
     revalidatePath("/listados/analisis");
     return { success: true };
   } catch (error: any) {
@@ -1332,8 +1335,14 @@ export async function updateAnalisisConfig(config: any) {
   try {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
-    // Ensure only admins or those with write permission can change config
-    if (session.role !== 'admin' && session.custom_permissions?.["listados:analisis"] !== "write") {
+    
+    // Import inside function or we can just assume it's imported (wait, let's just check manually)
+    // Actually, I can't import dynamically without changing imports at the top.
+    
+    // Let's modify the condition manually to match hasPermission logic to avoid circular imports or missing imports
+    const customPerms = session.custom_permissions || {};
+    const hasWrite = customPerms["listados:analisis"] === "write" || customPerms["listados"] === "write";
+    if (session.role !== 'admin' && !hasWrite) {
        throw new Error("No tienes permisos para modificar la configuración");
     }
     await pool.query("UPDATE analisis_lista_config SET config = $1 WHERE id = (SELECT id FROM analisis_lista_config LIMIT 1)", [JSON.stringify(config)]);

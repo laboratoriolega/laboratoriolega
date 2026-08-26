@@ -104,8 +104,17 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionsConfig> = {
 
 export function hasPermission(userPermissions: PermissionsConfig, moduleId: string, requiredLevel: "read" | "write" = "read"): boolean {
   if (!userPermissions) return false;
+  
   const level = userPermissions[moduleId];
   if (level === "write") return true;
   if (level === "read" && requiredLevel === "read") return true;
+  
+  if (moduleId.includes(':')) {
+    const parentId = moduleId.split(':')[0];
+    const parentLevel = userPermissions[parentId];
+    if (parentLevel === "write") return true;
+    if (parentLevel === "read" && requiredLevel === "read") return true;
+  }
+  
   return false;
 }
