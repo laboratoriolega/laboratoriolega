@@ -116,5 +116,14 @@ export function hasPermission(userPermissions: PermissionsConfig, moduleId: stri
     if (parentLevel === "read" && requiredLevel === "read") return true;
   }
   
+  // Implicit read access to parent if any child has access
+  if (requiredLevel === "read") {
+    for (const [key, val] of Object.entries(userPermissions)) {
+      if (key.startsWith(moduleId + ':') && (val === "read" || val === "write")) {
+        return true;
+      }
+    }
+  }
+  
   return false;
 }

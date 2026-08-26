@@ -18,6 +18,8 @@ export default function AnalisisExcelTable({ data, initialColumns, canEdit }: { 
   const [editValues, setEditValues] = useState<any>({});
   const [showNewRow, setShowNewRow] = useState(false);
   const [newRowValues, setNewRowValues] = useState<any>({});
+  
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editingColumns, setEditingColumns] = useState<Column[]>([...columns]);
@@ -47,12 +49,17 @@ export default function AnalisisExcelTable({ data, initialColumns, canEdit }: { 
     }
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm("¿Eliminar este análisis?")) return;
-    const res = await deleteAnalisisLista(id);
+  function handleDelete(id: number) {
+    setDeleteConfirmId(id);
+  }
+
+  async function executeDelete() {
+    if (deleteConfirmId === null) return;
+    const res = await deleteAnalisisLista(deleteConfirmId);
     if (!res.error) {
-      setItems(items.filter((it: any) => it.id !== id));
+      setItems(items.filter((it: any) => it.id !== deleteConfirmId));
     }
+    setDeleteConfirmId(null);
   }
 
   async function handleSaveConfig() {
@@ -240,6 +247,38 @@ export default function AnalisisExcelTable({ data, initialColumns, canEdit }: { 
               <div style={{ display: "flex", gap: "1rem" }}>
                 <button onClick={() => setShowConfigModal(false)} className="btn-secondary" style={{ flex: 1 }}>Cancelar</button>
                 <button onClick={handleSaveConfig} className="btn-primary" style={{ flex: 1 }}>Guardar Cambios</button>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {deleteConfirmId !== null && (
+        <Portal>
+          <div style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100,
+            padding: "1rem"
+          }}>
+            <div className="glass-panel" style={{ width: "100%", maxWidth: "400px", padding: "1.5rem", textAlign: "center" }}>
+              <div style={{ marginBottom: "1.5rem" }}>
+                <div style={{ 
+                  width: "48px", height: "48px", borderRadius: "50%", 
+                  background: "rgba(239, 68, 68, 0.1)", color: "var(--danger)", 
+                  display: "flex", alignItems: "center", justifyContent: "center", 
+                  margin: "0 auto 1rem" 
+                }}>
+                  <Trash2 size={24} />
+                </div>
+                <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.25rem" }}>Eliminar Análisis</h3>
+                <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.95rem" }}>
+                  ¿Estás seguro que deseas eliminar este análisis? Esta acción no se puede deshacer.
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "1rem" }}>
+                <button onClick={() => setDeleteConfirmId(null)} className="btn-secondary" style={{ flex: 1 }}>Cancelar</button>
+                <button onClick={executeDelete} className="btn-primary" style={{ flex: 1, background: "var(--danger)", borderColor: "var(--danger)", color: "white" }}>Eliminar</button>
               </div>
             </div>
           </div>
