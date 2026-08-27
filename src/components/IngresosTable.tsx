@@ -235,7 +235,7 @@ export default function IngresosTable({ ingresos, onEdit, onRefresh, period, use
                 <th style={{ padding: '0.75rem 1rem' }}>DOCUMENTACIÓN</th>
               )}
               {!isBioq && <th style={{ padding: '0.75rem 1rem' }}>TELÉFONO</th>}
-              {!isBioq && <th style={{ padding: '0.75rem 1rem' }}>PROFESIONAL</th>}
+              <th style={{ padding: '0.75rem 1rem' }}>PROFESIONAL</th>
               <th style={{ padding: '0.75rem 1rem' }}>ESTUDIO</th>
               {!isBioq && <th style={{ padding: '0.75rem 1rem' }}>OBRA SOCIAL</th>}
               {!isBioq && <th style={{ padding: '0.75rem 1rem' }}>COSEGURO</th>}
@@ -410,11 +410,9 @@ export default function IngresosTable({ ingresos, onEdit, onRefresh, period, use
                       {ing.phone || '-'}
                     </td>
                   )}
-                  {!isBioq && (
-                    <td style={{ padding: '0.75rem 1rem', color: 'var(--text-main)' }}>
-                      <EditableCell id={ing.id} field="professional_name" value={ing.professional_name} isReadOnly={isBioq} />
-                    </td>
-                  )}
+                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-main)' }}>
+                    <EditableCell id={ing.id} field="professional_name" value={ing.professional_name} isReadOnly={isBioq} />
+                  </td>
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--primary)', fontWeight: 700 }}>
                     {ing.analyses && ing.analyses.length > 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
