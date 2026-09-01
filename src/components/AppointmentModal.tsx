@@ -165,7 +165,10 @@ export default function AppointmentModal({
         }
       }
 
-      await createAppointment(formData);
+      const res = await createAppointment(formData);
+      if (res && res.error) {
+        throw new Error(res.error);
+      }
       onClose();
       router.refresh();
     } catch(err: any) {

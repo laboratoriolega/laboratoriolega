@@ -195,7 +195,7 @@ export async function createAppointment(formData: FormData) {
   } catch (error: any) {
     await client.query('ROLLBACK');
     console.error("Error creating appointment:", error);
-    throw new Error(error.message);
+    return { error: error.message };
   } finally {
     client.release();
   }
