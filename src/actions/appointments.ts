@@ -241,6 +241,7 @@ export async function updateAppointment(formData: FormData) {
     const domicilio_address = formData.get("domicilio_address") as string;
     const google_maps_link = domicilio_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(domicilio_address)}` : null;
     const files = formData.getAll("document") as File[];
+    const reschedule_reason = formData.get("reschedule_reason") as string;
 
     // Check limit if changing type to an air test or changing date for an air test appointment
     const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'TEST DE AIRE', 'AIRES'];
@@ -255,13 +256,16 @@ export async function updateAppointment(formData: FormData) {
       }
     }
 
+    const rescheduleText = reschedule_reason ? `\n[REPROGRAMACIÓN ${format(new Date(), "dd/MM")}] Motivo: ${reschedule_reason}` : '';
+
     await client.query(
       `UPDATE appointments a
        SET appointment_date = $1, analysis_type = $2, aire_test_type = $3, observations = $4, is_domicilio = $5, domicilio_address = $6, google_maps_link = $7,
-           health_insurance = NULLIF($9, '')
+           health_insurance = NULLIF($9, ''),
+           evolution_notes = COALESCE(evolution_notes, '') || $10
        FROM patients p
        WHERE a.patient_id = p.id AND a.id = $8`,
-      [appointment_date, analysis_type, aire_test_type, observations, is_domicilio, domicilio_address, google_maps_link, id, health_insurance]
+      [appointment_date, analysis_type, aire_test_type, observations, is_domicilio, domicilio_address, google_maps_link, id, health_insurance, rescheduleText]
     );
 
     // Sync Multiple Analyses

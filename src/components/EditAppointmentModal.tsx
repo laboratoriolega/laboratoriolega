@@ -17,6 +17,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
   const [analyses, setAnalyses] = useState<{ analysis_name: string, aire_test_subtype?: string, is_aire?: boolean }[]>([{ analysis_name: '', aire_test_subtype: '', is_aire: true }]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [insuranceValue, setInsuranceValue] = useState("");
+  const [isRescheduling, setIsRescheduling] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
         }]);
       }
       setSelectedFiles([]); // Reset new files when opening a different appointment
+      setIsRescheduling(false);
     }
   }, [ap]);
 
@@ -199,9 +201,19 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
             />
           </div>
 
-          <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-            <div>
-              <label style={labelStyle}>Fecha y Hora</label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label style={{...labelStyle, marginBottom: 0}}>Fecha y Hora</label>
+              <button 
+                type="button"
+                onClick={() => setIsRescheduling(!isRescheduling)}
+                style={{ padding: "0.25rem 0.6rem", fontSize: "0.7rem", background: isRescheduling ? "transparent" : "var(--primary)", color: isRescheduling ? "var(--primary)" : "white", border: "1px solid var(--primary)", borderRadius: "6px", cursor: "pointer", fontWeight: 700, transition: "all 0.2s" }}
+              >
+                {isRescheduling ? "Cancelar Reprogramación" : "Reprogramar"}
+              </button>
+            </div>
+            
+            {!isRescheduling ? (
               <input 
                 required 
                 name="appointment_date" 
@@ -210,7 +222,32 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
                 className="input-field"
                 style={inputStyle}
               />
-            </div>
+            ) : (
+              <div style={{ background: "rgba(14, 165, 233, 0.05)", padding: "1rem", borderRadius: "10px", border: "1px solid rgba(14, 165, 233, 0.3)", display: "flex", flexDirection: "column", gap: "0.8rem", animation: 'fadeIn 0.3s ease' }}>
+                <div>
+                  <label style={{...labelStyle, color: "var(--primary)"}}>Nueva Fecha y Hora</label>
+                  <input 
+                    required 
+                    name="appointment_date" 
+                    type="datetime-local" 
+                    defaultValue={ap.appointment_date ? format(new Date(ap.appointment_date), "yyyy-MM-dd'T'HH:mm") : ""}
+                    className="input-field"
+                    style={{...inputStyle, borderColor: "rgba(14, 165, 233, 0.4)", background: "var(--glass-bg)"}}
+                  />
+                </div>
+                <div>
+                  <label style={{...labelStyle, color: "var(--primary)"}}>Motivo de Reprogramación</label>
+                  <input 
+                    required
+                    name="reschedule_reason" 
+                    type="text" 
+                    placeholder="Ej: A pedido del paciente..."
+                    className="input-field"
+                    style={{...inputStyle, borderColor: "rgba(14, 165, 233, 0.4)", background: "var(--glass-bg)"}}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Multi-Analysis Selection */}
