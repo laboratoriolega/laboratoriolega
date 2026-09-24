@@ -258,6 +258,8 @@ export default function IngresosTable({ ingresos, onEdit, onRefresh, period, use
                 return name === 'CURVA' || name === 'EXTRACCIÓN - ENDOCRINOLOGÍA';
               }) || ['CURVA', 'EXTRACCIÓN - ENDOCRINOLOGÍA'].includes((ing.analysis_type || '').toUpperCase());
 
+              const isHighlighted = highlightId && parseInt(highlightId) === ing.id;
+
               return (
                 <tr
                   key={ing.id}
