@@ -2,7 +2,7 @@ import pool from '@/lib/db';
 import { Calendar, Stethoscope, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es } from 'date-fns/locale/es';
 import HistoryItem from '@/components/HistoryItem';
 
 export const dynamic = "force-dynamic";

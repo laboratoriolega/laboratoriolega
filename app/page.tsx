@@ -1,6 +1,6 @@
 import { getAppointments } from "@/actions/appointments";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from "date-fns/locale/es";
 import { Calendar, Clock, Activity, FileText, X, Car } from "lucide-react";
 import NewAppointmentModal from "@/components/NewAppointmentModal";
 import Link from "next/link";
