@@ -6,7 +6,7 @@ import IngresosTable from "@/components/IngresosTable";
 import NewIngresoModal from "@/components/NewIngresoModal";
 import { Plus, Filter, Activity, ArrowLeft, Users } from "lucide-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { useSearchParams } from "next/navigation";
 
 import IngresosReports from "@/components/IngresosReports";

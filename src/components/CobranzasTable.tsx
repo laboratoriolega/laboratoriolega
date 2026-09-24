@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { updateCobranza, createCobranza, deleteCobranza } from "@/actions/listados";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Plus, Trash2, Save, X, Search, ChevronDown, CheckSquare } from "lucide-react";
 
 type Tab = 'pendiente' | 'factura_instante' | 'finalizado';

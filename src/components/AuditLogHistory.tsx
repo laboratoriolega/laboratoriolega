@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Calendar, Loader2, User } from "lucide-react";
 import { getAuditLogs, getAuditUsers } from "@/actions/audit";
 import { formatAuditLog } from "@/lib/audit-format";

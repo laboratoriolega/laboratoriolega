@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useTransition } from "react";
 import { createApross, deleteApross, updateApross, deleteAprossDocument } from "@/actions/listados";
 import { searchPatients } from "@/actions/patients";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Plus, Trash2, Save, X, Search, FileText, Upload, Check, AlertCircle, Pencil, User as UserIcon, Calendar as CalendarIcon, Phone } from "lucide-react";
 
 export default function AprossTable({ data }: { data: any[] }) {

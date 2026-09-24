@@ -3,7 +3,7 @@
 import { useState, useRef, useTransition, useEffect } from "react";
 import { createFacturacionOS, updateFacturacionOS, deleteFacturacionOS, deleteFacturacionOSDocument, updateFacturacionOSSeguimiento } from "@/actions/listados";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Plus, Trash2, Save, X, Search, FileText, Upload, Pencil } from "lucide-react";
 
 const OBRAS_SOCIALES = ['OSDE', 'SWISS MEDICAL', 'GALENO', 'MEDIFE', 'CIBIC', 'METABOLOMICA', 'FEDERACION', 'ASOCIACION'];

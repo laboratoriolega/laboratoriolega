@@ -5,7 +5,7 @@ import { Search, User, Calendar, FileText, Plus, Send, CheckCircle, Clock, Trash
 import { searchPatients, getPatientAppointments, uploadMedicalResult, getAllMedicalResults, markAsNotified, markAllPendingAsNotified, deleteMedicalResult } from "@/actions/medical_results";
 import Portal from "./Portal";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 
 export default function MedicalResultsManager({ currentUser }: { currentUser: any }) {
   const [searchQuery, setSearchQuery] = useState("");

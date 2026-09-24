@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, subMonths, addMonths } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Clock, ChevronLeft, ChevronRight, Wind, AlertCircle, Edit2, CheckCircle, MessageSquare, Loader2, Ban } from "lucide-react";
 import { toggleIndicationsStatus } from "@/actions/appointments";
 import BlockedDaysPanel from "./BlockedDaysPanel";

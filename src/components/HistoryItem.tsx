@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Calendar, FileText, ChevronDown, ChevronUp, Clock, Info } from "lucide-react";
 
 const ACTION_LABELS: Record<string, string> = {

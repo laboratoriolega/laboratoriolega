@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { updatePendiente, createPendiente, deletePendiente } from "@/actions/listados";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Plus, Trash2, Save, X } from "lucide-react";
 
 export default function PendientesTable({ data }: { data: any[] }) {

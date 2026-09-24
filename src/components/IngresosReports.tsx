@@ -7,9 +7,10 @@ import {
 } from 'recharts';
 import { Download, ChevronDown, TrendingUp, Users, Activity, DollarSign } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { es } from 'date-fns/locale';
-import html2canvas from 'html2canvas';
+import { es } from 'date-fns/locale/es';
+import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const AIR_TEST_NAMES = new Set(['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES']);
 
@@ -176,39 +177,73 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
     pdf.save(`Reporte_Laboratorio_Lega_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
   };
 
-  const exportCSV = () => {
+  const exportExcel = () => {
     setShowExportMenu(false);
     const dateLabel = `${format(parseLocalDate(dateRange.start), 'dd/MM/yyyy')} al ${format(parseLocalDate(dateRange.end), 'dd/MM/yyyy')}`;
-    const rows: string[] = [
-      `Reporte Laboratorio Lega - ${dateLabel}`,
-      '',
-      'DISTRIBUCIÓN DE ESTUDIOS',
-      'Estudio,Cantidad',
-      ...stats.analysisData.map(d => `${d.name},${d.value}`),
-      '',
-      'COBERTURAS MÉDICAS',
-      'Obra Social,Cantidad',
-      ...stats.insuranceData.map(d => `${d.name},${d.value}`),
-      '',
-      'PACIENTES POR PROFESIONAL',
-      'Profesional,Cantidad',
-      ...stats.professionalData.map(d => `${d.name},${d.value}`),
-      '',
-      'MÉTODOS DE PAGO',
-      'Método,Cantidad',
-      ...stats.paymentData.map(d => `${d.name},${d.value}`),
-      '',
-      `Total pacientes,${stats.totalEntries}`,
-      `Caja estimada,$${stats.totalRevenue.toLocaleString()}`,
-      `Agregados cobrados,$${stats.totalAgregadosCobrados.toLocaleString()}`,
+
+    const wb = XLSX.utils.book_new();
+
+    const detallePacientes = filteredData.map(item => {
+      const particular = parseFloat(item.particular_price) || 0;
+      const coseguroAgregado = item.coseguro_agregado ? (parseFloat(item.total_coseguro_pagado) || 0) : (parseFloat(item.coseguro) || 0);
+      const totalCobrado = particular + coseguroAgregado;
+      
+      const studyName = item.analyses && item.analyses.length > 0 
+        ? item.analyses.map((a: any) => a.name).join(', ')
+        : (item.analysis_type || '');
+
+      return {
+        'Fecha': format(new Date(item.appointment_date), 'dd/MM/yyyy'),
+        'Paciente': item.name || item.paciente || '',
+        'DNI': item.dni || '',
+        'Obra Social': item.health_insurance || 'PARTICULAR',
+        'Estudio': studyName,
+        'Importe Particular': particular > 0 ? particular : '',
+        'Coseguro': coseguroAgregado > 0 ? coseguroAgregado : '',
+        'Total Cobrado': totalCobrado,
+        'Método de Pago': item.payment_method || ''
+      };
+    });
+
+    detallePacientes.push({
+        'Fecha': '',
+        'Paciente': '',
+        'DNI': '',
+        'Obra Social': '',
+        'Estudio': 'TOTAL ACUMULADO:',
+        'Importe Particular': '',
+        'Coseguro': '',
+        'Total Cobrado': stats.totalRevenue,
+        'Método de Pago': ''
+    } as any);
+
+    const wsDetalle = XLSX.utils.json_to_sheet(detallePacientes);
+    wsDetalle['!cols'] = [ {wch: 12}, {wch: 30}, {wch: 12}, {wch: 25}, {wch: 35}, {wch: 18}, {wch: 15}, {wch: 15}, {wch: 20} ];
+    XLSX.utils.book_append_sheet(wb, wsDetalle, "Detalle Pacientes");
+
+    const resumenData = [
+      ['REPORTE ESTADÍSTICO - LABORATORIO LEGA'],
+      ['Período', dateLabel],
+      [''],
+      ['TOTALES GENERALES'],
+      ['Total Pacientes', stats.totalEntries],
+      ['Caja Estimada', stats.totalRevenue],
+      ['Agregados Cobrados', stats.totalAgregadosCobrados],
+      [''],
+      ['DISTRIBUCIÓN DE ESTUDIOS', 'Cantidad'],
+      ...stats.analysisData.map(d => [d.name, d.value]),
+      [''],
+      ['COBERTURAS MÉDICAS', 'Cantidad'],
+      ...stats.insuranceData.map(d => [d.name, d.value]),
+      [''],
+      ['MÉTODOS DE PAGO', 'Cantidad'],
+      ...stats.paymentData.map(d => [d.name, d.value])
     ];
-    const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Reporte_Laboratorio_Lega_${format(new Date(), 'dd-MM-yyyy')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+    XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen Estadístico");
+
+    XLSX.writeFile(wb, `Reporte_Lega_${format(new Date(), 'dd-MM-yyyy')}.xlsx`);
   };
 
   return (
@@ -259,10 +294,10 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
                 <Download size={15} /> Descargar PDF
               </button>
               <button
-                onClick={exportCSV}
+                onClick={exportExcel}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, borderTop: '1px solid var(--glass-border)' }}
               >
-                <Download size={15} /> Descargar CSV (Excel)
+                <Download size={15} /> Descargar Excel
               </button>
             </div>
           )}

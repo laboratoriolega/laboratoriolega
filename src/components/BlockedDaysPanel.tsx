@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Ban, Trash2, Plus, Loader2, Edit2, Check, X } from "lucide-react";
 import { createBlockedDay, deleteBlockedDay, updateBlockedDay } from "@/actions/appointments";
 import { useRouter } from "next/navigation";

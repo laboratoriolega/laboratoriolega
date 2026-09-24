@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Download, ChevronDown, Users, Activity, Shield, CalendarDays, X } from 'lucide-react';
 import { format, isWithinInterval } from 'date-fns';
 import { startOfMonth, endOfMonth } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es } from 'date-fns/locale/es';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { getProfesionales } from '@/actions/listados';

@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 
 import { useState, useRef, useEffect } from "react";
 import { format, isToday } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { Check, Edit2, Trash2, Search, Filter, Calendar as CalendarIcon, Clock, User, Shield, CreditCard, DollarSign, Mail, MapPin, ArrowDown, ArrowUp, FileText, X } from "lucide-react";
 import { updateIngresoField, deleteIngreso, updateBiochemicalNotice } from "@/actions/ingresos";
 import InternalNotesModal from "./InternalNotesModal";

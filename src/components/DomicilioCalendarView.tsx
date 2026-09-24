@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, subMonths, addMonths } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import AppointmentModal from "./AppointmentModal";
 import EvolutionModal from "./EvolutionModal";
 import EditAppointmentModal from "./EditAppointmentModal";

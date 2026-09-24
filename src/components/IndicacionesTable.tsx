@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { toggleIndicationsStatus } from "@/actions/appointments";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale/es';
 import { CheckCircle, Clock, Loader2, MessageSquare, Phone, Search, Wind, Car } from "lucide-react";
 import { useRouter } from "next/navigation";
 
