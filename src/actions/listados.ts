@@ -1352,3 +1352,66 @@ export async function updateAnalisisConfig(config: any) {
     return { error: error.message };
   }
 }
+
+export async function getIngresosPorObraSocial(obraSocial: string, desde: string, hasta: string) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    const res = await pool.query(`
+      SELECT a.id, a.appointment_date, p.name as paciente, p.dni, 
+             COALESCE(NULLIF(a.health_insurance, ''), p.health_insurance) as health_insurance, 
+             a.coseguro, a.payment_method
+      FROM appointments a
+      JOIN patients p ON a.patient_id = p.id
+      WHERE (a.is_ingreso = TRUE OR a.status = 'COMPLETADO' OR a.status = 'CONFIRMAR ASISTENCIA')
+        AND COALESCE(NULLIF(a.health_insurance, ''), p.health_insurance) ILIKE $1
+        AND a.appointment_date >= $2::timestamp
+        AND a.appointment_date <= $3::timestamp + interval '1 day' - interval '1 second'
+      ORDER BY a.appointment_date ASC
+    `, [`%${obraSocial}%`, desde, hasta]);
+
+    return { data: JSON.parse(JSON.stringify(res.rows)), error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
+}
+
+export async function updateCoseguroMasivo(ids: string[], monto: number, paymentMethod: string) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    await pool.query(`
+      UPDATE appointments
+      SET coseguro = $1, payment_method = $2
+      WHERE id = ANY($3::uuid[])
+    `, [monto, paymentMethod, ids]);
+
+    revalidatePath("/listados/pago-obrasocial");
+    revalidatePath("/ingresos");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function updateCoseguroIndividual(id: string, monto: string | null) {
+  try {
+    const session = await getSession() as any;
+    if (!session) throw new Error("No autenticado");
+
+    await pool.query(`
+      UPDATE appointments
+      SET coseguro = $1
+      WHERE id = $2
+    `, [monto ? Number(monto) : null, id]);
+
+    revalidatePath("/listados/pago-obrasocial");
+    revalidatePath("/ingresos");
+    return { success: true };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+

@@ -60,7 +60,7 @@ export default function CobranzasTable({ data }: { data: any[] }) {
   const [editValues, setEditValues] = useState<any>({});
   const [showNewRow, setShowNewRow] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({});
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkNroFactura, setBulkNroFactura] = useState("");
   const [bulkObservacion, setBulkObservacion] = useState("");
@@ -116,7 +116,7 @@ export default function CobranzasTable({ data }: { data: any[] }) {
   }
 
   const toggleMonth = (month: string) => {
-    setCollapsedMonths(prev => ({ ...prev, [month]: !prev[month] }));
+    setExpandedMonths(prev => ({ ...prev, [month]: !prev[month] }));
   };
 
   return (
@@ -293,7 +293,7 @@ export default function CobranzasTable({ data }: { data: any[] }) {
             onClick={() => toggleMonth(month)}
             style={{ padding: "1rem 1.5rem", background: "var(--bg-gradient-end)", borderBottom: "1px solid var(--glass-border)", display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", userSelect: "none" }}
           >
-            <ChevronDown size={18} style={{ transform: collapsedMonths[month] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-muted)' }} />
+            <ChevronDown size={18} style={{ transform: expandedMonths[month] ? 'none' : 'rotate(-90deg)', transition: 'transform 0.2s', color: 'var(--text-muted)' }} />
             <h4 style={{ margin: 0, fontSize: "1rem", textTransform: "capitalize", color: "var(--text-main)" }}>
               {month !== 'sin-fecha' ? format(new Date(month + "-02"), "MMMM yyyy", { locale: es }) : 'Sin fecha'}
             </h4>
@@ -325,7 +325,7 @@ export default function CobranzasTable({ data }: { data: any[] }) {
           </div>
 
           {/* Cards layout */}
-          {!collapsedMonths[month] && (
+          {expandedMonths[month] && (
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {groups[month].map((item: any, idx: number) => {
               const isEditing = editingId === item.id;
