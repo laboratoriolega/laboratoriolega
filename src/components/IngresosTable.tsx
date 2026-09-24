@@ -253,7 +253,10 @@ export default function IngresosTable({ ingresos, onEdit, onRefresh, period, use
               const isTodayRow = isToday(new Date(ing.appointment_date));
               const isChecked = optimisticChecks[ing.id] ?? ing.checkbox_checked;
 
-              const isHighlighted = highlightId && parseInt(highlightId) === ing.id;
+              const isPab = ing.analyses?.some((a: any) => {
+                const name = (a.name || '').toUpperCase();
+                return name === 'CURVA' || name === 'EXTRACCIÓN - ENDOCRINOLOGÍA';
+              }) || ['CURVA', 'EXTRACCIÓN - ENDOCRINOLOGÍA'].includes((ing.analysis_type || '').toUpperCase());
 
               return (
                 <tr
@@ -263,7 +266,7 @@ export default function IngresosTable({ ingresos, onEdit, onRefresh, period, use
                   className={isHighlighted ? "blink-highlight" : ""}
                   style={{
                     borderBottom: '1px solid var(--glass-border)',
-                    background: isHighlighted ? 'rgba(239, 68, 68, 0.1)' : (isTodayRow ? 'rgba(14, 165, 233, 0.15)' : (isChecked ? 'rgba(16, 185, 129, 0.1)' : 'transparent')),
+                    background: isHighlighted ? 'rgba(239, 68, 68, 0.1)' : (isTodayRow ? 'rgba(14, 165, 233, 0.15)' : (isChecked ? 'rgba(16, 185, 129, 0.1)' : (isPab ? 'rgba(139, 92, 246, 0.1)' : 'transparent'))),
                     transition: 'all 0.2s'
                   }}
                 >

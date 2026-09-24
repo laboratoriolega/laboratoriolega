@@ -21,6 +21,7 @@ export default function SidebarNav({ session, isCollapsed }: { session?: any, is
     { name: "Ingresos", path: "/ingresos", icon: <IngresosIcon size={20} />, id: "ingresos" },
     { name: "Pacientes", path: "/pacientes", icon: <Users size={20} />, id: "pacientes" },
     { name: "Turnos Aire", path: "/calendario-aire", icon: <Wind size={20} />, id: "calendario" },
+    { name: "PAB", path: "/calendario-pab", icon: <Wind size={20} />, id: "calendario" },
     { name: "Domicilio", path: "/calendario-domicilio", icon: <Car size={20} />, id: "calendario" },
     { name: "Listados", path: "/listados", icon: <ListTodo size={20} />, id: "listados" },
     { name: "Facturacion", path: "/facturacion", icon: <Receipt size={20} />, id: "facturacion" },

@@ -11,7 +11,7 @@ import { compressImage } from "@/lib/compression";
 import Portal from "./Portal";
 import PatientInsuranceSelector from "./PatientInsuranceSelector";
 
-export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: { isOpen: boolean, onClose: () => void, ap: any, isAires?: boolean }) {
+export default function EditAppointmentModal({ isOpen, onClose, ap, isAires, isPab }: { isOpen: boolean, onClose: () => void, ap: any, isAires?: boolean, isPab?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [analysisType, setAnalysisType] = useState("");
   const [analyses, setAnalyses] = useState<{ analysis_name: string, aire_test_subtype?: string, is_aire?: boolean }[]>([{ analysis_name: '', aire_test_subtype: '', is_aire: true }]);
@@ -254,7 +254,7 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
           <div style={{ background: 'rgba(0,0,0,0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>Estudios / Análisis</label>
-              {!isAires && (
+              {!(isAires || isPab) && (
                 <button 
                   type="button" 
                   onClick={() => setAnalyses([...analyses, { analysis_name: '', aire_test_subtype: '' }])}
@@ -267,11 +267,11 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {(() => {
                 // If in Aires mode, separate visible and hidden analyses based on the initial flag
-                const visibleAnalyses = isAires 
+                const visibleAnalyses = (isAires || isPab) 
                   ? analyses.filter(a => a.is_aire !== false)
                   : analyses;
                 
-                const hiddenAnalyses = isAires
+                const hiddenAnalyses = (isAires || isPab)
                   ? analyses.filter(a => a.is_aire === false)
                   : [];
 
@@ -288,22 +288,42 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires }: {
                     {visibleAnalyses.map((ana, idx) => (
                       <div key={idx} style={{ display: 'flex', gap: '0.5rem', animation: 'fadeIn 0.2s ease' }}>
                         <div style={{ flex: 1 }}>
-                          <TipoAnalisisInput
-                            name="analysis_name"
-                            defaultValue={ana.analysis_name}
-                            onChange={(e) => {
-                              const newAnalyses = [...analyses];
-                              const realIndex = analyses.indexOf(ana);
-                              newAnalyses[realIndex].analysis_name = e.target.value;
-                              setAnalyses(newAnalyses);
-                            }}
-                            placeholder="Ej: SIBO, Rutina..."
-                            className="input-field"
-                            style={inputStyle}
-                            required
-                          />
+                          {isPab ? (
+                            <select
+                              name="analysis_name"
+                              value={ana.analysis_name}
+                              onChange={(e) => {
+                                const newAnalyses = [...analyses];
+                                const realIndex = analyses.indexOf(ana);
+                                newAnalyses[realIndex].analysis_name = e.target.value;
+                                setAnalyses(newAnalyses);
+                              }}
+                              className="input-field"
+                              style={inputStyle}
+                              required
+                            >
+                              <option value="">Seleccionar...</option>
+                              <option value="CURVA">CURVA</option>
+                              <option value="EXTRACCIÓN - ENDOCRINOLOGÍA">EXTRACCIÓN - ENDOCRINOLOGÍA</option>
+                            </select>
+                          ) : (
+                            <TipoAnalisisInput
+                              name="analysis_name"
+                              defaultValue={ana.analysis_name}
+                              onChange={(e) => {
+                                const newAnalyses = [...analyses];
+                                const realIndex = analyses.indexOf(ana);
+                                newAnalyses[realIndex].analysis_name = e.target.value;
+                                setAnalyses(newAnalyses);
+                              }}
+                              placeholder="Ej: SIBO, Rutina..."
+                              className="input-field"
+                              style={inputStyle}
+                              required
+                            />
+                          )}
                         </div>
-                        {(!isAires || visibleAnalyses.length > 1) && (
+                        {(!(isAires || isPab) || visibleAnalyses.length > 1) && (
                           <button 
                             type="button" 
                             onClick={() => setAnalyses(analyses.filter(item => item !== ana))}

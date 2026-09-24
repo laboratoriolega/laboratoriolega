@@ -20,7 +20,8 @@ export default function AppointmentModal({
   defaultDate,
   initialData,
   isDomicilio,
-  isAire
+  isAire,
+  isPab
 }: {
   isOpen: boolean,
   onClose: () => void,
@@ -37,6 +38,7 @@ export default function AppointmentModal({
   },
   isDomicilio?: boolean,
   isAire?: boolean,
+  isPab?: boolean,
   slotId?: string
 }) {
   const [loading, setLoading] = useState(false);
@@ -346,15 +348,30 @@ export default function AppointmentModal({
               </div>
               <div>
                 <label style={labelStyle}>Tipo de Análisis</label>
-                <TipoAnalisisInput
-                  name="analysis_type"
-                  defaultValue={initialData?.analysis_type || ""}
-                  onChange={(e) => setAnalysisType(e.target.value)}
-                  className="modern-input"
-                  style={inputStyle}
-                  placeholder="Ej: SIBO, Rutina, etc."
-                  required
-                />
+                {isPab ? (
+                  <select
+                    name="analysis_type"
+                    value={analysisType}
+                    onChange={(e) => setAnalysisType(e.target.value)}
+                    className="modern-input"
+                    style={inputStyle}
+                    required
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="CURVA">CURVA</option>
+                    <option value="EXTRACCIÓN - ENDOCRINOLOGÍA">EXTRACCIÓN - ENDOCRINOLOGÍA</option>
+                  </select>
+                ) : (
+                  <TipoAnalisisInput
+                    name="analysis_type"
+                    defaultValue={initialData?.analysis_type || ""}
+                    onChange={(e) => setAnalysisType(e.target.value)}
+                    className="modern-input"
+                    style={inputStyle}
+                    placeholder="Ej: SIBO, Rutina, etc."
+                    required
+                  />
+                )}
               </div>
             </div>
 
