@@ -69,7 +69,7 @@ export default function PabCalendarView({
   }
 
   // Resolve the effective aire test type from multiple possible sources
-  const resolveTestType = (apt: any): string | undefined => {
+  function resolveTestType(apt: any): string | undefined {
     if (apt.aire_test_type) return apt.aire_test_type;
     // Fall back to analyses array subtype or name
     if (apt.analyses && apt.analyses.length > 0) {
@@ -81,7 +81,7 @@ export default function PabCalendarView({
       if (airAnalysis) return airAnalysis.subtype || airAnalysis.name;
     }
     return apt.analysis_type;
-  };
+  }
 
   const getTypeStyle = (type?: string, status?: string) => {
     let base = { border: '1px solid var(--glass-border)', borderLeft: '5px solid var(--glass-border)', background: 'var(--glass-bg)', opacity: 1 };
