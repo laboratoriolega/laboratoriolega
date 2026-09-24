@@ -4,7 +4,7 @@ import { useState } from "react";
 import { updateCobranza, createCobranza, deleteCobranza } from "@/actions/listados";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, Trash2, Save, X, Search } from "lucide-react";
+import { Plus, Trash2, Save, X, Search, ChevronDown, CheckSquare } from "lucide-react";
 
 type Tab = 'pendiente' | 'factura_instante' | 'finalizado';
 
@@ -60,6 +60,10 @@ export default function CobranzasTable({ data }: { data: any[] }) {
   const [editValues, setEditValues] = useState<any>({});
   const [showNewRow, setShowNewRow] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkNroFactura, setBulkNroFactura] = useState("");
+  const [bulkObservacion, setBulkObservacion] = useState("");
 
   const counts: Record<Tab, number> = { pendiente: 0, factura_instante: 0, finalizado: 0 };
   items.forEach(it => counts[getItemTab(it)]++);
@@ -110,6 +114,10 @@ export default function CobranzasTable({ data }: { data: any[] }) {
     const res = await updateCobranza(id, { tipo: 'finalizado', seguimiento: 'Finalizado' });
     if (!res.error) setItems(prev => prev.map(it => it.id === id ? { ...it, tipo: 'finalizado', seguimiento: 'Finalizado' } : it));
   }
+
+  const toggleMonth = (month: string) => {
+    setCollapsedMonths(prev => ({ ...prev, [month]: !prev[month] }));
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -200,20 +208,124 @@ export default function CobranzasTable({ data }: { data: any[] }) {
         </form>
       )}
 
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && activeTab !== 'finalizado' && (
+        <div className="glass-panel" style={{
+          position: "sticky", top: "1rem", zIndex: 100, padding: "1rem 1.5rem",
+          display: "flex", gap: "1.5rem", flexWrap: "wrap", alignItems: "center",
+          border: "2px solid var(--primary)", background: "var(--bg-gradient-end)",
+          boxShadow: "0 8px 32px rgba(14,165,233,0.15)", borderRadius: "12px",
+          animation: "fadeIn 0.2s ease"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ background: "rgba(14,165,233,0.15)", padding: "0.6rem", borderRadius: "8px", color: "var(--primary)" }}>
+              <CheckSquare size={24} />
+            </div>
+            <div>
+              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Seleccionados</div>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--text-main)" }}>{selectedIds.size} registros</div>
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total a Facturar</div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--primary)" }}>
+              ${Array.from(selectedIds).reduce((acc, id) => {
+                const item = items.find(it => it.id === id);
+                return acc + (item?.total ? parseFloat(item.total) : 0);
+              }, 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </div>
+          </div>
+          <div style={{ width: "1px", height: "40px", background: "var(--glass-border)" }} />
+          <div style={{ flex: 1, display: "flex", gap: "1rem", minWidth: "300px" }}>
+            <input 
+              placeholder="Nro. Factura (ej: 001-1234)" 
+              className="input-field" 
+              value={bulkNroFactura}
+              onChange={e => setBulkNroFactura(e.target.value)}
+              style={{ fontWeight: 600 }}
+            />
+            <input 
+              placeholder="Observación (opcional)" 
+              className="input-field" 
+              style={{ flex: 1, fontWeight: 600 }}
+              value={bulkObservacion}
+              onChange={e => setBulkObservacion(e.target.value)}
+            />
+          </div>
+          <button 
+            className="btn-primary" 
+            style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}
+            onClick={async () => {
+              if (!confirm(`¿Facturar y finalizar los ${selectedIds.size} registros seleccionados?`)) return;
+              const updates: any = { 
+                 estado_factura: 'FACTURADO', 
+                 tipo: 'finalizado', 
+                 seguimiento: 'Finalizado' 
+              };
+              if (bulkNroFactura) updates.nro_factura = bulkNroFactura;
+              if (bulkObservacion) updates.observacion = bulkObservacion;
+
+              setEditingId(-1);
+              try {
+                await Promise.all(Array.from(selectedIds).map(id => updateCobranza(id, updates)));
+                setItems(prev => prev.map(it => selectedIds.has(it.id) ? { ...it, ...updates } : it));
+                setSelectedIds(new Set());
+                setBulkNroFactura("");
+                setBulkObservacion("");
+              } catch (e) {
+                alert("Error al procesar algunos registros");
+              } finally {
+                setEditingId(null);
+              }
+            }}
+            disabled={editingId === -1}
+          >
+            {editingId === -1 ? 'Procesando...' : 'Facturar y Finalizar'}
+          </button>
+        </div>
+      )}
+
       {/* Data Tables */}
       {sortedMonths.length > 0 ? sortedMonths.map(month => (
         <div key={month} className="glass-panel" style={{ overflow: "hidden", borderRadius: "16px" }}>
           {/* Month header */}
-          <div style={{ padding: "1rem 1.5rem", background: "var(--bg-gradient-end)", borderBottom: "1px solid var(--glass-border)", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <h4 style={{ margin: 0, fontSize: "1rem", textTransform: "capitalize" }}>
+          <div 
+            onClick={() => toggleMonth(month)}
+            style={{ padding: "1rem 1.5rem", background: "var(--bg-gradient-end)", borderBottom: "1px solid var(--glass-border)", display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", userSelect: "none" }}
+          >
+            <ChevronDown size={18} style={{ transform: collapsedMonths[month] ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-muted)' }} />
+            <h4 style={{ margin: 0, fontSize: "1rem", textTransform: "capitalize", color: "var(--text-main)" }}>
               {month !== 'sin-fecha' ? format(new Date(month + "-02"), "MMMM yyyy", { locale: es }) : 'Sin fecha'}
             </h4>
             <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 600 }}>
               {groups[month].length} {groups[month].length === 1 ? 'registro' : 'registros'}
             </span>
+            <div style={{ flex: 1 }} />
+            
+            {activeTab !== 'finalizado' && (
+              <label 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', cursor: 'pointer', padding: '0.3rem 0.6rem', background: 'rgba(14,165,233,0.1)', borderRadius: '6px' }} 
+                onClick={e => e.stopPropagation()}
+              >
+                <input type="checkbox" 
+                  style={{ cursor: 'pointer', accentColor: 'var(--primary)', width: '14px', height: '14px' }}
+                  checked={groups[month].length > 0 && groups[month].every((item: any) => selectedIds.has(item.id))}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    const newSet = new Set(selectedIds);
+                    groups[month].forEach((item: any) => {
+                      if (isChecked) newSet.add(item.id);
+                      else newSet.delete(item.id);
+                    });
+                    setSelectedIds(newSet);
+                  }}
+                /> Selección Masiva
+              </label>
+            )}
           </div>
 
           {/* Cards layout */}
+          {!collapsedMonths[month] && (
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {groups[month].map((item: any, idx: number) => {
               const isEditing = editingId === item.id;
@@ -224,12 +336,32 @@ export default function CobranzasTable({ data }: { data: any[] }) {
                   style={{
                     padding: "1.1rem 1.5rem",
                     borderBottom: idx < groups[month].length - 1 ? "1px solid var(--glass-border)" : "none",
-                    background: isEditing ? "rgba(14,165,233,0.04)" : "transparent",
-                    transition: "background 0.2s"
+                    background: selectedIds.has(item.id) ? "rgba(14,165,233,0.06)" : (isEditing ? "rgba(14,165,233,0.04)" : "transparent"),
+                    transition: "background 0.2s",
+                    display: "flex",
+                    gap: "1rem"
                   }}
                 >
-                  {/* Row 1: date + patient + estado badge + actions */}
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+                  {/* Checkbox column */}
+                  {activeTab !== 'finalizado' && (
+                    <div style={{ paddingTop: '0.35rem' }}>
+                      <input 
+                        type="checkbox" 
+                        style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                        checked={selectedIds.has(item.id)}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedIds);
+                          if (e.target.checked) newSet.add(item.id);
+                          else newSet.delete(item.id);
+                          setSelectedIds(newSet);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ flex: 1 }}>
+                    {/* Row 1: date + patient + estado badge + actions */}
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
                     <div style={{ display: "flex", gap: "1.25rem", alignItems: "center", flexWrap: "wrap", flex: 1 }}>
                       <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", whiteSpace: "nowrap", fontWeight: 600 }}>
                         {item.fecha ? format(new Date(item.fecha), "dd/MM/yyyy") : '—'}
@@ -331,10 +463,12 @@ export default function CobranzasTable({ data }: { data: any[] }) {
                       </div>
                     )}
                   </div>
+                  </div>
                 </div>
               );
             })}
           </div>
+          )}
         </div>
       )) : (
         <div className="glass-panel" style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)", borderRadius: "16px" }}>
