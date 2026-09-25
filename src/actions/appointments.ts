@@ -173,8 +173,6 @@ export async function createAppointment(formData: FormData) {
     }
 
     // Insert Analyses (Multiple)
-    const analysisNames = formData.getAll("analysis_name") as string[];
-    const analysisSubtypes = formData.getAll("aire_test_subtype") as string[];
 
     if (analysisNames.length > 0) {
       for (let i = 0; i < analysisNames.length; i++) {
@@ -319,8 +317,6 @@ export async function updateAppointment(formData: FormData) {
     );
 
     // Sync Multiple Analyses
-    const analysisNames = analysisNamesRaw;
-    const analysisSubtypes = formData.getAll("aire_test_subtype") as string[];
 
     if (analysisNames.length > 0) {
       // Delete old ones first
