@@ -104,6 +104,31 @@ export async function createAppointment(formData: FormData) {
       }
     }
 
+    // Turn limit for 'CURVA' (Max 3 on Thursdays)
+    const analysisNames = formData.getAll("analysis_name") as string[];
+    const analysisSubtypes = formData.getAll("aire_test_subtype") as string[];
+    if (analysis_type?.toUpperCase() === 'CURVA' || analysisNames.some(n => n.toUpperCase() === 'CURVA') || analysisSubtypes.some(n => n?.toUpperCase() === 'CURVA')) {
+      const targetDate = new Date(appointment_date);
+      if (targetDate.getDay() === 4) { // Thursday
+        const targetDateStr = appointment_date.split('T')[0];
+        const countRes = await client.query(
+          `SELECT COUNT(*) FROM appointments a
+           WHERE DATE(a.appointment_date) = $1 AND (a.status IS NULL OR a.status != 'CANCELADO')
+           AND (
+             UPPER(a.analysis_type) = 'CURVA' OR UPPER(a.aire_test_type) = 'CURVA'
+             OR EXISTS (
+               SELECT 1 FROM appointment_analyses aa
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) = 'CURVA' OR UPPER(aa.aire_test_subtype) = 'CURVA')
+             )
+           )`,
+          [targetDateStr]
+        );
+        if (parseInt(countRes.rows[0].count) >= 3) {
+          throw new Error("Límite excedido: Solo se permiten 3 turnos de CURVA los días Jueves.");
+        }
+      }
+    }
+
     // Find or Create patient. 
     // We search by DNI AND Name to allow multiple people to share a DNI (like a placeholder '.')
     let patientRes = await client.query(
@@ -256,6 +281,31 @@ export async function updateAppointment(formData: FormData) {
       }
     }
 
+    // Turn limit for 'CURVA' (Max 3 on Thursdays)
+    const analysisNames = analysisNamesRaw;
+    const analysisSubtypes = formData.getAll("aire_test_subtype") as string[];
+    if (analysis_type?.toUpperCase() === 'CURVA' || analysisNames.some(n => n.toUpperCase() === 'CURVA') || analysisSubtypes.some(n => n?.toUpperCase() === 'CURVA')) {
+      const targetDate = new Date(appointment_date);
+      if (targetDate.getDay() === 4) { // Thursday
+        const targetDateStr = appointment_date.split('T')[0];
+        const countRes = await client.query(
+          `SELECT COUNT(*) FROM appointments a
+           WHERE DATE(a.appointment_date) = $1 AND a.id != $2 AND (a.status IS NULL OR a.status != 'CANCELADO')
+           AND (
+             UPPER(a.analysis_type) = 'CURVA' OR UPPER(a.aire_test_type) = 'CURVA'
+             OR EXISTS (
+               SELECT 1 FROM appointment_analyses aa
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) = 'CURVA' OR UPPER(aa.aire_test_subtype) = 'CURVA')
+             )
+           )`,
+          [targetDateStr, id]
+        );
+        if (parseInt(countRes.rows[0].count) >= 3) {
+          throw new Error("Límite excedido: Solo se permiten 3 turnos de CURVA los días Jueves.");
+        }
+      }
+    }
+
     const rescheduleText = reschedule_reason ? `\n[REPROGRAMACIÓN ${format(new Date(), "dd/MM")}] Motivo: ${reschedule_reason}` : '';
 
     await client.query(
@@ -358,7 +408,11 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
     if (!session) throw new Error("No autorizado");
 
     // Get current data for logging and logic
-    const current = await pool.query("SELECT p.name, a.analysis_type FROM appointments a JOIN patients p ON a.patient_id = p.id WHERE a.id = $1", [appointmentId]);
+    const current = await pool.query(`
+      SELECT p.name, a.analysis_type, a.aire_test_type,
+             (SELECT COUNT(*) FROM appointment_analyses aa WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) = 'CURVA' OR UPPER(aa.aire_test_subtype) = 'CURVA')) as is_curva
+      FROM appointments a JOIN patients p ON a.patient_id = p.id WHERE a.id = $1
+    `, [appointmentId]);
     const apt = current.rows[0];
 
     // Check limit if moving an air test
@@ -371,6 +425,30 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
       );
       if (parseInt(countRes.rows[0].count) >= 4) {
         throw new Error("Límite excedido: Solo se permiten 4 turnos de pruebas de aire por día.");
+      }
+    }
+
+    // Turn limit for 'CURVA' (Max 3 on Thursdays)
+    const isCurva = apt?.analysis_type?.toUpperCase() === 'CURVA' || apt?.aire_test_type?.toUpperCase() === 'CURVA' || apt?.is_curva > 0;
+    if (isCurva) {
+      const targetDate = new Date(newDate);
+      if (targetDate.getDay() === 4) { // Thursday
+        const targetDateStr = newDate.split('T')[0];
+        const countRes = await pool.query(
+          `SELECT COUNT(*) FROM appointments a
+           WHERE DATE(a.appointment_date) = $1 AND a.id != $2 AND (a.status IS NULL OR a.status != 'CANCELADO')
+           AND (
+             UPPER(a.analysis_type) = 'CURVA' OR UPPER(a.aire_test_type) = 'CURVA'
+             OR EXISTS (
+               SELECT 1 FROM appointment_analyses aa
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) = 'CURVA' OR UPPER(aa.aire_test_subtype) = 'CURVA')
+             )
+           )`,
+          [targetDateStr, appointmentId]
+        );
+        if (parseInt(countRes.rows[0].count) >= 3) {
+          throw new Error("Límite excedido: Solo se permiten 3 turnos de CURVA los días Jueves.");
+        }
       }
     }
 

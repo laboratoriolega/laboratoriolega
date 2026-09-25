@@ -162,7 +162,9 @@ export default function PabCalendarView({
             const activeDayAppts = dayAppts.filter(a => a.status !== 'CANCELADO');
             const isCurrentMonth = isSameMonth(day, monthStart);
             const isToday = isSameDay(day, new Date());
-            const isFull = activeDayAppts.length >= 3;
+            const isThursday = day.getDay() === 4;
+            const curvaCount = activeDayAppts.filter(a => resolveTestType(a)?.toUpperCase() === 'CURVA').length;
+            const isCurvaFull = isThursday && curvaCount >= 3;
             const blocked = getBlockedInfo(day);
             const isBlocked = blocked !== null;
 
@@ -171,7 +173,6 @@ export default function PabCalendarView({
                 key={day.toISOString()}
                 onClick={() => {
                   if (isBlocked) return;
-                  if (isFull) { alert("Límite de turnos alcanzado para este día (Máx 3)."); return; }
                   setSelectedDate(day);
                   setIsModalOpen(true);
                 }}
@@ -190,8 +191,12 @@ export default function PabCalendarView({
                   e.currentTarget.style.background = isCurrentMonth ? 'var(--glass-bg)' : 'rgba(0,0,0,0.05)';
                   const apptId = e.dataTransfer.getData("appointmentId");
                   if (apptId) {
-                    if (isFull) { alert("No se pueden mover turnos a este día: Límite de 3 alcanzado."); return; }
                     const originalAppt = airesAppts.find(a => a.id === apptId);
+                    const effectiveType = originalAppt ? resolveTestType(originalAppt) : null;
+                    if (isCurvaFull && effectiveType?.toUpperCase() === 'CURVA') { 
+                      alert("Límite de turnos de CURVA alcanzado para este Jueves (Máx 3)."); 
+                      return; 
+                    }
                     let targetDateTime = day.toISOString();
                     if (originalAppt && originalAppt.appointment_date) {
                       const originalDate = new Date(originalAppt.appointment_date);
@@ -206,19 +211,19 @@ export default function PabCalendarView({
                 style={{
                   background: isBlocked
                     ? 'rgba(239,68,68,0.1)'
-                    : (isCurrentMonth ? (isFull ? 'rgba(239,68,68,0.05)' : 'var(--glass-bg)') : 'rgba(0,0,0,0.05)'),
+                    : (isCurrentMonth ? (isCurvaFull ? 'rgba(239,68,68,0.02)' : 'var(--glass-bg)') : 'rgba(0,0,0,0.05)'),
                   border: isBlocked
                     ? '2px solid rgba(239,68,68,0.45)'
-                    : (isFull ? '2px dashed var(--danger)' : (isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)')),
+                    : (isCurvaFull ? '2px dashed rgba(239,68,68,0.3)' : (isToday ? '2px solid var(--primary)' : '1px solid var(--glass-border)')),
                   borderRadius: '8px',
-                  cursor: (isBlocked || isFull) ? 'not-allowed' : 'pointer',
+                  cursor: isBlocked ? 'not-allowed' : 'pointer',
                   padding: '0.5rem',
                   display: 'flex', flexDirection: 'column', gap: '0.25rem',
                   minHeight: '120px',
                   opacity: isCurrentMonth ? 1 : 0.4,
                   transition: 'all 0.2s ease',
                 }}
-                className={!isFull && isCurrentMonth && !isBlocked ? "hoverable-day" : ""}
+                className={isCurrentMonth && !isBlocked ? "hoverable-day" : ""}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                   <p style={{ fontWeight: 700, fontSize: '0.875rem', margin: 0, color: isBlocked ? '#EF4444' : (isToday ? 'var(--primary)' : (isCurrentMonth ? 'var(--text-main)' : 'var(--text-muted)')) }}>
@@ -227,14 +232,25 @@ export default function PabCalendarView({
                   {isBlocked ? (
                     <Ban size={14} color="#EF4444" />
                   ) : (
-                    <span style={{
-                      fontSize: '0.65rem', fontWeight: 700,
-                      background: isFull ? 'var(--danger)' : (activeDayAppts.length > 0 ? 'var(--primary)' : 'rgba(0,0,0,0.1)'),
-                      color: activeDayAppts.length > 0 ? 'white' : 'var(--text-muted)',
-                      padding: '0.1rem 0.4rem', borderRadius: '4px',
-                    }}>
-                      {activeDayAppts.length}/3
-                    </span>
+                    isThursday ? (
+                      <span style={{
+                        fontSize: '0.6rem', fontWeight: 700,
+                        background: isCurvaFull ? 'var(--danger)' : (curvaCount > 0 ? '#10B981' : 'rgba(0,0,0,0.05)'),
+                        color: curvaCount > 0 ? 'white' : 'var(--text-muted)',
+                        padding: '0.1rem 0.3rem', borderRadius: '4px',
+                      }}>
+                        CURVA {curvaCount}/3
+                      </span>
+                    ) : (
+                      <span style={{
+                        fontSize: '0.6rem', fontWeight: 700,
+                        background: 'rgba(0,0,0,0.05)',
+                        color: 'var(--text-muted)',
+                        padding: '0.1rem 0.3rem', borderRadius: '4px',
+                      }}>
+                        {activeDayAppts.length}
+                      </span>
+                    )
                   )}
                 </div>
 
@@ -319,9 +335,9 @@ export default function PabCalendarView({
                        </div>
                       );
                     })}
-                    {isFull && (
+                    {isCurvaFull && (
                       <div style={{ marginTop: 'auto', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.6rem', fontWeight: 800 }}>
-                        <AlertCircle size={10} /> CUPO AGOTADO
+                        <AlertCircle size={10} /> CUPO CURVA JUEVES AGOTADO
                       </div>
                     )}
                   </div>
