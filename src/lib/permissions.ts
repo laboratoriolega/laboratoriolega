@@ -24,7 +24,16 @@ export const MODULES = [
     ]
   },
   { id: "resumen-medico", label: "Resumen Médico" },
-  { id: "calendario", label: "Calendario" },
+  {
+    id: "calendario",
+    label: "Calendario",
+    submodules: [
+      { id: "calendario:lista", label: "Turnos en Lista" },
+      { id: "calendario:aire", label: "Turnos Aire" },
+      { id: "calendario:pab", label: "PAB" },
+      { id: "calendario:domicilio", label: "Domicilio" }
+    ]
+  },
   { id: "totem", label: "Tótem" },
   { id: "admin-lega", label: "Administración Lega" },
   { id: "usuarios", label: "Usuarios / Perfil" }
@@ -47,6 +56,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionsConfig> = {
     "listados:precios": "write",
     "resumen-medico": "write",
     "calendario": "write",
+    "calendario:lista": "write",
+    "calendario:aire": "write",
+    "calendario:pab": "write",
+    "calendario:domicilio": "write",
     "totem": "write",
     "admin-lega": "write",
     "usuarios": "write",
@@ -65,6 +78,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionsConfig> = {
     "listados:precios": "read",
     "resumen-medico": "read",
     "calendario": "write",
+    "calendario:lista": "write",
+    "calendario:aire": "write",
+    "calendario:pab": "write",
+    "calendario:domicilio": "write",
     "totem": "read",
     "usuarios": "read",
   },
@@ -84,6 +101,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionsConfig> = {
     "listados:precios": "read",
     "resumen-medico": "read",
     "calendario": "read",
+    "calendario:lista": "read",
+    "calendario:aire": "read",
+    "calendario:pab": "read",
+    "calendario:domicilio": "read",
     "admin-lega": "read",
     "usuarios": "read",
   },

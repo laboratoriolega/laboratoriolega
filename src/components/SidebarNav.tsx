@@ -17,12 +17,12 @@ export default function SidebarNav({ session, isCollapsed }: { session?: any, is
     customPermissions = DEFAULT_ROLE_PERMISSIONS[userRole];
   }
   const allNavItems = [
-    { name: "Turnos en Lista", path: "/", icon: <CalendarDays size={20} />, id: "calendario" },
+    { name: "Turnos en Lista", path: "/", icon: <CalendarDays size={20} />, id: "calendario:lista" },
     { name: "Ingresos", path: "/ingresos", icon: <IngresosIcon size={20} />, id: "ingresos" },
     { name: "Pacientes", path: "/pacientes", icon: <Users size={20} />, id: "pacientes" },
-    { name: "Turnos Aire", path: "/calendario-aire", icon: <Wind size={20} />, id: "calendario" },
-    { name: "PAB", path: "/calendario-pab", icon: <Wind size={20} />, id: "calendario" },
-    { name: "Domicilio", path: "/calendario-domicilio", icon: <Car size={20} />, id: "calendario" },
+    { name: "Turnos Aire", path: "/calendario-aire", icon: <Wind size={20} />, id: "calendario:aire" },
+    { name: "PAB", path: "/calendario-pab", icon: <Wind size={20} />, id: "calendario:pab" },
+    { name: "Domicilio", path: "/calendario-domicilio", icon: <Car size={20} />, id: "calendario:domicilio" },
     { name: "Listados", path: "/listados", icon: <ListTodo size={20} />, id: "listados" },
     { name: "Facturacion", path: "/facturacion", icon: <Receipt size={20} />, id: "facturacion" },
     { name: "Prestaciones", path: "/prestaciones", icon: <PrestacionesIcon size={20} />, id: "admin-lega" },
