@@ -1382,11 +1382,15 @@ export async function updateCoseguroMasivo(ids: string[], monto: number, payment
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
 
+    const note = `\n[Carga Masiva ${format(new Date(), "dd/MM")}] Se sumó $${monto} al Coseguro.`;
+
     await pool.query(`
       UPDATE appointments
-      SET coseguro = $1, payment_method = $2
+      SET coseguro = COALESCE(coseguro, 0) + $1,
+          payment_method = $2,
+          observations = COALESCE(observations, '') || $4
       WHERE id = ANY($3::uuid[])
-    `, [monto, paymentMethod, ids]);
+    `, [monto, paymentMethod, ids, note]);
 
     revalidatePath("/listados/pago-obrasocial");
     revalidatePath("/ingresos");
