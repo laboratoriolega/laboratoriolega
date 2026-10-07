@@ -8,10 +8,48 @@ import DashboardFilters from "@/components/DashboardFilters";
 import DashboardTable from "@/components/DashboardTable";
 import KpiDateFilter from "@/components/KpiDateFilter";
 import { Suspense } from "react";
+import { getSession } from "@/lib/auth";
+import { hasPermission, DEFAULT_ROLE_PERMISSIONS } from "@/lib/permissions";
+import { redirect } from "next/navigation";
 
 export const revalidate = 0; // Disable cache for this page since data changes
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ status?: string, date?: string, q?: string, kpiStart?: string, kpiEnd?: string, kpiCustom?: string }> }) {
+  const session = await getSession() as any;
+  if (!session) {
+    redirect('/login');
+  }
+
+  const userRole = session?.role || 'staff';
+  let customPermissions = typeof session?.custom_permissions === 'string' ? JSON.parse(session.custom_permissions) : (session?.custom_permissions || {});
+  
+  if (Object.keys(customPermissions).length === 0 && DEFAULT_ROLE_PERMISSIONS[userRole]) {
+    customPermissions = DEFAULT_ROLE_PERMISSIONS[userRole];
+  }
+
+  const canViewLista = hasPermission(customPermissions, "calendario:lista", "read");
+  if (!canViewLista) {
+    const allNavItems = [
+      { path: "/ingresos", id: "ingresos" },
+      { path: "/pacientes", id: "pacientes" },
+      { path: "/calendario-aire", id: "calendario:aire" },
+      { path: "/calendario-pab", id: "calendario:pab" },
+      { path: "/calendario-domicilio", id: "calendario:domicilio" },
+      { path: "/listados", id: "listados" },
+      { path: "/facturacion", id: "facturacion" },
+      { path: "/admin-lega", id: "admin-lega" },
+      { path: "/resumen-medico", id: "resumen-medico" },
+      { path: "/perfil", id: "usuarios" },
+    ];
+    
+    for (const item of allNavItems) {
+      if (item.id === "usuarios" || hasPermission(customPermissions, item.id, "read")) {
+        redirect(item.path);
+      }
+    }
+    redirect('/perfil');
+  }
+
   const { data: allAppointments, error } = await getAppointments();
   const filters = await searchParams;
   const today = format(new Date(), "yyyy-MM-dd");
