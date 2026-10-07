@@ -17,7 +17,7 @@ export default function NotificationsBell({ userRole }: { userRole: string }) {
   const router = useRouter();
 
   // Solo roles permitidos
-  if (!['admin', 'gerente', 'administracion', 'bioquimico'].includes(userRole)) {
+  if (!['admin', 'gerente', 'bioquimico'].includes(userRole)) {
     return null;
   }
 
