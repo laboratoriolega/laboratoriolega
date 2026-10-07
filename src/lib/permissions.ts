@@ -127,12 +127,14 @@ export function hasPermission(userPermissions: PermissionsConfig, moduleId: stri
   if (!userPermissions) return false;
   
   const level = userPermissions[moduleId];
+  if (level === "none") return false;
   if (level === "write") return true;
   if (level === "read" && requiredLevel === "read") return true;
   
   if (moduleId.includes(':')) {
     const parentId = moduleId.split(':')[0];
     const parentLevel = userPermissions[parentId];
+    if (parentLevel === "none") return false;
     if (parentLevel === "write") return true;
     if (parentLevel === "read" && requiredLevel === "read") return true;
   }

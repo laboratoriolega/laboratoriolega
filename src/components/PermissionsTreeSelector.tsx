@@ -27,11 +27,7 @@ export default function PermissionsTreeSelector({ role, initialPermissions, onCh
   const handleLevelChange = (id: string, level: PermissionLevel) => {
     setPermissions(prev => {
       const next = { ...prev };
-      if (level === "none") {
-        delete next[id];
-      } else {
-        next[id] = level;
-      }
+      next[id] = level;
       return next;
     });
   };
