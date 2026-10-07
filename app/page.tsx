@@ -6,15 +6,25 @@ import NewAppointmentModal from "@/components/NewAppointmentModal";
 import Link from "next/link";
 import DashboardFilters from "@/components/DashboardFilters";
 import DashboardTable from "@/components/DashboardTable";
+import KpiDateFilter from "@/components/KpiDateFilter";
 import { Suspense } from "react";
 
 export const revalidate = 0; // Disable cache for this page since data changes
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ status?: string, date?: string, q?: string }> }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ status?: string, date?: string, q?: string, kpiStart?: string, kpiEnd?: string, kpiCustom?: string }> }) {
   const { data: allAppointments, error } = await getAppointments();
   const filters = await searchParams;
   const today = format(new Date(), "yyyy-MM-dd");
   const selectedDate = filters.date || today;
+
+  const kpiStart = filters.kpiStart || format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+  const kpiEnd = filters.kpiEnd || format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), "yyyy-MM-dd");
+
+  const kpiAppointments = (allAppointments || []).filter((a: any) => {
+    if (!a || !a.appointment_date) return false;
+    const aptDate = format(new Date(a.appointment_date), "yyyy-MM-dd");
+    return aptDate >= kpiStart && aptDate <= kpiEnd;
+  });
 
   // Filter logic: Exclude Domicilio from the main Laboratory table
   let appointments = (allAppointments || []).filter(a => a && !a.is_domicilio);
@@ -66,6 +76,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       </header>
 
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-1rem' }}>
+        <Suspense fallback={<div style={{ width: '300px', height: '42px', background: 'var(--glass-bg)', borderRadius: '12px' }} />}>
+          <KpiDateFilter />
+        </Suspense>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem' }}>
         <Link href="/" className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', color: 'inherit', border: !filters.status ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}>
@@ -74,7 +90,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Total General</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{kpiAppointments?.length ?? 0}</h3>
           </div>
         </Link>
 
@@ -84,7 +100,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>Confirmados</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'COMPLETADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{kpiAppointments?.filter((a:any) => a?.status === 'COMPLETADO')?.length ?? 0}</h3>
           </div>
         </Link>
 
@@ -94,7 +110,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 }}>Pendientes</p>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'AGENDADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{kpiAppointments?.filter((a:any) => a?.status === 'AGENDADO')?.length ?? 0}</h3>
           </div>
         </Link>
 
@@ -105,8 +121,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, whiteSpace: 'nowrap' }}>Indicaciones (Aire)</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire')?.length ?? 0}</h3>
-              <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>({allAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire' && !a?.indications_sent)?.length ?? 0} p.)</span>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{kpiAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire')?.length ?? 0}</h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>({kpiAppointments?.filter((a:any) => a?.analysis_type === 'Test de aire' && !a?.indications_sent)?.length ?? 0} p.)</span>
             </div>
           </div>
         </Link>
@@ -117,7 +133,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 }}>Cancelados</p>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.status === 'CANCELADO')?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{kpiAppointments?.filter((a:any) => a?.status === 'CANCELADO')?.length ?? 0}</h3>
           </div>
         </Link>
         <Link href="/calendario-domicilio" className="glass-panel" style={{ padding: '1.25rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', border: '1px solid var(--glass-border)' }}>
@@ -126,7 +142,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           <div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 }}>Domicilio</p>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{allAppointments?.filter((a:any) => a?.is_domicilio)?.length ?? 0}</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{kpiAppointments?.filter((a:any) => a?.is_domicilio)?.length ?? 0}</h3>
           </div>
         </Link>
       </div>
