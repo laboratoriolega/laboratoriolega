@@ -91,13 +91,20 @@ export async function createAppointment(formData: FormData) {
     const google_maps_link = domicilio_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(domicilio_address)}` : null;
     const files = formData.getAll("document") as File[];
 
-    // Turn limit for 'Aires' (Max 4 per day)
+    // Turn limit for 'Aires' (Max 4 per day) — applies to known names OR any custom type with aire_test_type set
     const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'TEST DE AIRE', 'AIRES'];
-    if (airTestNames.includes(analysis_type?.toUpperCase() || "")) {
+    const isAireAppointment = airTestNames.includes(analysis_type?.toUpperCase() || "") || (aire_test_type && aire_test_type.trim() !== '');
+    if (isAireAppointment) {
       const targetDateStr = appointment_date.split('T')[0];
       const countRes = await client.query(
-        "SELECT COUNT(*) FROM appointments WHERE UPPER(analysis_type) = ANY($1::text[]) AND DATE(appointment_date) = $2 AND (status IS NULL OR status != 'CANCELADO')",
-        [airTestNames, targetDateStr]
+        `SELECT COUNT(*) FROM appointments 
+         WHERE DATE(appointment_date) = $1 
+         AND (status IS NULL OR status != 'CANCELADO')
+         AND (
+           UPPER(analysis_type) = ANY($2::text[]) OR
+           (aire_test_type IS NOT NULL AND aire_test_type != '')
+         )`,
+        [targetDateStr, airTestNames]
       );
       if (parseInt(countRes.rows[0].count) >= 4) {
         throw new Error("Límite excedido: Solo se permiten 4 turnos de pruebas de aire por día.");
@@ -212,6 +219,7 @@ export async function createAppointment(formData: FormData) {
 
     revalidatePath("/");
     revalidatePath("/calendario");
+    revalidatePath("/calendario-aire");
     revalidatePath("/pacientes", "layout");
 
     return { success: true };

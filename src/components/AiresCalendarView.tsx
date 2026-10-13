@@ -50,42 +50,64 @@ export default function AiresCalendarView({
   const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES', 'TEST DE AIRE'];
   const airesAppts = (appointments || []).filter(a =>
     a &&
-    (airTestNames.includes((a.analysis_type || '').toUpperCase()) || 
-     (a.aire_test_type && airTestNames.includes(a.aire_test_type.toUpperCase())) || 
-     (a.analyses && a.analyses.some((ana: any) => airTestNames.includes((ana.name || '').toUpperCase())))) &&
-    !a.is_domicilio
+    !a.is_domicilio &&
+    (
+      // Any appointment with aire_test_type set is an aire appointment (new or edited via Aire calendar)
+      (a.aire_test_type && a.aire_test_type.trim() !== '') ||
+      // Legacy: appointments whose analysis_type is one of the known air test names
+      airTestNames.includes((a.analysis_type || '').toUpperCase()) ||
+      // Analyses array fallback
+      (a.analyses && a.analyses.some((ana: any) => airTestNames.includes((ana.name || '').toUpperCase())))
+    )
   );
 
   const currentMonthAppts = airesAppts.filter(a => a && a.appointment_date && isSameMonth(new Date(a.appointment_date), monthStart));
   const completedThisMonth = currentMonthAppts.filter(a => a?.status === 'COMPLETADO').length;
-  const siboTotal = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO').length;
-  const siboCompleted = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO' && a?.status === 'COMPLETADO').length;
-  const siboLactulonTotal = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO c/Lactulon').length;
-  const siboLactulonCompleted = currentMonthAppts.filter(a => a?.aire_test_type === 'SIBO c/Lactulon' && a?.status === 'COMPLETADO').length;
-  const lactosaTotal = currentMonthAppts.filter(a => a?.aire_test_type === 'Lactosa').length;
-  const lactosaCompleted = currentMonthAppts.filter(a => a?.aire_test_type === 'Lactosa' && a?.status === 'COMPLETADO').length;
-  const fructuosaTotal = currentMonthAppts.filter(a => a?.aire_test_type === 'Fructuosa').length;
-  const fructuosaCompleted = currentMonthAppts.filter(a => a?.aire_test_type === 'Fructuosa' && a?.status === 'COMPLETADO').length;
-
-  function getBlockedInfo(d: Date): BlockedDay | null {
-    const key = format(d, 'yyyy-MM-dd');
-    return blockedDays.find(b => b.fecha.slice(0, 10) === key) || null;
-  }
 
   // Resolve the effective aire test type from multiple possible sources
   const resolveTestType = (apt: any): string | undefined => {
     if (apt.aire_test_type) return apt.aire_test_type;
     // Fall back to analyses array subtype or name
     if (apt.analyses && apt.analyses.length > 0) {
-      const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES', 'TEST DE AIRE'];
-      const airAnalysis = apt.analyses.find((a: any) => 
-        airTestNames.includes((a.subtype || '').toUpperCase()) || 
-        airTestNames.includes((a.name || '').toUpperCase())
-      );
+      const airAnalysis = apt.analyses.find((a: any) => a.subtype || a.name);
       if (airAnalysis) return airAnalysis.subtype || airAnalysis.name;
     }
+    // Last resort: use analysis_type directly
     return apt.analysis_type;
   };
+
+  // Helper: get effective type for counting (case-insensitive)
+  const effectiveTypeUpper = (a: any) => (resolveTestType(a) || '').toUpperCase().trim();
+
+  const siboTotal = currentMonthAppts.filter(a => effectiveTypeUpper(a) === 'SIBO').length;
+  const siboCompleted = currentMonthAppts.filter(a => effectiveTypeUpper(a) === 'SIBO' && a?.status === 'COMPLETADO').length;
+  const siboLactulonTotal = currentMonthAppts.filter(a => effectiveTypeUpper(a) === 'SIBO C/LACTULON' || effectiveTypeUpper(a) === 'SIBO C/ LACTULON').length;
+  const siboLactulonCompleted = currentMonthAppts.filter(a => (effectiveTypeUpper(a) === 'SIBO C/LACTULON' || effectiveTypeUpper(a) === 'SIBO C/ LACTULON') && a?.status === 'COMPLETADO').length;
+  const lactosaTotal = currentMonthAppts.filter(a => effectiveTypeUpper(a) === 'LACTOSA').length;
+  const lactosaCompleted = currentMonthAppts.filter(a => effectiveTypeUpper(a) === 'LACTOSA' && a?.status === 'COMPLETADO').length;
+  const fructuosaTotal = currentMonthAppts.filter(a => effectiveTypeUpper(a) === 'FRUCTUOSA').length;
+  const fructuosaCompleted = currentMonthAppts.filter(a => effectiveTypeUpper(a) === 'FRUCTUOSA' && a?.status === 'COMPLETADO').length;
+
+  // Compute dynamic types for types not in the 4 known ones
+  const knownTypes = ['SIBO', 'SIBO C/LACTULON', 'SIBO C/ LACTULON', 'LACTOSA', 'FRUCTUOSA'];
+  const dynamicTypesMap = new Map<string, { total: number; completed: number; color: string }>();
+  currentMonthAppts.forEach(a => {
+    const t = effectiveTypeUpper(a);
+    if (t && !knownTypes.includes(t)) {
+      const prev = dynamicTypesMap.get(t) || { total: 0, completed: 0, color: 'var(--primary)' };
+      dynamicTypesMap.set(t, {
+        total: prev.total + 1,
+        completed: prev.completed + (a?.status === 'COMPLETADO' ? 1 : 0),
+        color: 'var(--primary)',
+      });
+    }
+  });
+
+
+  function getBlockedInfo(d: Date): BlockedDay | null {
+    const key = format(d, 'yyyy-MM-dd');
+    return blockedDays.find(b => b.fecha.slice(0, 10) === key) || null;
+  }
 
   const getTypeStyle = (type?: string, status?: string) => {
     let base = { border: '1px solid var(--glass-border)', borderLeft: '5px solid var(--glass-border)', background: 'var(--glass-bg)', opacity: 1 };
@@ -151,17 +173,24 @@ export default function AiresCalendarView({
 
       <div style={{ display: 'flex', gap: '1.5rem', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#A855F7' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A855F7' }}></span> SIBO ({siboTotal}/{siboCompleted})
+          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A855F7' }}></span> SIBO ({siboCompleted}/{siboTotal})
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#06B6D4' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#06B6D4' }}></span> SIBO C/ LACTULON ({siboLactulonTotal}/{siboLactulonCompleted})
+          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#06B6D4' }}></span> SIBO C/ LACTULON ({siboLactulonCompleted}/{siboLactulonTotal})
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EC4899' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#EC4899' }}></span> LACTOSA ({lactosaTotal}/{lactosaCompleted})
+          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#EC4899' }}></span> LACTOSA ({lactosaCompleted}/{lactosaTotal})
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#F97316' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#F97316' }}></span> FRUCTUOSA ({fructuosaTotal}/{fructuosaCompleted})
+          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#F97316' }}></span> FRUCTUOSA ({fructuosaCompleted}/{fructuosaTotal})
         </div>
+        {/* Dynamic types (any new type not in the 4 known ones) */}
+        {Array.from(dynamicTypesMap.entries()).map(([type, data]) => (
+          <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>
+            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--primary)' }}></span>
+            {type} ({data.completed}/{data.total})
+          </div>
+        ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EF4444' }}>
           <Ban size={12} color="#EF4444" /> SIN ATENCIÓN
         </div>

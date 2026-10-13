@@ -256,6 +256,8 @@ export default function AppointmentModal({
 
           <form ref={formRef} className="modal-body" onSubmit={handleSubmit} encType="multipart/form-data" style={{ padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem", overflowY: "auto" }}>
             <input type="hidden" name="is_domicilio" value={isDomicilio ? "true" : "false"} />
+            {/* When booking an Aire appointment, mirror analysis_type to aire_test_type */}
+            {isAire && <input type="hidden" name="aire_test_type" value={analysisType} />}
 
             {/* Name field with autocomplete */}
             <div>
