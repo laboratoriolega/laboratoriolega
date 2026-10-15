@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Download, ChevronDown, Users, Activity, Shield, CalendarDays, X } from 'lucide-react';
+import { Download, ChevronDown, Users, Activity, Shield, CalendarDays, X, DollarSign } from 'lucide-react';
 import { format, isWithinInterval } from 'date-fns';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale/es';
@@ -31,6 +31,17 @@ const normalizeString = (str?: string) => {
     .toLowerCase()
     .trim();
 };
+
+const getRowIncome = (item: any): number => {
+  const particular = parseFloat(item.particular_price) || 0;
+  const coseguro = item.coseguro_agregado
+    ? (parseFloat(item.total_coseguro_pagado) || parseFloat(item.coseguro) || 0)
+    : (parseFloat(item.coseguro) || 0);
+  return particular + coseguro;
+};
+
+const fmtMoney = (val: number): string =>
+  `$${val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -220,7 +231,8 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
   const summary = useMemo(() => {
     const totalAtenciones = reportData.length;
     const distinctPatients = new Set(reportData.map((r) => r.name)).size;
-    return { totalAtenciones, distinctPatients };
+    const totalIngresos = reportData.reduce((acc, r) => acc + getRowIncome(r), 0);
+    return { totalAtenciones, distinctPatients, totalIngresos };
   }, [reportData]);
 
   // ── Etiquetas del encabezado ──────────────────────────────────────────
@@ -268,7 +280,7 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
     pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
     heightLeft -= pageHeight;
 
-    while (heightLeft >= 0) {
+    while (heightLeft > 2) {
       position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
@@ -284,15 +296,20 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
     const rows: string[] = [
       `Reporte de Pacientes - Laboratorio Lega - ${periodLabel}`,
       `Obra Social: ${obraSocialLabel}`,
+      ...(appliedFilters?.patientName ? [`Paciente: ${appliedFilters.patientName}`] : []),
+      ...(appliedFilters?.professionals && appliedFilters.professionals.length > 0
+        ? [`Profesional: ${appliedFilters.professionals.join(', ')}`]
+        : []),
       '',
-      'Fecha,Paciente,Obra Social,Profesional',
-      ...reportData.map(
-        (r) =>
-          `${fmtDate(r.appointment_date)},"${r.name || ''}","${r.health_insurance || ''}","${r.professional_name || ''}"`
-      ),
+      'Fecha,Paciente,Obra Social,Profesional,Ingreso $',
+      ...reportData.map((r) => {
+        const inc = getRowIncome(r);
+        return `${fmtDate(r.appointment_date)},"${(r.name || '').replace(/"/g, '""')}","${(r.health_insurance || '').replace(/"/g, '""')}","${(r.professional_name || '').replace(/"/g, '""')}",${inc.toFixed(2)}`;
+      }),
       '',
       `Total de Atenciones,${summary.totalAtenciones}`,
       `Total de Pacientes Distintos,${summary.distinctPatients}`,
+      `Total Ingresos Registrados,${summary.totalIngresos.toFixed(2)}`,
     ];
     const blob = new Blob(['\uFEFF' + rows.join('\n')], {
       type: 'text/csv;charset=utf-8;',
@@ -639,14 +656,29 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
             </div>
 
             {/* Pacientes Distintos */}
-            <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid var(--success)' }}>
+            <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #6366F1' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <div style={{ padding: '0.65rem', background: 'rgba(16,185,129,0.1)', borderRadius: '10px' }}>
-                  <Users size={22} color="var(--success)" />
+                <div style={{ padding: '0.65rem', background: 'rgba(99,102,241,0.1)', borderRadius: '10px' }}>
+                  <Users size={22} color="#6366F1" />
                 </div>
                 <div>
                   <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Pacientes Distintos</p>
                   <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{summary.distinctPatients}</h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Ingresos Registrados */}
+            <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #10B981' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{ padding: '0.65rem', background: 'rgba(16,185,129,0.1)', borderRadius: '10px' }}>
+                  <DollarSign size={22} color="#10B981" />
+                </div>
+                <div style={{ overflow: 'hidden' }}>
+                  <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ingresos Registrados</p>
+                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#10B981', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {fmtMoney(summary.totalIngresos)}
+                  </h3>
                 </div>
               </div>
             </div>
@@ -720,47 +752,72 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                       <th style={{ ...thStyle, textAlign: 'left' }}>Paciente</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>Obra Social</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>Profesional</th>
+                      <th style={{ ...thStyle, textAlign: 'right' }}>Ingreso $</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {reportData.map((row, idx) => (
-                      <tr
-                        key={`${row.id}-${idx}`}
-                        style={{
-                          borderBottom: '1px solid var(--glass-border)',
-                          background: idx % 2 === 0 ? 'transparent' : 'rgba(14,165,233,0.025)',
-                          transition: 'background 0.15s',
-                        }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(14,165,233,0.07)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? 'transparent' : 'rgba(14,165,233,0.025)'; }}
-                      >
-                        <td style={{ ...tdStyle, color: 'var(--text-muted)', fontWeight: 600, width: '48px' }}>{idx + 1}</td>
-                        <td style={{ ...tdStyle, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {fmtDate(row.appointment_date)}
-                        </td>
-                        <td style={{ ...tdStyle, fontWeight: 700 }}>
-                          {row.name || '—'}
-                        </td>
-                        <td style={{ ...tdStyle }}>
-                          {row.health_insurance ? (
-                            <span style={{
-                              display: 'inline-block', padding: '0.15rem 0.55rem',
-                              borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700,
-                              background: 'rgba(14,165,233,0.1)', color: 'var(--primary)',
-                              border: '1px solid rgba(14,165,233,0.2)',
-                            }}>
-                              {row.health_insurance}
-                            </span>
-                          ) : (
-                            <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.82rem' }}>—</span>
-                          )}
-                        </td>
-                        <td style={{ ...tdStyle, fontWeight: 600, fontSize: '0.8rem' }}>
-                          {row.professional_name || '—'}
-                        </td>
-                      </tr>
-                    ))}
+                    {reportData.map((row, idx) => {
+                      const rowIncome = getRowIncome(row);
+                      return (
+                        <tr
+                          key={`${row.id}-${idx}`}
+                          style={{
+                            borderBottom: '1px solid var(--glass-border)',
+                            background: idx % 2 === 0 ? 'transparent' : 'rgba(14,165,233,0.025)',
+                            transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(14,165,233,0.07)'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? 'transparent' : 'rgba(14,165,233,0.025)'; }}
+                        >
+                          <td style={{ ...tdStyle, color: 'var(--text-muted)', fontWeight: 600, width: '48px' }}>{idx + 1}</td>
+                          <td style={{ ...tdStyle, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                            {fmtDate(row.appointment_date)}
+                          </td>
+                          <td style={{ ...tdStyle, fontWeight: 700 }}>
+                            {row.name || '—'}
+                          </td>
+                          <td style={{ ...tdStyle }}>
+                            {row.health_insurance ? (
+                              <span style={{
+                                display: 'inline-block', padding: '0.15rem 0.55rem',
+                                borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700,
+                                background: 'rgba(14,165,233,0.1)', color: 'var(--primary)',
+                                border: '1px solid rgba(14,165,233,0.2)',
+                              }}>
+                                {row.health_insurance}
+                              </span>
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.82rem' }}>—</span>
+                            )}
+                          </td>
+                          <td style={{ ...tdStyle, fontWeight: 600, fontSize: '0.8rem' }}>
+                            {row.professional_name || '—'}
+                          </td>
+                          <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            {rowIncome > 0 ? (
+                              <span style={{ fontWeight: 800, color: 'var(--success)' }}>
+                                {fmtMoney(rowIncome)}
+                              </span>
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600 }}>
+                                $0,00
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
+                  <tfoot>
+                    <tr style={{ borderTop: '2px solid var(--glass-border)', background: 'rgba(14,165,233,0.04)' }}>
+                      <td colSpan={5} style={{ ...tdStyle, fontWeight: 800, textAlign: 'right', textTransform: 'uppercase', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Total Ingresos Registrados:
+                      </td>
+                      <td style={{ ...tdStyle, fontWeight: 900, textAlign: 'right', fontSize: '0.95rem', color: 'var(--success)', whiteSpace: 'nowrap' }}>
+                        {fmtMoney(summary.totalIngresos)}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
