@@ -10,7 +10,7 @@ import MoveReasonModal from "./MoveReasonModal";
 import { Clock, ChevronLeft, ChevronRight, Edit2, MessageSquare, Ban } from "lucide-react";
 import BlockedDaysPanel from "./BlockedDaysPanel";
 
-type BlockedDay = { id: number; fecha: string; descripcion: string | null };
+type BlockedDay = { id: number; fecha: string; descripcion: string | null; created_by?: string | null };
 
 export default function MonthClientView({
   appointments,

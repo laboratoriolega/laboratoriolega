@@ -12,7 +12,7 @@ import EditAppointmentModal from "./EditAppointmentModal";
 import EvolutionModal from "./EvolutionModal";
 import MoveReasonModal from "./MoveReasonModal";
 
-type BlockedDay = { id: number; fecha: string; descripcion: string | null };
+type BlockedDay = { id: number; fecha: string; descripcion: string | null; created_by?: string | null };
 
 export default function PabCalendarView({
   appointments,

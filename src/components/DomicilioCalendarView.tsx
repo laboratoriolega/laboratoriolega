@@ -11,7 +11,7 @@ import { Clock, ChevronLeft, ChevronRight, Edit2, MessageSquare, Car, MapPin, Ex
 import { toggleIndicationsStatus } from "@/actions/appointments";
 import BlockedDaysPanel from "./BlockedDaysPanel";
 
-type BlockedDay = { id: number; fecha: string; descripcion: string | null };
+type BlockedDay = { id: number; fecha: string; descripcion: string | null; created_by?: string | null };
 
 export default function DomicilioCalendarView({
   appointments,

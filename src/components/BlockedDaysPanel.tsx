@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale/es';
-import { Ban, Trash2, Plus, Loader2, Edit2, Check, X } from "lucide-react";
+import { Ban, Trash2, Plus, Loader2, Edit2, Check, X, User } from "lucide-react";
 import { createBlockedDay, deleteBlockedDay, updateBlockedDay } from "@/actions/appointments";
 import { useRouter } from "next/navigation";
 
-type BlockedDay = { id: number; fecha: string; descripcion: string | null };
+type BlockedDay = { id: number; fecha: string; descripcion: string | null; created_by?: string | null };
 
 export default function BlockedDaysPanel({ blockedDays: initial }: { blockedDays: BlockedDay[] }) {
   const router = useRouter();
@@ -129,6 +129,28 @@ export default function BlockedDaysPanel({ blockedDays: initial }: { blockedDays
               ) : (
                 <span style={{ flex: 1, color: bd.descripcion ? 'var(--text-muted)' : 'rgba(0,0,0,0.25)', fontSize: '0.83rem', fontStyle: bd.descripcion ? 'normal' : 'italic' }}>
                   {bd.descripcion || 'Sin descripción'}
+                </span>
+              )}
+
+              {/* Creator badge */}
+              {bd.created_by && (
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    color: '#64748b',
+                    background: 'rgba(255,255,255,0.7)',
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    whiteSpace: 'nowrap',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 500,
+                  }}
+                  title={`Creado por @${bd.created_by}`}
+                >
+                  <User size={11} style={{ opacity: 0.6 }} /> {bd.created_by}
                 </span>
               )}
 

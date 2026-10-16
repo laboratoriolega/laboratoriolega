@@ -570,8 +570,12 @@ export async function ensureBlockedDaysTable() {
         id SERIAL PRIMARY KEY,
         fecha DATE NOT NULL UNIQUE,
         descripcion TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        created_by VARCHAR(100)
       );
+    `);
+    await pool.query(`
+      ALTER TABLE blocked_days ADD COLUMN IF NOT EXISTS created_by VARCHAR(100);
     `);
     // migrate from old per-calendar table if it exists
     await pool.query(`
@@ -605,13 +609,20 @@ export async function createBlockedDay(fecha: string, descripcion: string) {
   try {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
+    const userIdentifier = session.username || session.name || "sistema";
     await pool.query(
-      "INSERT INTO blocked_days (fecha, descripcion) VALUES ($1, $2) ON CONFLICT (fecha) DO UPDATE SET descripcion = EXCLUDED.descripcion",
-      [fecha, descripcion || null]
+      `INSERT INTO blocked_days (fecha, descripcion, created_by) 
+       VALUES ($1, $2, $3) 
+       ON CONFLICT (fecha) DO UPDATE SET 
+         descripcion = EXCLUDED.descripcion,
+         created_by = COALESCE(blocked_days.created_by, EXCLUDED.created_by)`,
+      [fecha, descripcion || null, userIdentifier]
     );
+    await logAction("CREATE_BLOCKED_DAY", { fecha, descripcion, created_by: userIdentifier });
     revalidatePath("/calendario");
     revalidatePath("/calendario-aire");
     revalidatePath("/calendario-domicilio");
+    revalidatePath("/calendario-pab");
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
@@ -622,10 +633,20 @@ export async function deleteBlockedDay(id: number) {
   try {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
+    const dayRes = await pool.query("SELECT fecha, descripcion FROM blocked_days WHERE id = $1", [id]);
+    const day = dayRes.rows[0];
+
     await pool.query("DELETE FROM blocked_days WHERE id = $1", [id]);
+
+    if (day) {
+      const fechaStr = day.fecha instanceof Date ? day.fecha.toISOString().slice(0, 10) : String(day.fecha).slice(0, 10);
+      await logAction("DELETE_BLOCKED_DAY", { id, fecha: fechaStr, descripcion: day.descripcion, deleted_by: session.username });
+    }
+
     revalidatePath("/calendario");
     revalidatePath("/calendario-aire");
     revalidatePath("/calendario-domicilio");
+    revalidatePath("/calendario-pab");
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
@@ -640,9 +661,11 @@ export async function updateBlockedDay(id: number, descripcion: string) {
       "UPDATE blocked_days SET descripcion = $1 WHERE id = $2",
       [descripcion || null, id]
     );
+    await logAction("UPDATE_BLOCKED_DAY", { id, descripcion, updated_by: session.username });
     revalidatePath("/calendario");
     revalidatePath("/calendario-aire");
     revalidatePath("/calendario-domicilio");
+    revalidatePath("/calendario-pab");
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
