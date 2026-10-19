@@ -348,6 +348,7 @@ export async function createIngreso(formData: FormData) {
     revalidatePath("/ingresos");
     revalidatePath("/");
     revalidatePath("/calendario-aire");
+    revalidatePath("/calendario-pab");
     revalidatePath("/calendario");
     return { success: true };
   } catch (error: any) {
@@ -375,6 +376,7 @@ export async function deleteIngreso(id: string) {
     });
 
     revalidatePath("/ingresos");
+    revalidatePath("/calendario-pab");
     return { success: true };
   } catch (error: any) {
     return { error: error.message };

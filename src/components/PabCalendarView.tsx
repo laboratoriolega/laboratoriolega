@@ -47,21 +47,43 @@ export default function PabCalendarView({
   let day = startDate;
   while (day <= endDate) { daysGrid.push(day); day = addDays(day, 1); }
 
-  const pabTestNames = ['CURVA', 'EXTRACCIÓN - ENDOCRINOLOGÍA'];
+  const isCurvaType = (type?: string | null): boolean => {
+    if (!type) return false;
+    const t = type.toUpperCase().trim();
+    return t === 'CURVA' || t === 'CURVAS' || t === 'CURVA PAB' || t === 'CURVAS PAB';
+  };
+
+  const isExtraccionPabType = (type?: string | null): boolean => {
+    if (!type) return false;
+    const t = type.toUpperCase().trim();
+    return (
+      t === 'EXTRACCIÓN - ENDOCRINOLOGÍA' ||
+      t === 'EXTRACCION - ENDOCRINOLOGIA' ||
+      t === 'EXTRACCION PAB' ||
+      t === 'EXTRACCIÓN PAB'
+    );
+  };
+
+  const isPabMatch = (val?: string | null): boolean => {
+    return isCurvaType(val) || isExtraccionPabType(val);
+  };
+
   const airesAppts = (appointments || []).filter(a =>
     a &&
-    (pabTestNames.includes((a.analysis_type || '').toUpperCase()) || 
-     (a.aire_test_type && pabTestNames.includes(a.aire_test_type.toUpperCase())) || 
-     (a.analyses && a.analyses.some((ana: any) => pabTestNames.includes((ana.name || '').toUpperCase())))) &&
+    (
+      isPabMatch(a.analysis_type) || 
+      (a.aire_test_type && isPabMatch(a.aire_test_type)) || 
+      (a.analyses && a.analyses.some((ana: any) => isPabMatch(ana.subtype) || isPabMatch(ana.name)))
+    ) &&
     !a.is_domicilio
   );
 
   const currentMonthAppts = airesAppts.filter(a => a && a.appointment_date && isSameMonth(new Date(a.appointment_date), monthStart));
   const completedThisMonth = currentMonthAppts.filter(a => a?.status === 'COMPLETADO').length;
-  const curvaTotal = currentMonthAppts.filter(a => resolveTestType(a)?.toUpperCase() === 'CURVA').length;
-  const curvaCompleted = currentMonthAppts.filter(a => resolveTestType(a)?.toUpperCase() === 'CURVA' && a?.status === 'COMPLETADO').length;
-  const extraccionTotal = currentMonthAppts.filter(a => resolveTestType(a)?.toUpperCase() === 'EXTRACCIÓN - ENDOCRINOLOGÍA').length;
-  const extraccionCompleted = currentMonthAppts.filter(a => resolveTestType(a)?.toUpperCase() === 'EXTRACCIÓN - ENDOCRINOLOGÍA' && a?.status === 'COMPLETADO').length;
+  const curvaTotal = currentMonthAppts.filter(a => isCurvaType(resolveTestType(a))).length;
+  const curvaCompleted = currentMonthAppts.filter(a => isCurvaType(resolveTestType(a)) && a?.status === 'COMPLETADO').length;
+  const extraccionTotal = currentMonthAppts.filter(a => isExtraccionPabType(resolveTestType(a))).length;
+  const extraccionCompleted = currentMonthAppts.filter(a => isExtraccionPabType(resolveTestType(a)) && a?.status === 'COMPLETADO').length;
 
   function getBlockedInfo(d: Date): BlockedDay | null {
     const key = format(d, 'yyyy-MM-dd');
@@ -70,15 +92,13 @@ export default function PabCalendarView({
 
   // Resolve the effective aire test type from multiple possible sources
   function resolveTestType(apt: any): string | undefined {
-    if (apt.aire_test_type) return apt.aire_test_type;
+    if (apt.aire_test_type && isPabMatch(apt.aire_test_type)) return apt.aire_test_type;
     // Fall back to analyses array subtype or name
     if (apt.analyses && apt.analyses.length > 0) {
-      const pabTestNames = ['CURVA', 'EXTRACCIÓN - ENDOCRINOLOGÍA'];
-      const airAnalysis = apt.analyses.find((a: any) => 
-        pabTestNames.includes((a.subtype || '').toUpperCase()) || 
-        pabTestNames.includes((a.name || '').toUpperCase())
+      const pabAnalysis = apt.analyses.find((a: any) => 
+        isPabMatch(a.subtype) || isPabMatch(a.name)
       );
-      if (airAnalysis) return airAnalysis.subtype || airAnalysis.name;
+      if (pabAnalysis) return pabAnalysis.subtype || pabAnalysis.name;
     }
     return apt.analysis_type;
   }
@@ -86,10 +106,9 @@ export default function PabCalendarView({
   const getTypeStyle = (type?: string, status?: string) => {
     let base = { border: '1px solid var(--glass-border)', borderLeft: '5px solid var(--glass-border)', background: 'var(--glass-bg)', opacity: 1 };
     if (status === 'CANCELADO') return { ...base, opacity: 0.5, background: 'rgba(0,0,0,0.1)', border: '1px solid var(--glass-border)', borderLeft: '5px solid #94a3b8' };
-    const t = (type || '').toUpperCase();
-    if (t === 'CURVA') {
+    if (isCurvaType(type)) {
       base = { ...base, border: '1px solid #10B981', borderLeft: '5px solid #10B981', background: status === 'COMPLETADO' ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.05)' };
-    } else if (t === 'EXTRACCIÓN - ENDOCRINOLOGÍA') {
+    } else if (isExtraccionPabType(type)) {
       base = { ...base, border: '1px solid #8B5CF6', borderLeft: '5px solid #8B5CF6', background: status === 'COMPLETADO' ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.05)' };
     }
     if (status === 'COMPLETADO') { base.border = '1px solid var(--success)'; base.borderLeft = '5px solid var(--success)'; }
@@ -97,9 +116,8 @@ export default function PabCalendarView({
   };
 
   const getBadgeColor = (type?: string) => {
-    const t = (type || '').toUpperCase();
-    if (t === 'CURVA') return '#10B981';
-    if (t === 'EXTRACCIÓN - ENDOCRINOLOGÍA') return '#8B5CF6';
+    if (isCurvaType(type)) return '#10B981';
+    if (isExtraccionPabType(type)) return '#8B5CF6';
     return 'var(--primary)';
   };
 
@@ -141,10 +159,10 @@ export default function PabCalendarView({
 
       <div style={{ display: 'flex', gap: '1.5rem', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#10B981' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10B981' }}></span> CURVA ({curvaTotal}/{curvaCompleted})
+          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10B981' }}></span> CURVAS ({curvaTotal}/{curvaCompleted})
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#8B5CF6' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#8B5CF6' }}></span> EXTRACCIÓN - ENDOCRINOLOGÍA ({extraccionTotal}/{extraccionCompleted})
+          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#8B5CF6' }}></span> EXTRACCIÓN PAB ({extraccionTotal}/{extraccionCompleted})
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EF4444' }}>
           <Ban size={12} color="#EF4444" /> SIN ATENCIÓN
@@ -163,7 +181,7 @@ export default function PabCalendarView({
             const isCurrentMonth = isSameMonth(day, monthStart);
             const isToday = isSameDay(day, new Date());
             const isThursday = day.getDay() === 4;
-            const curvaCount = activeDayAppts.filter(a => resolveTestType(a)?.toUpperCase() === 'CURVA').length;
+            const curvaCount = activeDayAppts.filter(a => isCurvaType(resolveTestType(a))).length;
             const isCurvaFull = isThursday && curvaCount >= 3;
             const blocked = getBlockedInfo(day);
             const isBlocked = blocked !== null;
@@ -193,7 +211,7 @@ export default function PabCalendarView({
                   if (apptId) {
                     const originalAppt = airesAppts.find(a => a.id === apptId);
                     const effectiveType = originalAppt ? resolveTestType(originalAppt) : null;
-                    if (isCurvaFull && effectiveType?.toUpperCase() === 'CURVA') { 
+                    if (isCurvaFull && isCurvaType(effectiveType)) { 
                       alert("Límite de turnos de CURVA alcanzado para este Jueves (Máx 3)."); 
                       return; 
                     }

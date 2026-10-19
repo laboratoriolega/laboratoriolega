@@ -303,6 +303,8 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires, isP
                               required
                             >
                               <option value="">Seleccionar...</option>
+                              <option value="CURVAS PAB">CURVAS PAB</option>
+                              <option value="EXTRACCION PAB">EXTRACCION PAB</option>
                               <option value="CURVA">CURVA</option>
                               <option value="EXTRACCIÓN - ENDOCRINOLOGÍA">EXTRACCIÓN - ENDOCRINOLOGÍA</option>
                             </select>

@@ -114,7 +114,12 @@ export async function createAppointment(formData: FormData) {
     // Turn limit for 'CURVA' (Max 3 on Thursdays)
     const analysisNames = formData.getAll("analysis_name") as string[];
     const analysisSubtypes = formData.getAll("aire_test_subtype") as string[];
-    if (analysis_type?.toUpperCase() === 'CURVA' || analysisNames.some(n => n.toUpperCase() === 'CURVA') || analysisSubtypes.some(n => n?.toUpperCase() === 'CURVA')) {
+    const isCurvaAnalysis = (n?: string | null) => {
+      if (!n) return false;
+      const u = n.toUpperCase().trim();
+      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB';
+    };
+    if (isCurvaAnalysis(analysis_type) || analysisNames.some(isCurvaAnalysis) || analysisSubtypes.some(isCurvaAnalysis)) {
       const targetDate = new Date(appointment_date);
       if (targetDate.getDay() === 4) { // Thursday
         const targetDateStr = appointment_date.split('T')[0];
@@ -122,10 +127,10 @@ export async function createAppointment(formData: FormData) {
           `SELECT COUNT(*) FROM appointments a
            WHERE DATE(a.appointment_date) = $1 AND (a.status IS NULL OR a.status != 'CANCELADO')
            AND (
-             UPPER(a.analysis_type) = 'CURVA' OR UPPER(a.aire_test_type) = 'CURVA'
+             UPPER(a.analysis_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(a.aire_test_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB')
              OR EXISTS (
                SELECT 1 FROM appointment_analyses aa
-               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) = 'CURVA' OR UPPER(aa.aire_test_subtype) = 'CURVA')
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(aa.aire_test_subtype) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB'))
              )
            )`,
           [targetDateStr]
@@ -290,7 +295,12 @@ export async function updateAppointment(formData: FormData) {
     // Turn limit for 'CURVA' (Max 3 on Thursdays)
     const analysisNames = analysisNamesRaw;
     const analysisSubtypes = formData.getAll("aire_test_subtype") as string[];
-    if (analysis_type?.toUpperCase() === 'CURVA' || analysisNames.some(n => n.toUpperCase() === 'CURVA') || analysisSubtypes.some(n => n?.toUpperCase() === 'CURVA')) {
+    const isCurvaAnalysisUpdate = (n?: string | null) => {
+      if (!n) return false;
+      const u = n.toUpperCase().trim();
+      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB';
+    };
+    if (isCurvaAnalysisUpdate(analysis_type) || analysisNames.some(isCurvaAnalysisUpdate) || analysisSubtypes.some(isCurvaAnalysisUpdate)) {
       const targetDate = new Date(appointment_date);
       if (targetDate.getDay() === 4) { // Thursday
         const targetDateStr = appointment_date.split('T')[0];
@@ -298,10 +308,10 @@ export async function updateAppointment(formData: FormData) {
           `SELECT COUNT(*) FROM appointments a
            WHERE DATE(a.appointment_date) = $1 AND a.id != $2 AND (a.status IS NULL OR a.status != 'CANCELADO')
            AND (
-             UPPER(a.analysis_type) = 'CURVA' OR UPPER(a.aire_test_type) = 'CURVA'
+             UPPER(a.analysis_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(a.aire_test_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB')
              OR EXISTS (
                SELECT 1 FROM appointment_analyses aa
-               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) = 'CURVA' OR UPPER(aa.aire_test_subtype) = 'CURVA')
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(aa.aire_test_subtype) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB'))
              )
            )`,
           [targetDateStr, id]
@@ -414,7 +424,7 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
     // Get current data for logging and logic
     const current = await pool.query(`
       SELECT p.name, a.analysis_type, a.aire_test_type,
-             (SELECT COUNT(*) FROM appointment_analyses aa WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) = 'CURVA' OR UPPER(aa.aire_test_subtype) = 'CURVA')) as is_curva
+             (SELECT COUNT(*) FROM appointment_analyses aa WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(aa.aire_test_subtype) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB'))) as is_curva
       FROM appointments a JOIN patients p ON a.patient_id = p.id WHERE a.id = $1
     `, [appointmentId]);
     const apt = current.rows[0];
@@ -433,7 +443,12 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
     }
 
     // Turn limit for 'CURVA' (Max 3 on Thursdays)
-    const isCurva = apt?.analysis_type?.toUpperCase() === 'CURVA' || apt?.aire_test_type?.toUpperCase() === 'CURVA' || apt?.is_curva > 0;
+    const isCurvaName = (n?: string | null) => {
+      if (!n) return false;
+      const u = n.toUpperCase().trim();
+      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB';
+    };
+    const isCurva = isCurvaName(apt?.analysis_type) || isCurvaName(apt?.aire_test_type) || apt?.is_curva > 0;
     if (isCurva) {
       const targetDate = new Date(newDate);
       if (targetDate.getDay() === 4) { // Thursday
@@ -442,10 +457,10 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
           `SELECT COUNT(*) FROM appointments a
            WHERE DATE(a.appointment_date) = $1 AND a.id != $2 AND (a.status IS NULL OR a.status != 'CANCELADO')
            AND (
-             UPPER(a.analysis_type) = 'CURVA' OR UPPER(a.aire_test_type) = 'CURVA'
+             UPPER(a.analysis_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(a.aire_test_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB')
              OR EXISTS (
                SELECT 1 FROM appointment_analyses aa
-               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) = 'CURVA' OR UPPER(aa.aire_test_subtype) = 'CURVA')
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(aa.aire_test_subtype) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB'))
              )
            )`,
           [targetDateStr, appointmentId]

@@ -254,9 +254,11 @@ export default function IngresosTable({ ingresos, onEdit, onRefresh, period, use
               const isChecked = optimisticChecks[ing.id] ?? ing.checkbox_checked;
 
               const isPab = ing.analyses?.some((a: any) => {
-                const name = (a.name || '').toUpperCase();
-                return name === 'CURVA' || name === 'EXTRACCIÓN - ENDOCRINOLOGÍA';
-              }) || ['CURVA', 'EXTRACCIÓN - ENDOCRINOLOGÍA'].includes((ing.analysis_type || '').toUpperCase());
+                const name = (a.name || '').toUpperCase().trim();
+                return name === 'CURVA' || name === 'CURVAS' || name === 'CURVAS PAB' || name === 'CURVA PAB' ||
+                       name === 'EXTRACCIÓN - ENDOCRINOLOGÍA' || name === 'EXTRACCION - ENDOCRINOLOGIA' || 
+                       name === 'EXTRACCION PAB' || name === 'EXTRACCIÓN PAB';
+              }) || ['CURVA', 'CURVAS', 'CURVAS PAB', 'CURVA PAB', 'EXTRACCIÓN - ENDOCRINOLOGÍA', 'EXTRACCION - ENDOCRINOLOGIA', 'EXTRACCION PAB', 'EXTRACCIÓN PAB'].includes((ing.analysis_type || '').toUpperCase().trim());
 
               const isHighlighted = highlightId && parseInt(highlightId) === ing.id;
 
