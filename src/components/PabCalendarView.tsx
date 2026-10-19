@@ -33,6 +33,7 @@ export default function PabCalendarView({
 
   const [blockedDays, setBlockedDays] = useState<BlockedDay[]>(initialBlockedDays);
   const [showBlockedPanel, setShowBlockedPanel] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'CURVAS PAB' | 'EXTRACCION PAB'>('ALL');
 
   useEffect(() => { setBlockedDays(initialBlockedDays); }, [initialBlockedDays]);
 
@@ -121,6 +122,13 @@ export default function PabCalendarView({
     return 'var(--primary)';
   };
 
+  function formatPabDisplayType(apt: any): string {
+    const effective = resolveTestType(apt);
+    if (isCurvaType(effective)) return 'CURVAS PAB';
+    if (isExtraccionPabType(effective)) return 'EXTRACCIÓN PAB';
+    return effective || (apt.analyses && apt.analyses.length > 0 ? apt.analyses[0].name : 'Prueba');
+  }
+
   return (
     <div className="glass-panel" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -157,14 +165,66 @@ export default function PabCalendarView({
 
       {showBlockedPanel && <BlockedDaysPanel blockedDays={blockedDays} />}
 
-      <div style={{ display: 'flex', gap: '1.5rem', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#10B981' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10B981' }}></span> CURVAS ({curvaTotal}/{curvaCompleted})
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#8B5CF6' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#8B5CF6' }}></span> EXTRACCIÓN PAB ({extraccionTotal}/{extraccionCompleted})
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EF4444' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={() => setTypeFilter('ALL')}
+          style={{
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            border: `1px solid ${typeFilter === 'ALL' ? 'var(--primary)' : 'var(--glass-border)'}`,
+            background: typeFilter === 'ALL' ? 'rgba(14, 165, 233, 0.15)' : 'var(--glass-bg)',
+            color: typeFilter === 'ALL' ? 'var(--primary)' : 'var(--text-muted)',
+            fontWeight: 700,
+            fontSize: '0.8rem',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          TODOS ({currentMonthAppts.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTypeFilter(prev => prev === 'CURVAS PAB' ? 'ALL' : 'CURVAS PAB')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            border: `1px solid ${typeFilter === 'CURVAS PAB' ? '#10B981' : 'var(--glass-border)'}`,
+            background: typeFilter === 'CURVAS PAB' ? 'rgba(16, 185, 129, 0.2)' : 'var(--glass-bg)',
+            color: '#10B981',
+            fontWeight: 700,
+            fontSize: '0.8rem',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#10B981' }}></span>
+          CURVAS PAB ({curvaTotal}/{curvaCompleted})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTypeFilter(prev => prev === 'EXTRACCION PAB' ? 'ALL' : 'EXTRACCION PAB')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            border: `1px solid ${typeFilter === 'EXTRACCION PAB' ? '#8B5CF6' : 'var(--glass-border)'}`,
+            background: typeFilter === 'EXTRACCION PAB' ? 'rgba(139, 92, 246, 0.2)' : 'var(--glass-bg)',
+            color: '#8B5CF6',
+            fontWeight: 700,
+            fontSize: '0.8rem',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#8B5CF6' }}></span>
+          EXTRACCIÓN PAB ({extraccionTotal}/{extraccionCompleted})
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EF4444', marginLeft: 'auto' }}>
           <Ban size={12} color="#EF4444" /> SIN ATENCIÓN
         </div>
       </div>
@@ -176,8 +236,13 @@ export default function PabCalendarView({
           ))}
 
           {daysGrid.map(day => {
-            const dayAppts = (airesAppts || []).filter(a => a && a.appointment_date && isSameDay(new Date(a.appointment_date), day));
-            const activeDayAppts = dayAppts.filter(a => a.status !== 'CANCELADO');
+            const rawDayAppts = (airesAppts || []).filter(a => a && a.appointment_date && isSameDay(new Date(a.appointment_date), day));
+            const activeDayAppts = rawDayAppts.filter(a => a.status !== 'CANCELADO');
+            const dayAppts = rawDayAppts.filter(a => {
+              if (typeFilter === 'CURVAS PAB' && !isCurvaType(resolveTestType(a))) return false;
+              if (typeFilter === 'EXTRACCION PAB' && !isExtraccionPabType(resolveTestType(a))) return false;
+              return true;
+            });
             const isCurrentMonth = isSameMonth(day, monthStart);
             const isToday = isSameDay(day, new Date());
             const isThursday = day.getDay() === 4;
@@ -212,7 +277,7 @@ export default function PabCalendarView({
                     const originalAppt = airesAppts.find(a => a.id === apptId);
                     const effectiveType = originalAppt ? resolveTestType(originalAppt) : null;
                     if (isCurvaFull && isCurvaType(effectiveType)) { 
-                      alert("Límite de turnos de CURVA alcanzado para este Jueves (Máx 3)."); 
+                      alert("Límite de turnos de CURVAS PAB alcanzado para este Jueves (Máx 3)."); 
                       return; 
                     }
                     let targetDateTime = day.toISOString();
@@ -257,7 +322,7 @@ export default function PabCalendarView({
                         color: curvaCount > 0 ? 'white' : 'var(--text-muted)',
                         padding: '0.1rem 0.3rem', borderRadius: '4px',
                       }}>
-                        CURVA {curvaCount}/3
+                        CURVAS PAB {curvaCount}/3
                       </span>
                     ) : (
                       <span style={{
@@ -346,7 +411,7 @@ export default function PabCalendarView({
                         <p style={{ fontWeight: 800, fontSize: '0.9rem', lineHeight: 1.15, color: apt?.status === 'CANCELADO' ? 'var(--text-muted)' : 'var(--text-main)', margin: '0.1rem 0', textDecoration: apt?.status === 'CANCELADO' ? 'line-through' : 'none', opacity: apt?.status === 'CANCELADO' ? 0.6 : 1, wordBreak: 'break-word' }}>{apt?.name}</p>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.05rem' }}>
                           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, margin: 0 }}>
-                             {effectiveType || (apt.analyses && apt.analyses.length > 0 ? apt.analyses[0].name : 'Prueba')}
+                             {formatPabDisplayType(apt)}
                            </p>
                            {apt.observations && <MessageSquare size={10} color="var(--primary)" />}
                          </div>
@@ -355,7 +420,7 @@ export default function PabCalendarView({
                     })}
                     {isCurvaFull && (
                       <div style={{ marginTop: 'auto', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.6rem', fontWeight: 800 }}>
-                        <AlertCircle size={10} /> CUPO CURVA JUEVES AGOTADO
+                        <AlertCircle size={10} /> CUPO CURVAS PAB JUEVES AGOTADO
                       </div>
                     )}
                   </div>
