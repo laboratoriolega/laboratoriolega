@@ -7,7 +7,7 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { getProfesionales } from '@/actions/listados';
+import { getProfesionales, getTiposAnalisis } from '@/actions/listados';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,6 +62,8 @@ interface ReportFilters {
   patientName: string;
   professionals: string[];
   professionalInput: string;
+  analyses: string[];
+  analysisInput: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +79,8 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
     patientName: '',
     professionals: [],
     professionalInput: '',
+    analyses: [],
+    analysisInput: '',
   });
 
   // ── Estado de generación ──────────────────────────────────────────────
@@ -99,12 +103,26 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
   const professionalInputRef = useRef<HTMLInputElement>(null);
   const professionalSuggestionsRef = useRef<HTMLDivElement>(null);
 
+  const [showAnalysisSuggestions, setShowAnalysisSuggestions] = useState(false);
+  const analysisInputRef = useRef<HTMLInputElement>(null);
+  const analysisSuggestionsRef = useRef<HTMLDivElement>(null);
+
   // Cargar profesionales del admin
   const [profesionalesAdmin, setProfesionalesAdmin] = useState<string[]>([]);
   useEffect(() => {
     getProfesionales().then(res => {
       if (res.data) {
         setProfesionalesAdmin(res.data.filter((o: any) => o.activo).map((o: any) => o.nombre).sort());
+      }
+    });
+  }, []);
+
+  // Cargar tipos de análisis del admin
+  const [tiposAnalisisAdmin, setTiposAnalisisAdmin] = useState<string[]>([]);
+  useEffect(() => {
+    getTiposAnalisis().then(res => {
+      if (res.data) {
+        setTiposAnalisisAdmin(res.data.filter((o: any) => o.activo).map((o: any) => o.nombre).sort());
       }
     });
   }, []);
@@ -136,6 +154,12 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
         (!professionalSuggestionsRef.current || !professionalSuggestionsRef.current.contains(e.target as Node))
       ) {
         setShowProfessionalSuggestions(false);
+      }
+      if (
+        analysisInputRef.current && !analysisInputRef.current.contains(e.target as Node) &&
+        (!analysisSuggestionsRef.current || !analysisSuggestionsRef.current.contains(e.target as Node))
+      ) {
+        setShowAnalysisSuggestions(false);
       }
       // Cierra menú exportar SOLO si el click fue fuera del contenedor
       if (
@@ -187,6 +211,44 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
       .slice(0, 8);
   }, [filters.professionalInput, filters.professionals, profesionalesAdmin, data]);
 
+  const analysisSuggestions = useMemo(() => {
+    const fromData: string[] = [];
+    data.forEach((d) => {
+      if (d.analysis_type) fromData.push(d.analysis_type);
+      if (d.aire_test_type) fromData.push(d.aire_test_type);
+      if (Array.isArray(d.analyses)) {
+        d.analyses.forEach((a: any) => {
+          if (a?.name) fromData.push(a.name);
+          if (a?.subtype) fromData.push(a.subtype);
+        });
+      }
+    });
+
+    const allAnalyses = Array.from(new Set([...tiposAnalisisAdmin, ...fromData]))
+      .filter(Boolean)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+    const uniqueMap = new Map<string, string>();
+    allAnalyses.forEach(a => {
+      const norm = normalizeString(a);
+      if (!uniqueMap.has(norm)) {
+        uniqueMap.set(norm, a);
+      }
+    });
+    const uniqueAnalyses = Array.from(uniqueMap.values());
+
+    if (!filters.analysisInput.trim()) {
+      return uniqueAnalyses.filter(a => !filters.analyses.includes(a)).slice(0, 8);
+    }
+
+    const q = normalizeString(filters.analysisInput);
+    return uniqueAnalyses
+      .filter(a => !filters.analyses.includes(a) && normalizeString(a).includes(q))
+      .slice(0, 8);
+  }, [filters.analysisInput, filters.analyses, tiposAnalisisAdmin, data]);
+
   // ── Datos filtrados (solo cuando se presiona "Generar Reporte") ───────
   const reportData = useMemo(() => {
     if (!appliedFilters) return [];
@@ -217,6 +279,38 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
           const profNorm = normalizeString(item.professional_name);
           const match = appliedFilters.professionals.some(p => profNorm.includes(normalizeString(p)));
           if (!match) return false;
+        }
+
+        // Tipos de Análisis
+        if (appliedFilters.analyses && appliedFilters.analyses.length > 0) {
+          const rawList: string[] = [];
+          if (item.analysis_type) rawList.push(item.analysis_type);
+          if (item.aire_test_type) rawList.push(item.aire_test_type);
+          if (Array.isArray(item.analyses)) {
+            item.analyses.forEach((a: any) => {
+              if (a?.name) rawList.push(a.name);
+              if (a?.subtype) rawList.push(a.subtype);
+            });
+          }
+          const normalizedList = rawList.map(normalizeString).filter(Boolean);
+
+          const matchAnalysis = appliedFilters.analyses.some(sel => {
+            const selNorm = normalizeString(sel);
+            if (!selNorm) return false;
+            return normalizedList.some(itemNorm => {
+              if (itemNorm === selNorm) return true;
+              const subItems = itemNorm.split(/[,;\/]+/).map(s => s.trim());
+              if (subItems.includes(selNorm)) return true;
+              if (itemNorm.includes(selNorm) || selNorm.includes(itemNorm)) return true;
+              const isCurva = (s: string) => s === 'curva' || s === 'curvas' || s === 'curva pab' || s === 'curvas pab';
+              if (isCurva(selNorm) && isCurva(itemNorm)) return true;
+              const isExtPab = (s: string) => (s.includes('extracc') || s.includes('extraccion')) && (s.includes('pab') || s.includes('endocrin'));
+              if (isExtPab(selNorm) && isExtPab(itemNorm)) return true;
+              return false;
+            });
+          });
+
+          if (!matchAnalysis) return false;
         }
 
         return true;
@@ -296,15 +390,21 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
     const rows: string[] = [
       `Reporte de Pacientes - Laboratorio Lega - ${periodLabel}`,
       `Obra Social: ${obraSocialLabel}`,
+      ...(appliedFilters?.analyses && appliedFilters.analyses.length > 0
+        ? [`Análisis: ${appliedFilters.analyses.join(', ')}`]
+        : []),
       ...(appliedFilters?.patientName ? [`Paciente: ${appliedFilters.patientName}`] : []),
       ...(appliedFilters?.professionals && appliedFilters.professionals.length > 0
         ? [`Profesional: ${appliedFilters.professionals.join(', ')}`]
         : []),
       '',
-      'Fecha,Paciente,Obra Social,Profesional,Ingreso $',
+      'Fecha,Paciente,Obra Social,Análisis,Profesional,Ingreso $',
       ...reportData.map((r) => {
         const inc = getRowIncome(r);
-        return `${fmtDate(r.appointment_date)},"${(r.name || '').replace(/"/g, '""')}","${(r.health_insurance || '').replace(/"/g, '""')}","${(r.professional_name || '').replace(/"/g, '""')}",${inc.toFixed(2)}`;
+        const anaStr = (r.analyses && r.analyses.length > 0)
+          ? r.analyses.map((a: any) => a.name + (a.subtype ? ` (${a.subtype})` : '')).join(', ')
+          : (r.analysis_type || '');
+        return `${fmtDate(r.appointment_date)},"${(r.name || '').replace(/"/g, '""')}","${(r.health_insurance || '').replace(/"/g, '""')}","${anaStr.replace(/"/g, '""')}","${(r.professional_name || '').replace(/"/g, '""')}",${inc.toFixed(2)}`;
       }),
       '',
       `Total de Atenciones,${summary.totalAtenciones}`,
@@ -438,6 +538,102 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                       textAlign: 'left', borderBottom: '1px solid var(--glass-border)',
                     }}
                     onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(14,165,233,0.08)'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'none'; }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tipo de Análisis con autocomplete multiple */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '240px', position: 'relative' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>TIPO DE ANÁLISIS</label>
+            <div
+              onClick={() => { setShowAnalysisSuggestions(true); analysisInputRef.current?.focus(); }}
+              style={{
+                display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center',
+                padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid var(--glass-border)',
+                background: 'var(--glass-bg)', cursor: 'text', minHeight: '38px'
+              }}
+            >
+              {filters.analyses.map(opt => (
+                <span
+                  key={opt}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.3rem',
+                    background: 'rgba(139, 92, 246, 0.15)', color: '#8B5CF6',
+                    border: '1px solid rgba(139, 92, 246, 0.35)', borderRadius: '20px',
+                    padding: '0.15rem 0.55rem 0.15rem 0.65rem', fontSize: '0.75rem', fontWeight: 600,
+                  }}
+                >
+                  {opt}
+                  <button
+                    type="button"
+                    onMouseDown={e => {
+                      e.preventDefault(); e.stopPropagation();
+                      setFilters(prev => ({ ...prev, analyses: prev.analyses.filter(o => o !== opt) }));
+                      setGenerated(false);
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B5CF6', padding: 0, display: 'flex', alignItems: 'center' }}
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
+
+              <input
+                ref={analysisInputRef}
+                type="text"
+                value={filters.analysisInput}
+                onChange={(e) => {
+                  setFilter('analysisInput', e.target.value);
+                  setShowAnalysisSuggestions(true);
+                }}
+                onFocus={() => setShowAnalysisSuggestions(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Backspace' && filters.analysisInput === '' && filters.analyses.length > 0) {
+                    setFilters(prev => ({ ...prev, analyses: prev.analyses.slice(0, -1) }));
+                    setGenerated(false);
+                  }
+                }}
+                placeholder={filters.analyses.length === 0 ? "Escribir o seleccionar..." : ""}
+                style={{
+                  border: 'none', outline: 'none', background: 'transparent',
+                  color: 'var(--text-main)', fontSize: '0.85rem', flex: 1, minWidth: '80px', fontWeight: 600
+                }}
+              />
+            </div>
+            {showAnalysisSuggestions && analysisSuggestions.length > 0 && (
+              <div
+                ref={analysisSuggestionsRef}
+                style={{
+                  position: 'absolute', top: 'calc(100% + 2px)', left: 0, right: 0, zIndex: 600,
+                  background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                  borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                  maxHeight: '220px', overflowY: 'auto',
+                }}
+              >
+                {analysisSuggestions.map((name: string) => (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      setFilters(prev => ({ 
+                        ...prev, 
+                        analyses: [...prev.analyses, name],
+                        analysisInput: '' 
+                      }));
+                      setShowAnalysisSuggestions(false);
+                      setGenerated(false);
+                    }}
+                    style={{
+                      display: 'block', width: '100%', padding: '0.6rem 0.85rem',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600,
+                      textAlign: 'left', borderBottom: '1px solid var(--glass-border)',
+                    }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(139,92,246,0.08)'; }}
                     onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'none'; }}
                   >
                     {name}
@@ -626,6 +822,11 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
               <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 Obra Social: {obraSocialLabel}
               </p>
+              {appliedFilters?.analyses && appliedFilters.analyses.length > 0 && (
+                <p style={{ margin: '0.1rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Análisis: {appliedFilters.analyses.join(', ')}
+                </p>
+              )}
               {appliedFilters?.patientName && (
                 <p style={{ margin: '0.1rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   Paciente: {appliedFilters.patientName}
@@ -698,6 +899,23 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
               </div>
             </div>
 
+            {/* Análisis (si está filtrado) */}
+            {appliedFilters?.analyses && appliedFilters.analyses.length > 0 && (
+              <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #EC4899' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                  <div style={{ padding: '0.65rem', background: 'rgba(236,72,153,0.1)', borderRadius: '10px' }}>
+                    <Activity size={22} color="#EC4899" />
+                  </div>
+                  <div style={{ overflow: 'hidden' }}>
+                    <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Análisis</p>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={appliedFilters.analyses.join(', ')}>
+                      {appliedFilters.analyses.join(', ')}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Período */}
             <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
@@ -751,6 +969,7 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                       <th style={thStyle}>Fecha</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>Paciente</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>Obra Social</th>
+                      <th style={{ ...thStyle, textAlign: 'left' }}>Análisis</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>Profesional</th>
                       <th style={{ ...thStyle, textAlign: 'right' }}>Ingreso $</th>
                     </tr>
@@ -758,6 +977,9 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                   <tbody>
                     {reportData.map((row, idx) => {
                       const rowIncome = getRowIncome(row);
+                      const anaStr = (row.analyses && row.analyses.length > 0)
+                        ? row.analyses.map((a: any) => a.name + (a.subtype ? ` (${a.subtype})` : '')).join(', ')
+                        : (row.analysis_type || '');
                       return (
                         <tr
                           key={`${row.id}-${idx}`}
@@ -790,6 +1012,20 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                               <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.82rem' }}>—</span>
                             )}
                           </td>
+                          <td style={{ ...tdStyle }}>
+                            {anaStr ? (
+                              <span style={{
+                                display: 'inline-block', padding: '0.15rem 0.55rem',
+                                borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700,
+                                background: 'rgba(139,92,246,0.1)', color: '#8B5CF6',
+                                border: '1px solid rgba(139,92,246,0.2)',
+                              }}>
+                                {anaStr}
+                              </span>
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.82rem' }}>—</span>
+                            )}
+                          </td>
                           <td style={{ ...tdStyle, fontWeight: 600, fontSize: '0.8rem' }}>
                             {row.professional_name || '—'}
                           </td>
@@ -810,7 +1046,7 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: '2px solid var(--glass-border)', background: 'rgba(14,165,233,0.04)' }}>
-                      <td colSpan={5} style={{ ...tdStyle, fontWeight: 800, textAlign: 'right', textTransform: 'uppercase', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      <td colSpan={6} style={{ ...tdStyle, fontWeight: 800, textAlign: 'right', textTransform: 'uppercase', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         Total Ingresos Registrados:
                       </td>
                       <td style={{ ...tdStyle, fontWeight: 900, textAlign: 'right', fontSize: '0.95rem', color: 'var(--success)', whiteSpace: 'nowrap' }}>
