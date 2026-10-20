@@ -214,19 +214,40 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
   const analysisSuggestions = useMemo(() => {
     const fromData: string[] = [];
     data.forEach((d) => {
-      if (d.analysis_type) fromData.push(d.analysis_type);
-      if (d.aire_test_type) fromData.push(d.aire_test_type);
+      if (d.analysis_type) {
+        d.analysis_type.split(/[,;\/]+/).forEach((part: string) => {
+          const trimmed = part.trim();
+          if (trimmed) fromData.push(trimmed);
+        });
+      }
+      if (d.aire_test_type && d.aire_test_type.trim()) {
+        fromData.push(d.aire_test_type.trim());
+      }
       if (Array.isArray(d.analyses)) {
         d.analyses.forEach((a: any) => {
-          if (a?.name) fromData.push(a.name);
-          if (a?.subtype) fromData.push(a.subtype);
+          if (a?.name && a.name.trim()) fromData.push(a.name.trim());
+          if (a?.subtype && a.subtype.trim()) fromData.push(a.subtype.trim());
         });
       }
     });
 
+    const normalizeCanonical = (name: string): string => {
+      const norm = normalizeString(name);
+      if (norm === 'curva' || norm === 'curvas' || norm === 'curva pab' || norm === 'curvas pab') {
+        return 'CURVAS PAB';
+      }
+      if (norm === 'extraccion pab' || norm === 'extraccion - endocrinologia' || norm === 'extraccion endocrinologia' || norm === 'extraccion endocrinologica') {
+        return 'EXTRACCION PAB';
+      }
+      if (norm === 'extraccion') {
+        return 'EXTRACCIÓN';
+      }
+      return name.trim();
+    };
+
     const allAnalyses = Array.from(new Set([...tiposAnalisisAdmin, ...fromData]))
       .filter(Boolean)
-      .map(s => s.trim())
+      .map(s => normalizeCanonical(s))
       .filter(s => s.length > 0)
       .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 
@@ -283,32 +304,78 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
 
         // Tipos de Análisis
         if (appliedFilters.analyses && appliedFilters.analyses.length > 0) {
-          const rawList: string[] = [];
-          if (item.analysis_type) rawList.push(item.analysis_type);
-          if (item.aire_test_type) rawList.push(item.aire_test_type);
-          if (Array.isArray(item.analyses)) {
-            item.analyses.forEach((a: any) => {
-              if (a?.name) rawList.push(a.name);
-              if (a?.subtype) rawList.push(a.subtype);
+          const itemAnalyses: string[] = [];
+          if (item.analysis_type) {
+            item.analysis_type.split(/[,;\/]+/).forEach((s: string) => {
+              const trimmed = s.trim();
+              if (trimmed) itemAnalyses.push(trimmed);
             });
           }
-          const normalizedList = rawList.map(normalizeString).filter(Boolean);
-
-          const matchAnalysis = appliedFilters.analyses.some(sel => {
-            const selNorm = normalizeString(sel);
-            if (!selNorm) return false;
-            return normalizedList.some(itemNorm => {
-              if (itemNorm === selNorm) return true;
-              const subItems = itemNorm.split(/[,;\/]+/).map(s => s.trim());
-              if (subItems.includes(selNorm)) return true;
-              if (itemNorm.includes(selNorm) || selNorm.includes(itemNorm)) return true;
-              const isCurva = (s: string) => s === 'curva' || s === 'curvas' || s === 'curva pab' || s === 'curvas pab';
-              if (isCurva(selNorm) && isCurva(itemNorm)) return true;
-              const isExtPab = (s: string) => (s.includes('extracc') || s.includes('extraccion')) && (s.includes('pab') || s.includes('endocrin'));
-              if (isExtPab(selNorm) && isExtPab(itemNorm)) return true;
-              return false;
+          if (item.aire_test_type && item.aire_test_type.trim()) {
+            itemAnalyses.push(item.aire_test_type.trim());
+          }
+          if (Array.isArray(item.analyses)) {
+            item.analyses.forEach((a: any) => {
+              if (a?.name && a.name.trim()) itemAnalyses.push(a.name.trim());
+              if (a?.subtype && a.subtype.trim()) itemAnalyses.push(a.subtype.trim());
             });
-          });
+          }
+
+          const isPabExtraccion = (s: string) =>
+            s === 'extraccion pab' ||
+            s === 'extraccion - endocrinologia' ||
+            s === 'extraccion endocrinologia' ||
+            s === 'extraccion endocrinologica';
+
+          const isCurva = (s: string) =>
+            s === 'curva' ||
+            s === 'curvas' ||
+            s === 'curva pab' ||
+            s === 'curvas pab';
+
+          const isAnalysisMatch = (itemAnalysis: string, filterAnalysis: string): boolean => {
+            const itemNorm = normalizeString(itemAnalysis);
+            const selNorm = normalizeString(filterAnalysis);
+            if (!itemNorm || !selNorm) return false;
+
+            // 1. Curvas PAB
+            if (isCurva(selNorm)) {
+              return isCurva(itemNorm);
+            }
+            if (isCurva(itemNorm)) {
+              return isCurva(selNorm);
+            }
+
+            // 2. Extracción PAB
+            if (isPabExtraccion(selNorm)) {
+              return isPabExtraccion(itemNorm);
+            }
+            if (isPabExtraccion(itemNorm)) {
+              return isPabExtraccion(selNorm);
+            }
+
+            // 3. Regular Extracción
+            if (selNorm === 'extraccion') {
+              return itemNorm === 'extraccion';
+            }
+            if (itemNorm === 'extraccion') {
+              return selNorm === 'extraccion';
+            }
+
+            // 4. Exact equality
+            if (itemNorm === selNorm) return true;
+
+            // 5. Clean comparison (without parentheses/subtypes if present)
+            const itemClean = itemNorm.replace(/\(.*?\)/g, '').trim();
+            const selClean = selNorm.replace(/\(.*?\)/g, '').trim();
+            if (itemClean === selClean && itemClean.length > 0) return true;
+
+            return false;
+          };
+
+          const matchAnalysis = appliedFilters.analyses.some(sel =>
+            itemAnalyses.some(itemAna => isAnalysisMatch(itemAna, sel))
+          );
 
           if (!matchAnalysis) return false;
         }
