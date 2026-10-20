@@ -232,17 +232,19 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
     });
 
     const normalizeCanonical = (name: string): string => {
-      const norm = normalizeString(name);
+      const trimmed = name.trim();
+      const norm = normalizeString(trimmed);
+      if (!norm || norm === '-' || norm === 'test de aire') return '';
       if (norm === 'curva' || norm === 'curvas' || norm === 'curva pab' || norm === 'curvas pab') {
         return 'CURVAS PAB';
       }
       if (norm === 'extraccion pab' || norm === 'extraccion - endocrinologia' || norm === 'extraccion endocrinologia' || norm === 'extraccion endocrinologica') {
         return 'EXTRACCION PAB';
       }
-      if (norm === 'extraccion') {
-        return 'EXTRACCIÓN';
+      if (norm === 'extraccion' || norm === 'extra') {
+        return 'EXTRACCION';
       }
-      return name.trim();
+      return trimmed.toUpperCase();
     };
 
     const allAnalyses = Array.from(new Set([...tiposAnalisisAdmin, ...fromData]))
@@ -355,11 +357,11 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
             }
 
             // 3. Regular Extracción
-            if (selNorm === 'extraccion') {
-              return itemNorm === 'extraccion';
+            if (selNorm === 'extraccion' || selNorm === 'extra') {
+              return itemNorm === 'extraccion' || itemNorm === 'extra';
             }
-            if (itemNorm === 'extraccion') {
-              return selNorm === 'extraccion';
+            if (itemNorm === 'extraccion' || itemNorm === 'extra') {
+              return selNorm === 'extraccion' || selNorm === 'extra';
             }
 
             // 4. Exact equality
