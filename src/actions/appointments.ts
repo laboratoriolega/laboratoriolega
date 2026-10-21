@@ -583,31 +583,51 @@ export async function ensureBlockedDaysTable() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS blocked_days (
         id SERIAL PRIMARY KEY,
-        fecha DATE NOT NULL UNIQUE,
+        fecha DATE NOT NULL,
         descripcion TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        created_by VARCHAR(100)
+        created_by VARCHAR(100),
+        calendar_type VARCHAR(50) NOT NULL DEFAULT 'general'
       );
     `);
     await pool.query(`
       ALTER TABLE blocked_days ADD COLUMN IF NOT EXISTS created_by VARCHAR(100);
+      ALTER TABLE blocked_days ADD COLUMN IF NOT EXISTS calendar_type VARCHAR(50) NOT NULL DEFAULT 'general';
     `);
-    // migrate from old per-calendar table if it exists
+
+    // Drop unique constraint on fecha alone if present
     await pool.query(`
-      INSERT INTO blocked_days (fecha, descripcion, created_at)
-      SELECT fecha, descripcion, created_at FROM aires_blocked_days
-      WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'aires_blocked_days')
-      ON CONFLICT (fecha) DO NOTHING;
+      ALTER TABLE blocked_days DROP CONSTRAINT IF EXISTS blocked_days_fecha_key;
     `).catch(() => {});
+
+    // Ensure composite unique constraint on (fecha, calendar_type)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'blocked_days_fecha_calendar_type_key'
+        ) THEN
+          ALTER TABLE blocked_days ADD CONSTRAINT blocked_days_fecha_calendar_type_key UNIQUE (fecha, calendar_type);
+        END IF;
+      END $$;
+    `).catch(() => {});
+
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
   }
 }
 
-export async function getBlockedDays() {
+export async function getBlockedDays(calendarType?: string) {
   try {
-    const res = await pool.query("SELECT * FROM blocked_days ORDER BY fecha ASC");
+    let query = "SELECT * FROM blocked_days";
+    const params: any[] = [];
+    if (calendarType) {
+      query += " WHERE calendar_type = $1";
+      params.push(calendarType);
+    }
+    query += " ORDER BY fecha ASC";
+    const res = await pool.query(query, params);
     const data = res.rows.map(r => ({
       ...r,
       fecha: r.fecha instanceof Date
@@ -620,20 +640,20 @@ export async function getBlockedDays() {
   }
 }
 
-export async function createBlockedDay(fecha: string, descripcion: string) {
+export async function createBlockedDay(fecha: string, descripcion: string, calendarType: string = 'general') {
   try {
     const session = await getSession() as any;
     if (!session) throw new Error("No autenticado");
     const userIdentifier = session.username || session.name || "sistema";
     await pool.query(
-      `INSERT INTO blocked_days (fecha, descripcion, created_by) 
-       VALUES ($1, $2, $3) 
-       ON CONFLICT (fecha) DO UPDATE SET 
+      `INSERT INTO blocked_days (fecha, descripcion, created_by, calendar_type) 
+       VALUES ($1, $2, $3, $4) 
+       ON CONFLICT (fecha, calendar_type) DO UPDATE SET 
          descripcion = EXCLUDED.descripcion,
          created_by = COALESCE(blocked_days.created_by, EXCLUDED.created_by)`,
-      [fecha, descripcion || null, userIdentifier]
+      [fecha, descripcion || null, userIdentifier, calendarType || 'general']
     );
-    await logAction("CREATE_BLOCKED_DAY", { fecha, descripcion, created_by: userIdentifier });
+    await logAction("CREATE_BLOCKED_DAY", { fecha, descripcion, created_by: userIdentifier, calendar_type: calendarType });
     revalidatePath("/calendario");
     revalidatePath("/calendario-aire");
     revalidatePath("/calendario-domicilio");

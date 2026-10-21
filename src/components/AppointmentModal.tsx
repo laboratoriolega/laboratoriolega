@@ -71,7 +71,8 @@ export default function AppointmentModal({
       setSelectedDocs([]);
       setAnalysisType("");
       setBlockedError(null);
-      getBlockedDays().then(res => { if (res.data) setBlockedDays(res.data); });
+      const calType = isAire ? 'aire' : (isPab ? 'pab' : (isDomicilio ? 'domicilio' : 'general'));
+      getBlockedDays(calType).then(res => { if (res.data) setBlockedDays(res.data); });
       setNameValue(initialData?.name || "");
       setDniValue(initialData?.dni || "");
       setPhoneValue(initialData?.phone || "");
@@ -81,7 +82,7 @@ export default function AppointmentModal({
       setShowSuggestions(false);
       if (formRef.current) formRef.current.reset();
     }
-  }, [isOpen, isAire, initialData]);
+  }, [isOpen, isAire, isPab, isDomicilio, initialData]);
 
   // Close suggestions when clicking outside
   useEffect(() => {

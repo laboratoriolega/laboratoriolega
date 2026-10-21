@@ -169,7 +169,7 @@ export default function AiresCalendarView({
         </div>
       </div>
 
-      {showBlockedPanel && <BlockedDaysPanel blockedDays={blockedDays} />}
+      {showBlockedPanel && <BlockedDaysPanel blockedDays={blockedDays} calendarType="aire" />}
 
       <div style={{ display: 'flex', gap: '1.5rem', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#A855F7' }}>

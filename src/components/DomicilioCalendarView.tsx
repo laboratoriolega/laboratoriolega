@@ -83,7 +83,7 @@ export default function DomicilioCalendarView({
         </div>
       </div>
 
-      {showBlockedPanel && <BlockedDaysPanel blockedDays={blockedDays} />}
+      {showBlockedPanel && <BlockedDaysPanel blockedDays={blockedDays} calendarType="domicilio" />}
 
       <div style={{ overflowX: 'auto', flex: 1 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', minWidth: '800px', paddingBottom: '1rem' }}>

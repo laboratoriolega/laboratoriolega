@@ -7,6 +7,7 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 import { getProfesionales, getTiposAnalisis } from '@/actions/listados';
 
 // ---------------------------------------------------------------------------
@@ -453,6 +454,114 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
     pdf.save(`Reporte_Pacientes_Lega_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
   }
 
+  // ── Exportar Excel (.xlsx) ─────────────────────────────────────────────
+  function exportExcel() {
+    setShowExportMenu(false);
+    const wb = XLSX.utils.book_new();
+
+    // 1. Hoja "Detalle Pacientes"
+    const detallePacientes = reportData.map((item) => {
+      const particular = parseFloat(item.particular_price) || 0;
+      const coseguroAgregado = item.coseguro_agregado
+        ? (parseFloat(item.total_coseguro_pagado) || parseFloat(item.coseguro) || 0)
+        : (parseFloat(item.coseguro) || 0);
+      const totalCobrado = getRowIncome(item);
+
+      const studyName = (item.analyses && item.analyses.length > 0)
+        ? item.analyses.map((a: any) => a.name + (a.subtype ? ` (${a.subtype})` : '')).join(', ')
+        : (item.analysis_type || '');
+
+      return {
+        'Fecha': fmtDate(item.appointment_date),
+        'Paciente': item.name || item.paciente || '',
+        'DNI': item.dni || '',
+        'Obra Social': item.health_insurance || 'PARTICULAR',
+        'Estudio': studyName,
+        'Profesional': item.professional_name || '',
+        'Importe Particular': particular > 0 ? particular : '',
+        'Coseguro': coseguroAgregado > 0 ? coseguroAgregado : '',
+        'Total Cobrado': totalCobrado,
+        'Método de Pago': item.payment_method || ''
+      };
+    });
+
+    // Fila totalizadora
+    detallePacientes.push({
+      'Fecha': '',
+      'Paciente': '',
+      'DNI': '',
+      'Obra Social': '',
+      'Estudio': 'TOTAL ACUMULADO:',
+      'Profesional': '',
+      'Importe Particular': '',
+      'Coseguro': '',
+      'Total Cobrado': summary.totalIngresos,
+      'Método de Pago': ''
+    } as any);
+
+    const wsDetalle = XLSX.utils.json_to_sheet(detallePacientes);
+    wsDetalle['!cols'] = [
+      { wch: 12 }, // Fecha
+      { wch: 32 }, // Paciente
+      { wch: 14 }, // DNI
+      { wch: 25 }, // Obra Social
+      { wch: 35 }, // Estudio
+      { wch: 30 }, // Profesional
+      { wch: 18 }, // Importe Particular
+      { wch: 15 }, // Coseguro
+      { wch: 16 }, // Total Cobrado
+      { wch: 20 }, // Método de Pago
+    ];
+    XLSX.utils.book_append_sheet(wb, wsDetalle, "Detalle Pacientes");
+
+    // 2. Hoja "Resumen Estadístico"
+    const studyMap: Record<string, number> = {};
+    const insuranceMap: Record<string, number> = {};
+    const profMap: Record<string, number> = {};
+
+    reportData.forEach((item) => {
+      const studyName = (item.analyses && item.analyses.length > 0)
+        ? item.analyses.map((a: any) => a.name).join(', ')
+        : (item.analysis_type || 'Otros');
+      studyMap[studyName] = (studyMap[studyName] || 0) + 1;
+
+      const os = item.health_insurance || 'PARTICULAR';
+      insuranceMap[os] = (insuranceMap[os] || 0) + 1;
+
+      const prof = item.professional_name || 'Sin Profesional';
+      profMap[prof] = (profMap[prof] || 0) + 1;
+    });
+
+    const resumenData: any[][] = [
+      ['REPORTE DE PACIENTES - LABORATORIO LEGA'],
+      ['Período', periodLabel],
+      ['Obra Social', obraSocialLabel],
+      ['Análisis', appliedFilters?.analyses && appliedFilters.analyses.length > 0 ? appliedFilters.analyses.join(', ') : 'Todos'],
+      ['Profesional', appliedFilters?.professionals && appliedFilters.professionals.length > 0 ? appliedFilters.professionals.join(', ') : 'Todos'],
+      ['Paciente', appliedFilters?.patientName || 'Todos'],
+      [''],
+      ['TOTALES GENERALES'],
+      ['Total Atenciones', summary.totalAtenciones],
+      ['Total Pacientes Distintos', summary.distinctPatients],
+      ['Total Ingresos Registrados', summary.totalIngresos],
+      [''],
+      ['DISTRIBUCIÓN DE ESTUDIOS / ANÁLISIS', 'Cantidad'],
+      ...Object.entries(studyMap).sort((a, b) => b[1] - a[1]).map(([name, count]) => [name, count]),
+      [''],
+      ['COBERTURAS MÉDICAS', 'Cantidad'],
+      ...Object.entries(insuranceMap).sort((a, b) => b[1] - a[1]).map(([name, count]) => [name, count]),
+      [''],
+      ['PROFESIONALES', 'Cantidad'],
+      ...Object.entries(profMap).sort((a, b) => b[1] - a[1]).map(([name, count]) => [name, count]),
+    ];
+
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+    wsResumen['!cols'] = [{ wch: 38 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen Estadístico");
+
+    XLSX.writeFile(wb, `Reporte_Lega_${format(new Date(), 'dd-MM-yyyy')}.xlsx`);
+  }
+
   // ── Exportar CSV ──────────────────────────────────────────────────────
   function exportCSV() {
     setShowExportMenu(false);
@@ -467,20 +576,24 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
         ? [`Profesional: ${appliedFilters.professionals.join(', ')}`]
         : []),
       '',
-      'Fecha,Paciente,Obra Social,Análisis,Profesional,Ingreso $',
+      'Fecha;Paciente;DNI;Obra Social;Estudio;Profesional;Importe Particular;Coseguro;Total Cobrado;Método de Pago',
       ...reportData.map((r) => {
+        const particular = parseFloat(r.particular_price) || 0;
+        const coseguroAgregado = r.coseguro_agregado
+          ? (parseFloat(r.total_coseguro_pagado) || parseFloat(r.coseguro) || 0)
+          : (parseFloat(r.coseguro) || 0);
         const inc = getRowIncome(r);
         const anaStr = (r.analyses && r.analyses.length > 0)
           ? r.analyses.map((a: any) => a.name + (a.subtype ? ` (${a.subtype})` : '')).join(', ')
           : (r.analysis_type || '');
-        return `${fmtDate(r.appointment_date)},"${(r.name || '').replace(/"/g, '""')}","${(r.health_insurance || '').replace(/"/g, '""')}","${anaStr.replace(/"/g, '""')}","${(r.professional_name || '').replace(/"/g, '""')}",${inc.toFixed(2)}`;
+        return `${fmtDate(r.appointment_date)};"${(r.name || '').replace(/"/g, '""')}";"${r.dni || ''}";"${(r.health_insurance || '').replace(/"/g, '""')}";"${anaStr.replace(/"/g, '""')}";"${(r.professional_name || '').replace(/"/g, '""')}";${particular.toFixed(2)};${coseguroAgregado.toFixed(2)};${inc.toFixed(2)};"${(r.payment_method || '').replace(/"/g, '""')}"`;
       }),
       '',
-      `Total de Atenciones,${summary.totalAtenciones}`,
-      `Total de Pacientes Distintos,${summary.distinctPatients}`,
-      `Total Ingresos Registrados,${summary.totalIngresos.toFixed(2)}`,
+      `Total de Atenciones;${summary.totalAtenciones}`,
+      `Total de Pacientes Distintos;${summary.distinctPatients}`,
+      `Total Ingresos Registrados;${summary.totalIngresos.toFixed(2)}`,
     ];
-    const blob = new Blob(['\uFEFF' + rows.join('\n')], {
+    const blob = new Blob(['\uFEFF' + rows.join('\r\n')], {
       type: 'text/csv;charset=utf-8;',
     });
     const url = URL.createObjectURL(blob);
@@ -523,19 +636,45 @@ export default function PatientsReport({ data, obrasSociales, onBack }: Patients
                   position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 500,
                   background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
                   borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                  minWidth: '190px', overflow: 'hidden',
+                  minWidth: '220px', overflow: 'hidden',
                 }}>
                   <button
-                    onClick={exportPDF}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600 }}
+                    onClick={exportExcel}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
+                      padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                   >
-                    <Download size={15} /> Descargar PDF
+                    <Download size={16} color="#10B981" /> Descargar Excel (.xlsx)
+                  </button>
+                  <button
+                    onClick={exportPDF}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
+                      padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600,
+                      borderTop: '1px solid var(--glass-border)',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(14, 165, 233, 0.08)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                  >
+                    <Download size={16} color="#0EA5E9" /> Descargar PDF
                   </button>
                   <button
                     onClick={exportCSV}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, borderTop: '1px solid var(--glass-border)' }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
+                      padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600,
+                      borderTop: '1px solid var(--glass-border)',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                   >
-                    <Download size={15} /> Descargar CSV (Excel)
+                    <Download size={15} /> Descargar CSV
                   </button>
                 </div>
               )}

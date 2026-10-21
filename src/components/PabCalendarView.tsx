@@ -108,7 +108,7 @@ export default function PabCalendarView({
     let base = { border: '1px solid var(--glass-border)', borderLeft: '5px solid var(--glass-border)', background: 'var(--glass-bg)', opacity: 1 };
     if (status === 'CANCELADO') return { ...base, opacity: 0.5, background: 'rgba(0,0,0,0.1)', border: '1px solid var(--glass-border)', borderLeft: '5px solid #94a3b8' };
     if (isCurvaType(type)) {
-      base = { ...base, border: '1px solid #10B981', borderLeft: '5px solid #10B981', background: status === 'COMPLETADO' ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.05)' };
+      base = { ...base, border: '1px solid #F59E0B', borderLeft: '5px solid #F59E0B', background: status === 'COMPLETADO' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.06)' };
     } else if (isExtraccionPabType(type)) {
       base = { ...base, border: '1px solid #8B5CF6', borderLeft: '5px solid #8B5CF6', background: status === 'COMPLETADO' ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.05)' };
     }
@@ -117,7 +117,7 @@ export default function PabCalendarView({
   };
 
   const getBadgeColor = (type?: string) => {
-    if (isCurvaType(type)) return '#10B981';
+    if (isCurvaType(type)) return '#F59E0B';
     if (isExtraccionPabType(type)) return '#8B5CF6';
     return 'var(--primary)';
   };
@@ -163,7 +163,7 @@ export default function PabCalendarView({
         </div>
       </div>
 
-      {showBlockedPanel && <BlockedDaysPanel blockedDays={blockedDays} />}
+      {showBlockedPanel && <BlockedDaysPanel blockedDays={blockedDays} calendarType="pab" />}
 
       <div style={{ display: 'flex', gap: '0.75rem', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <button
@@ -191,16 +191,16 @@ export default function PabCalendarView({
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.35rem 0.75rem',
             borderRadius: '6px',
-            border: `1px solid ${typeFilter === 'CURVAS PAB' ? '#10B981' : 'var(--glass-border)'}`,
-            background: typeFilter === 'CURVAS PAB' ? 'rgba(16, 185, 129, 0.2)' : 'var(--glass-bg)',
-            color: '#10B981',
+            border: `1px solid ${typeFilter === 'CURVAS PAB' ? '#F59E0B' : 'var(--glass-border)'}`,
+            background: typeFilter === 'CURVAS PAB' ? 'rgba(245, 158, 11, 0.2)' : 'var(--glass-bg)',
+            color: '#F59E0B',
             fontWeight: 700,
             fontSize: '0.8rem',
             cursor: 'pointer',
             transition: 'all 0.15s ease',
           }}
         >
-          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#10B981' }}></span>
+          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#F59E0B' }}></span>
           CURVAS PAB ({curvaTotal}/{curvaCompleted})
         </button>
 
@@ -318,7 +318,7 @@ export default function PabCalendarView({
                     isThursday ? (
                       <span style={{
                         fontSize: '0.6rem', fontWeight: 700,
-                        background: isCurvaFull ? 'var(--danger)' : (curvaCount > 0 ? '#10B981' : 'rgba(0,0,0,0.05)'),
+                        background: isCurvaFull ? 'var(--danger)' : (curvaCount > 0 ? '#F59E0B' : 'rgba(0,0,0,0.05)'),
                         color: curvaCount > 0 ? 'white' : 'var(--text-muted)',
                         padding: '0.1rem 0.3rem', borderRadius: '4px',
                       }}>

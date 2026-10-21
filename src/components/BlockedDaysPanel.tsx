@@ -9,7 +9,13 @@ import { useRouter } from "next/navigation";
 
 type BlockedDay = { id: number; fecha: string; descripcion: string | null; created_by?: string | null };
 
-export default function BlockedDaysPanel({ blockedDays: initial }: { blockedDays: BlockedDay[] }) {
+export default function BlockedDaysPanel({
+  blockedDays: initial,
+  calendarType = 'general',
+}: {
+  blockedDays: BlockedDay[];
+  calendarType?: string;
+}) {
   const router = useRouter();
   const [days, setDays] = useState<BlockedDay[]>(initial);
   const [newDate, setNewDate] = useState('');
@@ -24,7 +30,7 @@ export default function BlockedDaysPanel({ blockedDays: initial }: { blockedDays
   async function handleAdd() {
     if (!newDate) return;
     setSaving(true);
-    const res = await createBlockedDay(newDate, newDesc);
+    const res = await createBlockedDay(newDate, newDesc, calendarType);
     if (!res.error) {
       setNewDate('');
       setNewDesc('');

@@ -6,7 +6,7 @@ export const revalidate = 0;
 export default async function DomicilioCalendarPage() {
   await ensureBlockedDaysTable();
   const { data: appointments } = await getAppointments();
-  const { data: blockedDays } = await getBlockedDays();
+  const { data: blockedDays } = await getBlockedDays('domicilio');
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
