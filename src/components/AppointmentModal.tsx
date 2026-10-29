@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createAppointment, getBlockedDays } from "@/actions/appointments";
+import { getBlockedDays, createAppointment } from "@/actions/appointments";
+import { getTiposAnalisis } from "@/actions/listados";
 import { searchPatients } from "@/actions/patients";
 import { format } from "date-fns";
 import { User, FileText, Calendar, CloudUpload, X, Loader2, Search } from "lucide-react";
@@ -11,6 +12,13 @@ import TipoAnalisisInput from "./TipoAnalisisInput";
 import { compressImage } from "@/lib/compression";
 import Portal from "./Portal";
 import PatientInsuranceSelector from "./PatientInsuranceSelector";
+
+const DEFAULT_PAB_OPTIONS = [
+  "CURVAS PAB",
+  "EXTRACCION PAB",
+  "CURVAS PAB - ARGININA",
+  "CURVAS PAB - CLONIDINA"
+];
 
 type PatientSuggestion = { id: string; name: string; dni: string; phone: string; health_insurance: string };
 
@@ -64,6 +72,22 @@ export default function AppointmentModal({
   // Blocked days
   const [blockedDays, setBlockedDays] = useState<{ fecha: string; descripcion: string | null }[]>([]);
   const [blockedError, setBlockedError] = useState<string | null>(null);
+  const [pabOptions, setPabOptions] = useState<string[]>(DEFAULT_PAB_OPTIONS);
+
+  useEffect(() => {
+    if (isPab) {
+      getTiposAnalisis().then(res => {
+        if (res?.data) {
+          const fromCatalog = res.data
+            .filter((t: any) => t.activo && t.nombre && t.nombre.toUpperCase().includes('PAB'))
+            .map((t: any) => t.nombre.toUpperCase().trim());
+          const combined = Array.from(new Set([...DEFAULT_PAB_OPTIONS, ...fromCatalog]))
+            .filter(name => name !== 'CURVA' && name !== 'EXTRACCIÓN - ENDOCRINOLOGÍA' && name !== 'EXTRACCION - ENDOCRINOLOGIA');
+          setPabOptions(combined);
+        }
+      });
+    }
+  }, [isPab]);
 
   useEffect(() => {
     if (isOpen) {
@@ -361,10 +385,9 @@ export default function AppointmentModal({
                     required
                   >
                     <option value="">Seleccionar...</option>
-                    <option value="CURVAS PAB">CURVAS PAB</option>
-                    <option value="EXTRACCION PAB">EXTRACCION PAB</option>
-                    <option value="CURVA">CURVA</option>
-                    <option value="EXTRACCIÓN - ENDOCRINOLOGÍA">EXTRACCIÓN - ENDOCRINOLOGÍA</option>
+                    {pabOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
                   </select>
                 ) : (
                   <TipoAnalisisInput

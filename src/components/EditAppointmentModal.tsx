@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { deleteDocument, updateAppointment, deleteAppointment } from "@/actions/appointments";
+import { getTiposAnalisis } from "@/actions/listados";
 import { X, Calendar, Edit, Loader2, Info, CloudUpload, Trash2, Plus } from "lucide-react";
 import HealthInsuranceInput from "./HealthInsuranceInput";
 import TipoAnalisisInput from "./TipoAnalisisInput";
@@ -11,6 +12,13 @@ import { compressImage } from "@/lib/compression";
 import Portal from "./Portal";
 import PatientInsuranceSelector from "./PatientInsuranceSelector";
 
+const DEFAULT_PAB_OPTIONS = [
+  "CURVAS PAB",
+  "EXTRACCION PAB",
+  "CURVAS PAB - ARGININA",
+  "CURVAS PAB - CLONIDINA"
+];
+
 export default function EditAppointmentModal({ isOpen, onClose, ap, isAires, isPab }: { isOpen: boolean, onClose: () => void, ap: any, isAires?: boolean, isPab?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [analysisType, setAnalysisType] = useState("");
@@ -18,26 +26,47 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires, isP
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [insuranceValue, setInsuranceValue] = useState("");
   const [isRescheduling, setIsRescheduling] = useState(false);
+  const [pabOptions, setPabOptions] = useState<string[]>(DEFAULT_PAB_OPTIONS);
   const router = useRouter();
+
+  useEffect(() => {
+    if (isPab) {
+      getTiposAnalisis().then(res => {
+        if (res?.data) {
+          const fromCatalog = res.data
+            .filter((t: any) => t.activo && t.nombre && t.nombre.toUpperCase().includes('PAB'))
+            .map((t: any) => t.nombre.toUpperCase().trim());
+          const combined = Array.from(new Set([...DEFAULT_PAB_OPTIONS, ...fromCatalog]))
+            .filter(name => name !== 'CURVA' && name !== 'EXTRACCIÓN - ENDOCRINOLOGÍA' && name !== 'EXTRACCION - ENDOCRINOLOGIA');
+          setPabOptions(combined);
+        }
+      });
+    }
+  }, [isPab]);
 
   useEffect(() => {
     if (ap) {
       setAnalysisType(ap.analysis_type || "");
       setInsuranceValue(ap.health_insurance || "");
       const airTestNames = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES', 'TEST DE AIRE'];
+      let list = [];
       if (ap.analyses && ap.analyses.length > 0) {
-        setAnalyses(ap.analyses.map((a: any) => ({ 
+        list = ap.analyses.map((a: any) => ({ 
             analysis_name: a.name || '', 
             aire_test_subtype: a.subtype || '',
             is_aire: airTestNames.includes((a.name || '').toUpperCase()) || airTestNames.includes((a.subtype || '').toUpperCase())
-        })));
+        }));
       } else {
-        setAnalyses([{ 
+        list = [{ 
             analysis_name: ap.analysis_type || '', 
             aire_test_subtype: ap.aire_test_type || '',
             is_aire: true 
-        }]);
+        }];
       }
+      if (list.length === 0) {
+        list = [{ analysis_name: ap.analysis_type || '', aire_test_subtype: ap.aire_test_type || '', is_aire: true }];
+      }
+      setAnalyses(list);
       setSelectedFiles([]); // Reset new files when opening a different appointment
       setIsRescheduling(false);
     }
@@ -254,10 +283,10 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires, isP
           <div style={{ background: 'rgba(0,0,0,0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>Estudios / Análisis</label>
-              {!(isAires || isPab) && (
+              {!isAires && (
                 <button 
                   type="button" 
-                  onClick={() => setAnalyses([...analyses, { analysis_name: '', aire_test_subtype: '' }])}
+                  onClick={() => setAnalyses(prev => [...prev, { analysis_name: isPab ? (pabOptions[0] || 'CURVAS PAB') : '', aire_test_subtype: '', is_aire: false }])}
                   style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                 >
                   <Plus size={12} /> AGREGAR
@@ -267,11 +296,11 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires, isP
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {(() => {
                 // If in Aires mode, separate visible and hidden analyses based on the initial flag
-                const visibleAnalyses = (isAires || isPab) 
+                const visibleAnalyses = isAires 
                   ? analyses.filter(a => a.is_aire !== false)
                   : analyses;
                 
-                const hiddenAnalyses = (isAires || isPab)
+                const hiddenAnalyses = isAires
                   ? analyses.filter(a => a.is_aire === false)
                   : [];
 
@@ -303,10 +332,12 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires, isP
                               required
                             >
                               <option value="">Seleccionar...</option>
-                              <option value="CURVAS PAB">CURVAS PAB</option>
-                              <option value="EXTRACCION PAB">EXTRACCION PAB</option>
-                              <option value="CURVA">CURVA</option>
-                              <option value="EXTRACCIÓN - ENDOCRINOLOGÍA">EXTRACCIÓN - ENDOCRINOLOGÍA</option>
+                              {pabOptions.map(opt => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                              {ana.analysis_name && !pabOptions.includes(ana.analysis_name) && (
+                                <option value={ana.analysis_name}>{ana.analysis_name}</option>
+                              )}
                             </select>
                           ) : (
                             <TipoAnalisisInput
@@ -325,11 +356,12 @@ export default function EditAppointmentModal({ isOpen, onClose, ap, isAires, isP
                             />
                           )}
                         </div>
-                        {(!(isAires || isPab) || visibleAnalyses.length > 1) && (
+                        {(!isAires && visibleAnalyses.length > 1) && (
                           <button 
                             type="button" 
                             onClick={() => setAnalyses(analyses.filter(item => item !== ana))}
                             style={{ padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                            title="Eliminar análisis"
                           >
                             <Trash2 size={14} />
                           </button>

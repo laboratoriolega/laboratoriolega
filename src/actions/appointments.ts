@@ -117,7 +117,7 @@ export async function createAppointment(formData: FormData) {
     const isCurvaAnalysis = (n?: string | null) => {
       if (!n) return false;
       const u = n.toUpperCase().trim();
-      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB';
+      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB' || u.startsWith('CURVAS PAB') || u.includes('CURVA');
     };
     if (isCurvaAnalysis(analysis_type) || analysisNames.some(isCurvaAnalysis) || analysisSubtypes.some(isCurvaAnalysis)) {
       const targetDate = new Date(appointment_date);
@@ -127,10 +127,10 @@ export async function createAppointment(formData: FormData) {
           `SELECT COUNT(*) FROM appointments a
            WHERE DATE(a.appointment_date) = $1 AND (a.status IS NULL OR a.status != 'CANCELADO')
            AND (
-             UPPER(a.analysis_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(a.aire_test_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB')
+             UPPER(a.analysis_type) LIKE '%CURVA%' OR UPPER(a.aire_test_type) LIKE '%CURVA%'
              OR EXISTS (
                SELECT 1 FROM appointment_analyses aa
-               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(aa.aire_test_subtype) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB'))
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) LIKE '%CURVA%' OR UPPER(aa.aire_test_subtype) LIKE '%CURVA%')
              )
            )`,
           [targetDateStr]
@@ -225,6 +225,7 @@ export async function createAppointment(formData: FormData) {
     revalidatePath("/");
     revalidatePath("/calendario");
     revalidatePath("/calendario-aire");
+    revalidatePath("/calendario-pab");
     revalidatePath("/pacientes", "layout");
 
     return { success: true };
@@ -298,7 +299,7 @@ export async function updateAppointment(formData: FormData) {
     const isCurvaAnalysisUpdate = (n?: string | null) => {
       if (!n) return false;
       const u = n.toUpperCase().trim();
-      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB';
+      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB' || u.startsWith('CURVAS PAB') || u.includes('CURVA');
     };
     if (isCurvaAnalysisUpdate(analysis_type) || analysisNames.some(isCurvaAnalysisUpdate) || analysisSubtypes.some(isCurvaAnalysisUpdate)) {
       const targetDate = new Date(appointment_date);
@@ -308,10 +309,10 @@ export async function updateAppointment(formData: FormData) {
           `SELECT COUNT(*) FROM appointments a
            WHERE DATE(a.appointment_date) = $1 AND a.id != $2 AND (a.status IS NULL OR a.status != 'CANCELADO')
            AND (
-             UPPER(a.analysis_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(a.aire_test_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB')
+             UPPER(a.analysis_type) LIKE '%CURVA%' OR UPPER(a.aire_test_type) LIKE '%CURVA%'
              OR EXISTS (
                SELECT 1 FROM appointment_analyses aa
-               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(aa.aire_test_subtype) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB'))
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) LIKE '%CURVA%' OR UPPER(aa.aire_test_subtype) LIKE '%CURVA%')
              )
            )`,
           [targetDateStr, id]
@@ -403,6 +404,7 @@ export async function updateAppointment(formData: FormData) {
     revalidatePath("/");
     revalidatePath("/calendario");
     revalidatePath("/calendario-aire");
+    revalidatePath("/calendario-pab");
     revalidatePath("/calendario-domicilio");
     revalidatePath("/pacientes", "layout");
 
@@ -446,7 +448,7 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
     const isCurvaName = (n?: string | null) => {
       if (!n) return false;
       const u = n.toUpperCase().trim();
-      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB';
+      return u === 'CURVA' || u === 'CURVAS' || u === 'CURVA PAB' || u === 'CURVAS PAB' || u.startsWith('CURVAS PAB') || u.includes('CURVA');
     };
     const isCurva = isCurvaName(apt?.analysis_type) || isCurvaName(apt?.aire_test_type) || apt?.is_curva > 0;
     if (isCurva) {
@@ -457,10 +459,10 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
           `SELECT COUNT(*) FROM appointments a
            WHERE DATE(a.appointment_date) = $1 AND a.id != $2 AND (a.status IS NULL OR a.status != 'CANCELADO')
            AND (
-             UPPER(a.analysis_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(a.aire_test_type) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB')
+             UPPER(a.analysis_type) LIKE '%CURVA%' OR UPPER(a.aire_test_type) LIKE '%CURVA%'
              OR EXISTS (
                SELECT 1 FROM appointment_analyses aa
-               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB') OR UPPER(aa.aire_test_subtype) IN ('CURVA', 'CURVAS', 'CURVA PAB', 'CURVAS PAB'))
+               WHERE aa.appointment_id = a.id AND (UPPER(aa.analysis_name) LIKE '%CURVA%' OR UPPER(aa.aire_test_subtype) LIKE '%CURVA%')
              )
            )`,
           [targetDateStr, appointmentId]
@@ -484,6 +486,7 @@ export async function moveAppointment(appointmentId: string, newDate: string, re
     });
 
     revalidatePath("/calendario");
+    revalidatePath("/calendario-pab");
     revalidatePath("/");
     revalidatePath("/pacientes", "layout");
 
@@ -509,6 +512,7 @@ export async function deleteAppointment(id: string) {
     await logAction("DELETE_APPOINTMENT", { appointment_id: id, patient_name: name });
 
     revalidatePath("/calendario");
+    revalidatePath("/calendario-pab");
     revalidatePath("/");
     revalidatePath("/turnos-lista");
     revalidatePath("/pacientes", "layout");

@@ -257,8 +257,8 @@ export default function IngresosTable({ ingresos, onEdit, onRefresh, period, use
                 const name = (a.name || '').toUpperCase().trim();
                 return name === 'CURVA' || name === 'CURVAS' || name === 'CURVAS PAB' || name === 'CURVA PAB' ||
                        name === 'EXTRACCIÓN - ENDOCRINOLOGÍA' || name === 'EXTRACCION - ENDOCRINOLOGIA' || 
-                       name === 'EXTRACCION PAB' || name === 'EXTRACCIÓN PAB';
-              }) || ['CURVA', 'CURVAS', 'CURVAS PAB', 'CURVA PAB', 'EXTRACCIÓN - ENDOCRINOLOGÍA', 'EXTRACCION - ENDOCRINOLOGIA', 'EXTRACCION PAB', 'EXTRACCIÓN PAB'].includes((ing.analysis_type || '').toUpperCase().trim());
+                       name === 'EXTRACCION PAB' || name === 'EXTRACCIÓN PAB' || name.includes('PAB');
+              }) || ((ing.analysis_type || '').toUpperCase().includes('PAB') || ['CURVA', 'CURVAS', 'CURVAS PAB', 'CURVA PAB', 'EXTRACCIÓN - ENDOCRINOLOGÍA', 'EXTRACCION - ENDOCRINOLOGIA', 'EXTRACCION PAB', 'EXTRACCIÓN PAB'].includes((ing.analysis_type || '').toUpperCase().trim()));
 
               const isHighlighted = highlightId && parseInt(highlightId) === ing.id;
 

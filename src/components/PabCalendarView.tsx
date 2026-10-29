@@ -51,7 +51,15 @@ export default function PabCalendarView({
   const isCurvaType = (type?: string | null): boolean => {
     if (!type) return false;
     const t = type.toUpperCase().trim();
-    return t === 'CURVA' || t === 'CURVAS' || t === 'CURVA PAB' || t === 'CURVAS PAB';
+    return (
+      t === 'CURVA' ||
+      t === 'CURVAS' ||
+      t === 'CURVA PAB' ||
+      t === 'CURVAS PAB' ||
+      t.startsWith('CURVAS PAB') ||
+      t.startsWith('CURVA PAB') ||
+      t.includes('CURVA')
+    );
   };
 
   const isExtraccionPabType = (type?: string | null): boolean => {
@@ -61,7 +69,9 @@ export default function PabCalendarView({
       t === 'EXTRACCIÓN - ENDOCRINOLOGÍA' ||
       t === 'EXTRACCION - ENDOCRINOLOGIA' ||
       t === 'EXTRACCION PAB' ||
-      t === 'EXTRACCIÓN PAB'
+      t === 'EXTRACCIÓN PAB' ||
+      t.includes('EXTRACCION PAB') ||
+      t.includes('EXTRACCIÓN PAB')
     );
   };
 
@@ -123,10 +133,20 @@ export default function PabCalendarView({
   };
 
   function formatPabDisplayType(apt: any): string {
+    if (apt.analyses && apt.analyses.length > 1) {
+      return apt.analyses.map((a: any) => a.name || a.subtype).filter(Boolean).join(' + ');
+    }
     const effective = resolveTestType(apt);
+    if (!effective) {
+      if (apt.analyses && apt.analyses.length > 0) return apt.analyses[0].name;
+      return 'Prueba';
+    }
+    const u = effective.toUpperCase().trim();
+    if (u === 'CURVAS PAB - ARGININA') return 'CURVAS PAB - ARGININA';
+    if (u === 'CURVAS PAB - CLONIDINA') return 'CURVAS PAB - CLONIDINA';
     if (isCurvaType(effective)) return 'CURVAS PAB';
     if (isExtraccionPabType(effective)) return 'EXTRACCIÓN PAB';
-    return effective || (apt.analyses && apt.analyses.length > 0 ? apt.analyses[0].name : 'Prueba');
+    return effective;
   }
 
   return (
