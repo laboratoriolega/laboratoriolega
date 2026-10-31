@@ -14,6 +14,16 @@ import MoveReasonModal from "./MoveReasonModal";
 
 type BlockedDay = { id: number; fecha: string; descripcion: string | null; created_by?: string | null };
 
+type PabCategory = 'CURVAS_PAB' | 'CURVAS_ARGININA' | 'CURVAS_CLONIDINA' | 'EXTRACCION_PAB' | 'OTHER';
+
+const PAB_COLORS: Record<PabCategory, string> = {
+  CURVAS_PAB: '#F59E0B',        // Ámbar
+  CURVAS_ARGININA: '#06B6D4',   // Cian / Celeste
+  CURVAS_CLONIDINA: '#EC4899',  // Rosa / Magenta
+  EXTRACCION_PAB: '#8B5CF6',    // Violeta / Púrpura
+  OTHER: 'var(--primary)',      // Primario / Dinámico
+};
+
 export default function PabCalendarView({
   appointments,
   blockedDays: initialBlockedDays,
@@ -33,7 +43,7 @@ export default function PabCalendarView({
 
   const [blockedDays, setBlockedDays] = useState<BlockedDay[]>(initialBlockedDays);
   const [showBlockedPanel, setShowBlockedPanel] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'CURVAS PAB' | 'EXTRACCION PAB'>('ALL');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
   useEffect(() => { setBlockedDays(initialBlockedDays); }, [initialBlockedDays]);
 
@@ -58,7 +68,9 @@ export default function PabCalendarView({
       t === 'CURVAS PAB' ||
       t.startsWith('CURVAS PAB') ||
       t.startsWith('CURVA PAB') ||
-      t.includes('CURVA')
+      t.includes('CURVA') ||
+      t.includes('ARGININA') ||
+      t.includes('CLONIDINA')
     );
   };
 
@@ -76,8 +88,55 @@ export default function PabCalendarView({
   };
 
   const isPabMatch = (val?: string | null): boolean => {
-    return isCurvaType(val) || isExtraccionPabType(val);
+    if (!val) return false;
+    const t = val.toUpperCase().trim();
+    return isCurvaType(t) || isExtraccionPabType(t) || t.includes('PAB');
   };
+
+  const getPabCategory = (type?: string | null): PabCategory => {
+    if (!type) return 'OTHER';
+    const u = type.toUpperCase().trim();
+    if (u.includes('ARGININA')) return 'CURVAS_ARGININA';
+    if (u.includes('CLONIDINA')) return 'CURVAS_CLONIDINA';
+    if (isExtraccionPabType(u)) return 'EXTRACCION_PAB';
+    if (isCurvaType(u)) return 'CURVAS_PAB';
+    return 'OTHER';
+  };
+
+  // Resolve the effective PAB test type from multiple possible sources
+  function resolveTestType(apt: any): string | undefined {
+    if (apt.aire_test_type && isPabMatch(apt.aire_test_type)) return apt.aire_test_type;
+    // Fall back to analyses array subtype or name
+    if (apt.analyses && apt.analyses.length > 0) {
+      const arginina = apt.analyses.find((a: any) => 
+        (a.subtype && a.subtype.toUpperCase().includes('ARGININA')) || 
+        (a.name && a.name.toUpperCase().includes('ARGININA'))
+      );
+      if (arginina) return arginina.subtype || arginina.name;
+
+      const clonidina = apt.analyses.find((a: any) => 
+        (a.subtype && a.subtype.toUpperCase().includes('CLONIDINA')) || 
+        (a.name && a.name.toUpperCase().includes('CLONIDINA'))
+      );
+      if (clonidina) return clonidina.subtype || clonidina.name;
+
+      const curva = apt.analyses.find((a: any) => 
+        isCurvaType(a.subtype) || isCurvaType(a.name)
+      );
+      if (curva) return curva.subtype || curva.name;
+
+      const extraccion = apt.analyses.find((a: any) => 
+        isExtraccionPabType(a.subtype) || isExtraccionPabType(a.name)
+      );
+      if (extraccion) return extraccion.subtype || extraccion.name;
+
+      const pabAnalysis = apt.analyses.find((a: any) => 
+        isPabMatch(a.subtype) || isPabMatch(a.name)
+      );
+      if (pabAnalysis) return pabAnalysis.subtype || pabAnalysis.name;
+    }
+    return apt.analysis_type;
+  }
 
   const airesAppts = (appointments || []).filter(a =>
     a &&
@@ -91,62 +150,81 @@ export default function PabCalendarView({
 
   const currentMonthAppts = airesAppts.filter(a => a && a.appointment_date && isSameMonth(new Date(a.appointment_date), monthStart));
   const completedThisMonth = currentMonthAppts.filter(a => a?.status === 'COMPLETADO').length;
-  const curvaTotal = currentMonthAppts.filter(a => isCurvaType(resolveTestType(a))).length;
-  const curvaCompleted = currentMonthAppts.filter(a => isCurvaType(resolveTestType(a)) && a?.status === 'COMPLETADO').length;
-  const extraccionTotal = currentMonthAppts.filter(a => isExtraccionPabType(resolveTestType(a))).length;
-  const extraccionCompleted = currentMonthAppts.filter(a => isExtraccionPabType(resolveTestType(a)) && a?.status === 'COMPLETADO').length;
+
+  const curvaPabTotal = currentMonthAppts.filter(a => getPabCategory(resolveTestType(a)) === 'CURVAS_PAB').length;
+  const curvaPabCompleted = currentMonthAppts.filter(a => getPabCategory(resolveTestType(a)) === 'CURVAS_PAB' && a?.status === 'COMPLETADO').length;
+
+  const argininaTotal = currentMonthAppts.filter(a => getPabCategory(resolveTestType(a)) === 'CURVAS_ARGININA').length;
+  const argininaCompleted = currentMonthAppts.filter(a => getPabCategory(resolveTestType(a)) === 'CURVAS_ARGININA' && a?.status === 'COMPLETADO').length;
+
+  const clonidinaTotal = currentMonthAppts.filter(a => getPabCategory(resolveTestType(a)) === 'CURVAS_CLONIDINA').length;
+  const clonidinaCompleted = currentMonthAppts.filter(a => getPabCategory(resolveTestType(a)) === 'CURVAS_CLONIDINA' && a?.status === 'COMPLETADO').length;
+
+  const extraccionTotal = currentMonthAppts.filter(a => getPabCategory(resolveTestType(a)) === 'EXTRACCION_PAB').length;
+  const extraccionCompleted = currentMonthAppts.filter(a => getPabCategory(resolveTestType(a)) === 'EXTRACCION_PAB' && a?.status === 'COMPLETADO').length;
+
+  // Dynamic types for any other PAB study not in the 4 known categories
+  const dynamicTypesMap = new Map<string, { total: number; completed: number }>();
+  currentMonthAppts.forEach(a => {
+    const effective = resolveTestType(a);
+    const cat = getPabCategory(effective);
+    if (cat === 'OTHER' && effective) {
+      const t = effective.toUpperCase().trim();
+      const prev = dynamicTypesMap.get(t) || { total: 0, completed: 0 };
+      dynamicTypesMap.set(t, {
+        total: prev.total + 1,
+        completed: prev.completed + (a?.status === 'COMPLETADO' ? 1 : 0),
+      });
+    }
+  });
 
   function getBlockedInfo(d: Date): BlockedDay | null {
     const key = format(d, 'yyyy-MM-dd');
     return blockedDays.find(b => b.fecha.slice(0, 10) === key) || null;
   }
 
-  // Resolve the effective aire test type from multiple possible sources
-  function resolveTestType(apt: any): string | undefined {
-    if (apt.aire_test_type && isPabMatch(apt.aire_test_type)) return apt.aire_test_type;
-    // Fall back to analyses array subtype or name
-    if (apt.analyses && apt.analyses.length > 0) {
-      const pabAnalysis = apt.analyses.find((a: any) => 
-        isPabMatch(a.subtype) || isPabMatch(a.name)
-      );
-      if (pabAnalysis) return pabAnalysis.subtype || pabAnalysis.name;
-    }
-    return apt.analysis_type;
-  }
-
   const getTypeStyle = (type?: string, status?: string) => {
     let base = { border: '1px solid var(--glass-border)', borderLeft: '5px solid var(--glass-border)', background: 'var(--glass-bg)', opacity: 1 };
     if (status === 'CANCELADO') return { ...base, opacity: 0.5, background: 'rgba(0,0,0,0.1)', border: '1px solid var(--glass-border)', borderLeft: '5px solid #94a3b8' };
-    if (isCurvaType(type)) {
-      base = { ...base, border: '1px solid #F59E0B', borderLeft: '5px solid #F59E0B', background: status === 'COMPLETADO' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.06)' };
-    } else if (isExtraccionPabType(type)) {
-      base = { ...base, border: '1px solid #8B5CF6', borderLeft: '5px solid #8B5CF6', background: status === 'COMPLETADO' ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.05)' };
+    
+    const cat = getPabCategory(type);
+    if (cat === 'CURVAS_PAB') {
+      base = { ...base, border: '1px solid #F59E0B', borderLeft: '5px solid #F59E0B', background: status === 'COMPLETADO' ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.06)' };
+    } else if (cat === 'CURVAS_ARGININA') {
+      base = { ...base, border: '1px solid #06B6D4', borderLeft: '5px solid #06B6D4', background: status === 'COMPLETADO' ? 'rgba(6,182,212,0.12)' : 'rgba(6,182,212,0.06)' };
+    } else if (cat === 'CURVAS_CLONIDINA') {
+      base = { ...base, border: '1px solid #EC4899', borderLeft: '5px solid #EC4899', background: status === 'COMPLETADO' ? 'rgba(236,72,153,0.12)' : 'rgba(236,72,153,0.06)' };
+    } else if (cat === 'EXTRACCION_PAB') {
+      base = { ...base, border: '1px solid #8B5CF6', borderLeft: '5px solid #8B5CF6', background: status === 'COMPLETADO' ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.05)' };
+    } else {
+      base = { ...base, border: '1px solid var(--primary)', borderLeft: '5px solid var(--primary)', background: status === 'COMPLETADO' ? 'rgba(14,165,233,0.12)' : 'rgba(14,165,233,0.05)' };
     }
+
     if (status === 'COMPLETADO') { base.border = '1px solid var(--success)'; base.borderLeft = '5px solid var(--success)'; }
     return base;
   };
 
   const getBadgeColor = (type?: string) => {
-    if (isCurvaType(type)) return '#F59E0B';
-    if (isExtraccionPabType(type)) return '#8B5CF6';
-    return 'var(--primary)';
+    const cat = getPabCategory(type);
+    return PAB_COLORS[cat] || PAB_COLORS.OTHER;
   };
+
+  function formatSinglePabName(name?: string | null): string {
+    if (!name) return '';
+    const cat = getPabCategory(name);
+    if (cat === 'CURVAS_ARGININA') return 'CURVAS ARGININA';
+    if (cat === 'CURVAS_CLONIDINA') return 'CURVAS CLONIDINA';
+    if (cat === 'CURVAS_PAB') return 'CURVAS PAB';
+    if (cat === 'EXTRACCION_PAB') return 'EXTRACCIÓN PAB';
+    return name.toUpperCase().trim();
+  }
 
   function formatPabDisplayType(apt: any): string {
     if (apt.analyses && apt.analyses.length > 1) {
-      return apt.analyses.map((a: any) => a.name || a.subtype).filter(Boolean).join(' + ');
+      return apt.analyses.map((a: any) => formatSinglePabName(a.name || a.subtype)).filter(Boolean).join(' + ');
     }
     const effective = resolveTestType(apt);
-    if (!effective) {
-      if (apt.analyses && apt.analyses.length > 0) return apt.analyses[0].name;
-      return 'Prueba';
-    }
-    const u = effective.toUpperCase().trim();
-    if (u === 'CURVAS PAB - ARGININA') return 'CURVAS PAB - ARGININA';
-    if (u === 'CURVAS PAB - CLONIDINA') return 'CURVAS PAB - CLONIDINA';
-    if (isCurvaType(effective)) return 'CURVAS PAB';
-    if (isExtraccionPabType(effective)) return 'EXTRACCIÓN PAB';
-    return effective;
+    return formatSinglePabName(effective) || (apt.analyses && apt.analyses.length > 0 ? apt.analyses[0].name : 'Prueba');
   }
 
   return (
@@ -206,13 +284,14 @@ export default function PabCalendarView({
 
         <button
           type="button"
-          onClick={() => setTypeFilter(prev => prev === 'CURVAS PAB' ? 'ALL' : 'CURVAS PAB')}
+          onClick={() => setTypeFilter(prev => prev === 'CURVAS_PAB' ? 'ALL' : 'CURVAS_PAB')}
+          title={`${curvaPabTotal} turnos (${curvaPabCompleted} completados)`}
           style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.35rem 0.75rem',
             borderRadius: '6px',
-            border: `1px solid ${typeFilter === 'CURVAS PAB' ? '#F59E0B' : 'var(--glass-border)'}`,
-            background: typeFilter === 'CURVAS PAB' ? 'rgba(245, 158, 11, 0.2)' : 'var(--glass-bg)',
+            border: `1px solid ${typeFilter === 'CURVAS_PAB' ? '#F59E0B' : 'var(--glass-border)'}`,
+            background: typeFilter === 'CURVAS_PAB' ? 'rgba(245, 158, 11, 0.2)' : 'var(--glass-bg)',
             color: '#F59E0B',
             fontWeight: 700,
             fontSize: '0.8rem',
@@ -221,18 +300,61 @@ export default function PabCalendarView({
           }}
         >
           <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#F59E0B' }}></span>
-          CURVAS PAB ({curvaTotal}/{curvaCompleted})
+          CURVAS PAB ({curvaPabTotal}/{curvaPabCompleted})
         </button>
 
         <button
           type="button"
-          onClick={() => setTypeFilter(prev => prev === 'EXTRACCION PAB' ? 'ALL' : 'EXTRACCION PAB')}
+          onClick={() => setTypeFilter(prev => prev === 'CURVAS_ARGININA' ? 'ALL' : 'CURVAS_ARGININA')}
+          title={`${argininaTotal} turnos (${argininaCompleted} completados)`}
           style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.35rem 0.75rem',
             borderRadius: '6px',
-            border: `1px solid ${typeFilter === 'EXTRACCION PAB' ? '#8B5CF6' : 'var(--glass-border)'}`,
-            background: typeFilter === 'EXTRACCION PAB' ? 'rgba(139, 92, 246, 0.2)' : 'var(--glass-bg)',
+            border: `1px solid ${typeFilter === 'CURVAS_ARGININA' ? '#06B6D4' : 'var(--glass-border)'}`,
+            background: typeFilter === 'CURVAS_ARGININA' ? 'rgba(6, 182, 212, 0.2)' : 'var(--glass-bg)',
+            color: '#06B6D4',
+            fontWeight: 700,
+            fontSize: '0.8rem',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#06B6D4' }}></span>
+          CURVAS ARGININA ({argininaTotal}/{argininaCompleted})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTypeFilter(prev => prev === 'CURVAS_CLONIDINA' ? 'ALL' : 'CURVAS_CLONIDINA')}
+          title={`${clonidinaTotal} turnos (${clonidinaCompleted} completados)`}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            border: `1px solid ${typeFilter === 'CURVAS_CLONIDINA' ? '#EC4899' : 'var(--glass-border)'}`,
+            background: typeFilter === 'CURVAS_CLONIDINA' ? 'rgba(236, 72, 153, 0.2)' : 'var(--glass-bg)',
+            color: '#EC4899',
+            fontWeight: 700,
+            fontSize: '0.8rem',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#EC4899' }}></span>
+          CURVAS CLONIDINA ({clonidinaTotal}/{clonidinaCompleted})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTypeFilter(prev => prev === 'EXTRACCION_PAB' ? 'ALL' : 'EXTRACCION_PAB')}
+          title={`${extraccionTotal} turnos (${extraccionCompleted} completados)`}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            border: `1px solid ${typeFilter === 'EXTRACCION_PAB' ? '#8B5CF6' : 'var(--glass-border)'}`,
+            background: typeFilter === 'EXTRACCION_PAB' ? 'rgba(139, 92, 246, 0.2)' : 'var(--glass-bg)',
             color: '#8B5CF6',
             fontWeight: 700,
             fontSize: '0.8rem',
@@ -243,6 +365,31 @@ export default function PabCalendarView({
           <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#8B5CF6' }}></span>
           EXTRACCIÓN PAB ({extraccionTotal}/{extraccionCompleted})
         </button>
+
+        {/* Dynamic types (any new type not in the 4 known ones) */}
+        {Array.from(dynamicTypesMap.entries()).map(([type, data]) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => setTypeFilter(prev => prev === type ? 'ALL' : type)}
+            title={`${data.total} turnos (${data.completed} completados)`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '6px',
+              border: `1px solid ${typeFilter === type ? 'var(--primary)' : 'var(--glass-border)'}`,
+              background: typeFilter === type ? 'rgba(14, 165, 233, 0.2)' : 'var(--glass-bg)',
+              color: 'var(--primary)',
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--primary)' }}></span>
+            {type} ({data.total}/{data.completed})
+          </button>
+        ))}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#EF4444', marginLeft: 'auto' }}>
           <Ban size={12} color="#EF4444" /> SIN ATENCIÓN
@@ -259,9 +406,14 @@ export default function PabCalendarView({
             const rawDayAppts = (airesAppts || []).filter(a => a && a.appointment_date && isSameDay(new Date(a.appointment_date), day));
             const activeDayAppts = rawDayAppts.filter(a => a.status !== 'CANCELADO');
             const dayAppts = rawDayAppts.filter(a => {
-              if (typeFilter === 'CURVAS PAB' && !isCurvaType(resolveTestType(a))) return false;
-              if (typeFilter === 'EXTRACCION PAB' && !isExtraccionPabType(resolveTestType(a))) return false;
-              return true;
+              if (typeFilter === 'ALL') return true;
+              const effective = resolveTestType(a);
+              const cat = getPabCategory(effective);
+              if (typeFilter === 'CURVAS_PAB') return cat === 'CURVAS_PAB';
+              if (typeFilter === 'CURVAS_ARGININA') return cat === 'CURVAS_ARGININA';
+              if (typeFilter === 'CURVAS_CLONIDINA') return cat === 'CURVAS_CLONIDINA';
+              if (typeFilter === 'EXTRACCION_PAB') return cat === 'EXTRACCION_PAB';
+              return (effective || '').toUpperCase().trim() === typeFilter;
             });
             const isCurrentMonth = isSameMonth(day, monthStart);
             const isToday = isSameDay(day, new Date());
@@ -385,7 +537,6 @@ export default function PabCalendarView({
                           boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
                           position: 'relative',
                           borderLeft: apt?.status === 'COMPLETADO' ? '5px solid var(--success)' : `5px solid ${getBadgeColor(effectiveType)}`,
-                          background: apt?.status === 'COMPLETADO' ? 'rgba(16,185,129,0.12)' : undefined,
                           cursor: 'grab',
                           transition: 'all 0.2s ease',
                           flexShrink: 0,
@@ -430,7 +581,7 @@ export default function PabCalendarView({
                         </div>
                         <p style={{ fontWeight: 800, fontSize: '0.9rem', lineHeight: 1.15, color: apt?.status === 'CANCELADO' ? 'var(--text-muted)' : 'var(--text-main)', margin: '0.1rem 0', textDecoration: apt?.status === 'CANCELADO' ? 'line-through' : 'none', opacity: apt?.status === 'CANCELADO' ? 0.6 : 1, wordBreak: 'break-word' }}>{apt?.name}</p>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.05rem' }}>
-                          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, margin: 0 }}>
+                          <p style={{ fontSize: '0.75rem', color: getBadgeColor(effectiveType), fontWeight: 700, margin: 0 }}>
                              {formatPabDisplayType(apt)}
                            </p>
                            {apt.observations && <MessageSquare size={10} color="var(--primary)" />}
