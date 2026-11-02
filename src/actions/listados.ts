@@ -1104,6 +1104,7 @@ export async function createTipoAnalisis(nombre: string) {
       [nombreUpper]
     );
     revalidatePath("/admin-lega");
+    revalidatePath("/ingresos");
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
@@ -1120,6 +1121,7 @@ export async function updateTipoAnalisis(id: number, nombre: string, activo: boo
       [nombre.trim().toUpperCase(), activo, id]
     );
     revalidatePath("/admin-lega");
+    revalidatePath("/ingresos");
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
@@ -1133,6 +1135,7 @@ export async function deleteTipoAnalisis(id: number) {
 
     await pool.query("DELETE FROM tipos_analisis_catalog WHERE id = $1", [id]);
     revalidatePath("/admin-lega");
+    revalidatePath("/ingresos");
     return { success: true };
   } catch (error: any) {
     return { error: error.message };

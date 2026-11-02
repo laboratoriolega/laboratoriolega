@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid
@@ -11,6 +11,7 @@ import { es } from 'date-fns/locale/es';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getTiposAnalisis } from '@/actions/listados';
 
 const AIR_TEST_NAMES = new Set(['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'AIRES']);
 
@@ -27,12 +28,82 @@ const parseLocalDate = (dateStr: string, isEnd = false): Date => {
 interface IngresosReportsProps {
   data: any[];
   onBack: () => void;
+  tiposAnalisis?: string[];
+  obrasSociales?: string[];
 }
 
-const ANALYSIS_OPTIONS = ['SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'PYLORI', 'EXTRACCION', 'MATERIA FECAL', 'ORINA', 'PANEL 105', 'PANEL 63', 'ALCAT', 'CIBIC', 'CURVAS PAB', 'EXTRACCION PAB'];
+const DEFAULT_ANALYSIS_OPTIONS = [
+  'SIBO', 'LACTOSA', 'FRUCTUOSA', 'SIBO C/LACTULON', 'PYLORI', 'EXTRACCION',
+  'MATERIA FECAL', 'ORINA', 'PANEL 105', 'PANEL 63', 'ALCAT', 'CIBIC',
+  'CURVAS PAB', 'EXTRACCION PAB'
+];
 const OBRAS_SOCIALES_FILTER = ['OSDE', 'SWISS MEDICAL', 'GALENO', 'MEDIFE', 'CIBIC', 'METABOLOMICA', 'FEDERACION', 'ASOCIACION', 'APROSS', 'PARTICULAR'];
 
-export default function IngresosReports({ data, onBack }: IngresosReportsProps) {
+const normalizeString = (str: string | null | undefined): string => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+};
+
+const isPabExtraccion = (s: string) =>
+  s === 'extraccion pab' ||
+  s === 'extraccion - endocrinologia' ||
+  s === 'extraccion endocrinologia' ||
+  s === 'extraccion endocrinologica';
+
+const isCurva = (s: string) =>
+  s === 'curva' ||
+  s === 'curvas' ||
+  s === 'curva pab' ||
+  s === 'curvas pab';
+
+const isAnalysisMatch = (itemAnalysis: string, filterAnalysis: string): boolean => {
+  const itemNorm = normalizeString(itemAnalysis);
+  const selNorm = normalizeString(filterAnalysis);
+  if (!itemNorm || !selNorm) return false;
+
+  // 1. Curvas PAB
+  if (isCurva(selNorm)) {
+    if (isCurva(itemNorm) || itemNorm.includes('curva')) return true;
+  }
+  if (isCurva(itemNorm)) {
+    if (isCurva(selNorm) || selNorm.includes('curva')) return true;
+  }
+
+  // 2. Extracción PAB
+  if (isPabExtraccion(selNorm)) {
+    return isPabExtraccion(itemNorm);
+  }
+  if (isPabExtraccion(itemNorm)) {
+    return isPabExtraccion(selNorm);
+  }
+
+  // 3. Regular Extracción
+  if (selNorm === 'extraccion' || selNorm === 'extra') {
+    return (itemNorm === 'extraccion' || itemNorm === 'extra') && !isPabExtraccion(itemNorm);
+  }
+  if (itemNorm === 'extraccion' || itemNorm === 'extra') {
+    return (selNorm === 'extraccion' || selNorm === 'extra') && !isPabExtraccion(selNorm);
+  }
+
+  // 4. Exact equality
+  if (itemNorm === selNorm) return true;
+
+  // 5. Clean comparison (without parentheses/subtypes if present)
+  const itemClean = itemNorm.replace(/\(.*?\)/g, '').trim();
+  const selClean = selNorm.replace(/\(.*?\)/g, '').trim();
+  if (itemClean === selClean && itemClean.length > 0) return true;
+
+  // 6. Substring match for compound types (e.g. CURVAS PAB - ARGININA)
+  if (itemNorm.includes(selNorm) || selNorm.includes(itemNorm)) return true;
+
+  return false;
+};
+
+export default function IngresosReports({ data, onBack, tiposAnalisis, obrasSociales }: IngresosReportsProps) {
   const [dateRange, setDateRange] = useState({
     start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
@@ -41,6 +112,44 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
   const [filterAnalysis, setFilterAnalysis] = useState<string[]>([]);
   const [filterObraSocial, setFilterObraSocial] = useState('');
   const [filterProfessional, setFilterProfessional] = useState('');
+
+  const [analysisOptions, setAnalysisOptions] = useState<string[]>(() => {
+    if (tiposAnalisis && tiposAnalisis.length > 0) {
+      return tiposAnalisis.map(t => t.trim().toUpperCase());
+    }
+    return DEFAULT_ANALYSIS_OPTIONS;
+  });
+
+  // Keep dynamic analysis types in sync with admin-lega catalog
+  useEffect(() => {
+    let isMounted = true;
+    getTiposAnalisis().then(res => {
+      if (isMounted && res?.data) {
+        const activeList = res.data
+          .filter((t: any) => t.activo && t.nombre)
+          .map((t: any) => t.nombre.trim().toUpperCase());
+        if (activeList.length > 0) {
+          setAnalysisOptions(activeList);
+        }
+      }
+    }).catch(err => {
+      console.error("Error al obtener tipos de análisis para reportes:", err);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (tiposAnalisis && tiposAnalisis.length > 0) {
+      setAnalysisOptions(tiposAnalisis.map(t => t.trim().toUpperCase()));
+    }
+  }, [tiposAnalisis]);
+
+  const availableObrasSociales = useMemo(() => {
+    if (obrasSociales && obrasSociales.length > 0) {
+      return obrasSociales;
+    }
+    return OBRAS_SOCIALES_FILTER;
+  }, [obrasSociales]);
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -54,9 +163,28 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
       if (!isWithinInterval(date, { start: startLimit, end: endLimit })) return false;
 
       if (filterAnalysis.length > 0) {
-        const itemTypes = item.analyses?.map((a: any) => (a.analysis_name || a.name || '').trim().toUpperCase()) ||
-          [(item.analysis_type || '').trim().toUpperCase()];
-        if (!filterAnalysis.some(fa => itemTypes.includes(fa.trim().toUpperCase()))) return false;
+        const itemAnalyses: string[] = [];
+        if (item.analysis_type) {
+          item.analysis_type.split(/[,;\/]+/).forEach((s: string) => {
+            const trimmed = s.trim();
+            if (trimmed) itemAnalyses.push(trimmed);
+          });
+        }
+        if (item.aire_test_type && item.aire_test_type.trim()) {
+          itemAnalyses.push(item.aire_test_type.trim());
+        }
+        if (Array.isArray(item.analyses)) {
+          item.analyses.forEach((a: any) => {
+            if (a?.name && a.name.trim()) itemAnalyses.push(a.name.trim());
+            if (a?.analysis_name && a.analysis_name.trim()) itemAnalyses.push(a.analysis_name.trim());
+            if (a?.subtype && a.subtype.trim()) itemAnalyses.push(a.subtype.trim());
+          });
+        }
+
+        const matches = filterAnalysis.some(fa =>
+          itemAnalyses.some(ia => isAnalysisMatch(ia, fa))
+        );
+        if (!matches) return false;
       }
 
       if (filterObraSocial) {
@@ -309,7 +437,7 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1 1 180px' }}>
             <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>TIPO DE ANÁLISIS</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-              {ANALYSIS_OPTIONS.map(opt => {
+              {analysisOptions.map(opt => {
                 const sel = filterAnalysis.includes(opt);
                 return (
                   <button
@@ -342,7 +470,7 @@ export default function IngresosReports({ data, onBack }: IngresosReportsProps) 
               style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem' }}
             >
               <option value="">Todas</option>
-              {OBRAS_SOCIALES_FILTER.map(os => <option key={os} value={os}>{os}</option>)}
+              {availableObrasSociales.map(os => <option key={os} value={os}>{os}</option>)}
             </select>
           </div>
 

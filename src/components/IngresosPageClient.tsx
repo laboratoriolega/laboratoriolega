@@ -15,9 +15,11 @@ import PatientsReport from "@/components/PatientsReport";
 export default function IngresosPageClient({
   userRole,
   obrasSociales = [],
+  tiposAnalisis = [],
 }: {
   userRole: string;
   obrasSociales?: string[];
+  tiposAnalisis?: string[];
 }) {
   const [ingresos, setIngresos] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -325,7 +327,12 @@ export default function IngresosPageClient({
           )}
         </>
       ) : view === 'reports' ? (
-        <IngresosReports data={ingresos} onBack={() => setView('table')} />
+        <IngresosReports
+          data={ingresos}
+          obrasSociales={obrasSociales}
+          tiposAnalisis={tiposAnalisis}
+          onBack={() => setView('table')}
+        />
       ) : (
         <PatientsReport data={ingresos} obrasSociales={obrasSociales} onBack={() => setView('table')} />
       )}
